@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+runsound-marketing/assets/
+runsound-marketing/posts/
+runsound-marketing/analytics/
+runsound-marketing/reports/
+runsound-marketing/logs/
+runsound-marketing/config.json
+runsound-marketing/strategy.json
+vercel-smart-link/.env.local
+vercel-smart-link/node_modules/
+vercel-smart-link/.next/
+.DS_Store
