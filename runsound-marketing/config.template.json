@@ -1,0 +1,51 @@
+{
+  "artist": {
+    "name": "",
+    "genre": "",
+    "mood": "",
+    "targetAudience": "",
+    "instagramHandle": "",
+    "tiktokHandle": ""
+  },
+  "song": {
+    "title": "",
+    "hookLines": [
+      "",
+      "",
+      ""
+    ],
+    "hookTimestamp": "0:00",
+    "hookDuration": 15,
+    "mp3Path": "runsound-marketing/assets/song.mp3",
+    "coverArtPath": "runsound-marketing/assets/cover.jpg",
+    "releaseDate": "",
+    "spotifyUrl": "",
+    "appleMusicUrl": "",
+    "youtubeMusicUrl": "",
+    "smartLinkSlug": ""
+  },
+  "imageGen": {
+    "provider": "openai",
+    "apiKey": "",
+    "model": "gpt-image-1.5",
+    "basePrompt": ""
+  },
+  "postiz": {
+    "apiKey": "",
+    "integrationIds": {
+      "tiktok": "",
+      "instagram": ""
+    }
+  },
+  "tracking": {
+    "supabaseUrl": "",
+    "supabaseKey": "",
+    "smartLinkBaseUrl": "https://runsound.com/s/"
+  },
+  "posting": {
+    "privacyLevel": "SELF_ONLY",
+    "schedule": ["07:30", "16:30", "21:00"],
+    "timezone": "Europe/Stockholm",
+    "crossPost": []
+  }
+}
