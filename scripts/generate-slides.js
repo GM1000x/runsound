@@ -117,7 +117,6 @@ async function generateOpenAI(prompt, outPath) {
     n: 1,
     size: '1024x1536',
     quality: 'high',
-    response_format: 'b64_json'
   });
 
   if (res.data[0].b64_json) {
@@ -176,7 +175,6 @@ async function withRetry(fn, retries = 2, delayMs = 3000) {
 
     // Resume: skip already-generated slides
     if (fs.existsSync(outPath) && fs.statSync(outPath).size > 10000) {
-      console.log(`  ⏭`  slide${i + 1}_raw.png already exists, skipping`);
       success++;
       skipped++;
       continue;

@@ -1,28 +1,22 @@
 #!/usr/bin/env node
 /**
- * RunSound — Post silent video to TikTok drafts via Postiz
+ * RunSound — Post image carousel to TikTok via Postiz
  *
- * Uploads slideshow_silent.mp4 to TikTok as a SELF_ONLY draft.
- * The artist then opens TikTok inbox, adds their song at hookTimestamp,
- * and publishes manually.
+ * Uploads slide1.png → slide6.png as a swipeable TikTok carousel (not a video).
+ * User receives a TikTok inbox notification, opens the draft, adds their song
+ * from TikTok's music library, then publishes.
  *
- * Usage: node post-to-tiktok.js --input runsound-marketing/posts/latest --config runsound-marketing/config.json
- *
- * What happens:
- *   1. Reads slideshow_silent.mp4 from --input dir
- *   2. Uploads to Postiz → TikTok (SELF_ONLY = draft visible only to you)
- *   3. Saves post ID to meta.json for analytics tracking later
- *   4. Prints publishing instructions with hookTimestamp
+ * Usage: node post-to-tiktok.js --input <dir> --config <config.json> [--variant A|B|C] [--caption "override"]
  */
 
-const fs   = require('fs');
-const path = require('path');
+const fs      = require('fs');
+const path    = require('path');
 const FormData = require('form-data');
 
-// Postiz uses fetch (Node 18+) — fallback to node-fetch if needed
+// Force node-fetch for form-data compatibility
 let fetchFn;
 try {
-  fetchFn = fetch; // Node 18+ built-in
+  fetchFn = require('node-fetch').default;
 } catch {
   fetchFn = require('node-fetch');
 }
@@ -33,8 +27,10 @@ function getArg(name) {
   return idx !== -1 ? args[idx + 1] : null;
 }
 
-const inputDir  = getArg('input');
-const configPath = getArg('config');
+const inputDir    = getArg('input');
+const configPath  = getArg('config');
+const captionArg  = getArg('caption');
+const variantArg  = (getArg('variant') || 'A').toUpperCase();
 
 if (!inputDir || !configPath) {
   console.error('Usage: node post-to-tiktok.js --input <dir> --config <config.json>');
@@ -43,8 +39,8 @@ if (!inputDir || !configPath) {
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-const POSTIZ_API   = 'https://api.postiz.com/public/v1';
-const apiKey       = config.postiz.apiKey;
+const POSTIZ_API    = 'https://api.postiz.com/public/v1';
+const apiKey        = process.env[config.postiz.apiKey] || config.postiz.apiKey;
 const integrationId = config.postiz.integrationIds?.tiktok;
 
 if (!apiKey || !integrationId) {
@@ -52,82 +48,112 @@ if (!apiKey || !integrationId) {
   process.exit(1);
 }
 
-const videoPath = path.join(inputDir, 'slideshow_silent.mp4');
-const metaPath  = path.join(inputDir, 'meta.json');
+const metaPath = path.join(inputDir, 'meta.json');
 
-if (!fs.existsSync(videoPath)) {
-  console.error(`❌ Video not found: ${videoPath}`);
-  console.error(`   Run 'npm run strip' first.`);
-  process.exit(1);
+// ─── Find slide images ────────────────────────────────────────────────────────
+function findSlides() {
+  const slides = [];
+  for (let i = 1; i <= 6; i++) {
+    // Try slide1_final.png first, then slide1.png
+    const finalPath = path.join(inputDir, `slide${i}_final.png`);
+    const basicPath = path.join(inputDir, `slide${i}.png`);
+    if (fs.existsSync(finalPath)) {
+      slides.push(finalPath);
+    } else if (fs.existsSync(basicPath)) {
+      slides.push(basicPath);
+    }
+  }
+  return slides;
 }
 
-// ─── Step 1: Upload media to Postiz ─────────────────────────────────────────
-async function uploadMedia() {
-  console.log('\n📤 Uploading video to Postiz...');
-
+// ─── Step 1: Upload a single image to Postiz ────────────────────────────────
+async function uploadImage(imagePath) {
+  const filename = path.basename(imagePath);
   const form = new FormData();
-  form.append('file', fs.createReadStream(videoPath), {
-    filename: 'slideshow_silent.mp4',
-    contentType: 'video/mp4'
+  form.append('file', fs.createReadStream(imagePath), {
+    filename,
+    contentType: 'image/png'
   });
 
-  const res = await fetchFn(`${POSTIZ_API}/media`, {
+  const res = await fetchFn(`${POSTIZ_API}/upload`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      ...form.getHeaders()
-    },
+    headers: { 'Authorization': apiKey, ...form.getHeaders() },
     body: form
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Media upload failed (${res.status}): ${text}`);
+    throw new Error(`Image upload failed for ${filename} (${res.status}): ${text}`);
   }
 
-  const data = await res.json();
-  console.log(`   ✅ Media uploaded: ${data.id || data.url || 'OK'}`);
-  return data;
+  return await res.json(); // { id, name, path, ... }
 }
 
-// ─── Step 2: Create post (TikTok draft) ──────────────────────────────────────
-async function createPost(mediaData) {
-  console.log('\n📱 Creating TikTok draft post...');
+// ─── Step 2: Upload all slides ────────────────────────────────────────────────
+async function uploadAllSlides(slides) {
+  console.log(`\n📤 Uploading ${slides.length} slides to Postiz...`);
+  const uploaded = [];
+  for (let i = 0; i < slides.length; i++) {
+    const data = await uploadImage(slides[i]);
+    console.log(`   ✅ Slide ${i + 1}/${slides.length}: ${data.path}`);
+    uploaded.push({ id: data.id, path: data.path });
+  }
+  return uploaded;
+}
 
-  // Build caption: song title + artist + CTA
+// ─── UTM URL builder ─────────────────────────────────────────────────────────
+function buildUtmUrl() {
+  const { song } = config;
+  const base = song.smartLinkSlug
+    ? `https://runsound.fm/${song.smartLinkSlug}`
+    : (song.spotifyUrl || '');
+  if (!base) return '';
+
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const campaign = `${dateStr}-${variantArg}`;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}utm_source=tiktok&utm_medium=carousel&utm_campaign=${campaign}`;
+}
+
+// ─── Step 3: Build caption ────────────────────────────────────────────────────
+function buildCaption(utmUrl) {
+  if (captionArg) return captionArg;
+
   const { artist, song } = config;
-  const spotifyUrl = song.spotifyUrl || '';
-  const smartLink  = song.smartLinkSlug ? `https://runsound.fm/${song.smartLinkSlug}` : spotifyUrl;
+  const link = utmUrl || '';
 
-  const caption = [
+  return [
     `${song.title} by ${artist.name}`,
-    smartLink ? `Stream it: ${smartLink}` : '',
-    `#${artist.genre?.replace(/\s+/g, '') || 'music'} #newmusic #${artist.name?.replace(/\s+/g, '').toLowerCase() || 'artist'}`
+    link ? `🎵 Stream it: ${link}` : '',
+    `#${artist.genre?.replace(/\s+/g, '') || 'music'} #newmusic #${artist.name?.replace(/\s+/g, '').toLowerCase() || 'artist'} #indiefolk`
   ].filter(Boolean).join('\n');
+}
 
-  // Schedule for 2 minutes from now (Postiz requires a future date)
+// ─── Step 4: Create carousel post ────────────────────────────────────────────
+async function createPost(images, utmUrl) {
+  console.log('\n📱 Creating TikTok carousel post...');
+
+  const caption      = buildCaption(utmUrl);
   const scheduleDate = new Date(Date.now() + 2 * 60 * 1000).toISOString();
 
   const body = {
-    type: 'draft',
+    type: 'now',
     date: scheduleDate,
     shortLink: false,
     tags: [],
-    content: [
+    posts: [
       {
         integration: { id: integrationId },
-        value: [
-          {
-            content: caption,
-            media: mediaData.id ? [{ id: mediaData.id }] : [{ url: mediaData.url }]
-          }
-        ],
+        value: [{ content: caption, image: images }],
         settings: {
-          // TikTok-specific: post as draft visible only to the account owner
-          privacy_level: 'SELF_ONLY',
-          disable_duet: false,
-          disable_comment: false,
-          disable_stitch: false
+          privacy_level:          'SELF_ONLY',
+          duet:                   false,
+          stitch:                 false,
+          comment:                true,
+          autoAddMusic:           'no',
+          brand_content_toggle:   false,
+          brand_organic_toggle:   false,
+          content_posting_method: 'UPLOAD'
         }
       }
     ]
@@ -135,10 +161,7 @@ async function createPost(mediaData) {
 
   const res = await fetchFn(`${POSTIZ_API}/posts`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Authorization': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
 
@@ -148,70 +171,68 @@ async function createPost(mediaData) {
   }
 
   const data = await res.json();
-  console.log(`   ℅ Draft created! Post ID: ${data.id}`);
-  return data;
+  const post = Array.isArray(data) ? data[0] : data;
+  console.log(`   ✅ Carousel posted! Post ID: ${post.postId || post.id}`);
+  return post;
 }
 
-// ─── Step 3: Save post ID to meta.json ───────────────────────────────────────
-function savePostMeta(postData) {
+// ─── Step 5: Save meta ────────────────────────────────────────────────────────
+function savePostMeta(postData, slideCount, utmUrl) {
   let meta = {};
   if (fs.existsSync(metaPath)) {
     try { meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')); } catch {}
   }
-
-  meta.postizPostId = postData.id;
-  meta.postedAt     = new Date().toISOString();
-  meta.status       = 'draft';
-  meta.tiktokVideoId = null; // Will be filled by check-analytics.js once published
-
+  meta.postizPostId  = postData.postId || postData.id;
+  meta.postedAt      = new Date().toISOString();
+  meta.status        = 'pending_publish';
+  meta.slideCount    = slideCount;
+  meta.variant       = variantArg;
+  meta.utmUrl        = utmUrl || null;
+  meta.tiktokVideoId = null;
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
-  console.log(`\n💾 Post ID saved to ${metaPath}`);
+  console.log(`\n💾 Post metadata saved to ${metaPath}`);
+  if (utmUrl) console.log(`   UTM: ${utmUrl}`);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 (async () => {
   try {
-    const videoSize = fs.statSync(videoPath).size;
-    console.log(`\n🎬 Posting RunSound video to TikTok drafts`);
+    const slides = findSlides();
+    if (slides.length === 0) {
+      console.error(`❌ No slides found in ${inputDir}`);
+      console.error(`   Expected: slide1.png → slide6.png (or slide1_final.png etc.)`);
+      console.error(`   Run 'npm run generate' first.`);
+      process.exit(1);
+    }
+
+    console.log(`\n🎵 RunSound — TikTok Carousel Post`);
     console.log(`   Artist: ${config.artist.name}`);
     console.log(`   Song:   ${config.song.title}`);
-    console.log(`   Video:  ${videoPath} (${(videoSize / 1024 / 1024).toFixed(1)}MB)`);
-    console.log(`   Mode:   SELF_ONLY draft (only you can see it)\n`);
+    console.log(`   Slides: ${slides.length} images found`);
+    console.log(`   Variant: ${variantArg}`);
+    console.log(`   Mode:   UPLOAD → TikTok inbox notification\n`);
 
-    const mediaData = await uploadMedia();
-    const postData  = await createPost(mediaData);
-    savePostMeta(postData);
+    const utmUrl         = buildUtmUrl();
+    const uploadedImages = await uploadAllSlides(slides);
+    const postData       = await createPost(uploadedImages, utmUrl);
+    savePostMeta(postData, slides.length, utmUrl);
 
-    // ─── Publishing instructions ──────────────────────────────────────────────
     console.log(`\n${'─'.repeat(60)}`);
-    console.log(`℅ VIDEO IS IN YOUR TIKTOK DRAFTS`);
+    console.log(`✅ CAROUSEL IS IN YOUR TIKTOK INBOX`);
     console.log(`${'─'.repeat(60)}`);
-    console.log(`\n📱 To publish from TikTok (takes 30 seconds):`);
-    console.log(`\n   1. Open TikTok on your phone`);
-    console.log(`   2. Tap Inbox → find your new draft`);
-    console.log(`   3. Tap "Add sound"`);
-    console.log(`   4. Search for: "${config.song.title}" by ${config.artist.name}`);
-    console.log(`   5. Start the audio at: ${config.song.hookTimestamp}`);
-    console.log(`      (The text on slide 1 should match what's playing)`);
-    console.log(`   6. Add hashtags if you want`);
-    console.log(`   7. Tap Post!\n`);
-    console.log(`After posting, grab the TikTok video URL and run:`);
-    console.log(`   npm run analytics`);
-    console.log(`   (links the video to Postiz for stats tracking)\n`);
+    console.log(`\n📱 To publish (30 seconds):`);
+    console.log(`   1. Open TikTok → tap the notification in your inbox`);
+    console.log(`   2. Tap "Add sound"`);
+    console.log(`   3. Search for: "${config.song?.title || 'your song'}" (or any trending sound)`);
+    console.log(`   4. Tap Post!\n`);
+    console.log(`After posting, run:`);
+    console.log(`   npm run analytics\n`);
 
   } catch (err) {
     console.error(`\n❌ Error: ${err.message}`);
-
     if (err.message.includes('401') || err.message.includes('403')) {
-      console.error(`\n   Check your postiz.apiKey in config.json`);
-      console.error(`   Get it from: https://app.postiz.com → Settings → API`);
+      console.error(`   Check your POSTIZ_API_KEY`);
     }
-
-    if (err.message.includes('integration')) {
-      console.error(`\n   Check your postiz.integrationIds.tiktok in config.json`);
-      console.error(`   Get it from: https://app.postiz.com → Integrations → TikTok`);
-    }
-
     process.exit(1);
   }
 })();

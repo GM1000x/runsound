@@ -22,7 +22,7 @@ const configPath = getArg('config');
 if (!configPath) { console.error('Usage: node whisper-sync.js --config <path>'); process.exit(1); }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-const openai = new OpenAI({ apiKey: config.imageGen.apiKey });
+const openai = new OpenAI({ apiKey: process.env[config.imageGen.apiKey] || config.imageGen.apiKey });
 
 function formatTimestamp(s) { const m = Math.floor(s/60); return `${m}:${Math.floor(s/60 % 60).toString().padStart(2,'0')}`; }
 

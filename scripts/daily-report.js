@@ -1,22 +1,21 @@
 #!/usr/bin/env node
 /**
- * RunSound — Daily report: TikTok views + Spotify clicks + recommendations
+ * RunSound — Daily analytics report
  *
- * Combines:
- *   - TikTok performance (views, likes) from Postiz analytics JSON
- *   - Spotify click-throughs from Supabase UTM tracking
- *   - Diagnostic framework: which content format is converting
- *   - Actionable recommendation for today's post
+ * 1. Hämtar Postiz analytics (views/likes/comments/shares per post)
+ * 2. Hämtar smartlink-klick per UTM-kampanj från RunSound-servern
+ * 3. Korskopplar: vilka TikTok-varianter driver faktiska streamingklick?
+ * 4. Kör Larry's diagnostic-loop
+ * 5. Skriver rapport + föreslår nya hooks
  *
- * Usage: node daily-report.js --config runsound-marketing/config.json [--days 7]
+ * Usage: node daily-report.js --config <config.json> [--days 3] [--artist <slug>]
  */
 
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
 
 let fetchFn;
-try { fetchFn = fetch; } catch { fetchFn = require('node-fetch'); }
+try { fetchFn = require('node-fetch').default; } catch { fetchFn = require('node-fetch'); }
 
 const args = process.argv.slice(2);
 function getArg(name) {
@@ -24,133 +23,224 @@ function getArg(name) {
   return idx !== -1 ? args[idx + 1] : null;
 }
 
-const configPath = getArg('config');
-const days = parseInt(getArg('days') || '7', 10);
+const configPath  = getArg('config');
+const daysArg     = parseInt(getArg('days') || '3', 10);
+const artistArg   = getArg('artist');
 
 if (!configPath) {
-  console.error('Usage: node daily-report.js --config runsound-marketing/config.json [--days 7]');
+  console.error('Usage: node daily-report.js --config <config.json> [--days 3]');
   process.exit(1);
 }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-function loadLatestAnalytics(configDir) {
-  const dir = path.join(configDir, 'reports');
-  if (!fs.existsSync(dir)) return null;
-  const files = fs.readdirSync(dir).filter(f => f.startsWith('analytics-') && f.endsWith('.json')).sort().reverse();
-  if (!files.length) return null;
-  try { return JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf-8')); }
-  catch { return null; }
-}
+const POSTIZ_API    = 'https://api.postiz.com/public/v1';
+const apiKey        = process.env[config.postiz?.apiKey] || config.postiz?.apiKey;
+const artistSlug    = artistArg || config.artist?.slug || config.artist?.name?.toLowerCase().replace(/\s+/g, '-');
+const SMARTLINK_API = config.smartlinkServer || 'http://localhost:3000';
+const REPORTS_DIR   = path.join(path.dirname(configPath), '..', 'reports');
 
-function loadPostMetas(configDir) {
-  const postsDir = path.join(configDir, 'posts');
-  if (!fs.existsSync(postsDir)) return [];
-  const metas = [];
-  const entries = fs.readdirSync(postsDir, {'"withFileTypes": true });
-  for (const e of entries.sort().reverse()) {
-    if (!e.isDirectory()) continue;
-    const mp = path.join(postsDir, e.name, 'meta.json');
-    if (fs.existsSync(mp)) { try { metas.push(JSON.parse(fs.readFileSync(mp, 'utf-8'))); } catch {} }
+fs.mkdirSync(REPORTS_DIR, { recursive: true });
+
+// ─── Fetch Postiz posts + analytics ──────────────────────────────────────────
+async function fetchPostizPosts() {
+  if (!apiKey) {
+    console.warn('⚠️  No Postiz API key — skipping TikTok analytics');
+    return [];
   }
-  return metas;
-}
 
-async function fetchSpotifyClicks(url, key, days) {
-  if (!url || !key) return { total: 0, bySlug: {}, error: 'No Supabase credentials' };
-  try {
-    const sb = createClient(url, key);
-    const since = new Date(); since.setDate(since.getDate() - days);
-    const { data, error } = await sb.from('utm_clicks').select('slug,source,created_at,destination').gte('created_at', since.toISOString()).order('created_at', { ascending: false });
-    if (error) throw error;
-    const bySlug = {}; let total = 0;
-    for (const row of (data || [])) {
-      const slug = row.slug || row.source || 'unknown';
-      bySlug[slug] = (bySlug[slug] || 0) + 1; total++;
-    }
-    return { total, bySlug, raw: data };
-  } catch (err) { return { total: 0, bySlug: {}, error: err.message }; }
-}
+  const since = new Date(Date.now() - daysArg * 24 * 60 * 60 * 1000).toISOString();
 
-function diagnose(views, clicks, avgV, avgC) {
-  const highV = views >= avgV * 0.8;
-  const highC = clicks >= avgC * 0.8;
-  if (highV && highC) return { label: 'SCALE', action: 'Post more of this exact format.' };
-  if (highV && !highC) return { label: 'FIX_CTA', action: 'Views good but no clicks - improve slide 6.' };
-  if (!highV && highC) return { label: 'FIX_HOOK', action: 'CTA works but hook isn\'t stopping scrolls.' };
-  return { label: 'RESET', action: 'Both low - try a completely different hook format.' };
-}
-
-function fmt(n) {
-  if (!n && n !== 0) return '0';
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
-}
-
-(async () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const configDir = path.dirname(configPath);
-  const reportsDir = path.join(configDir, 'reports');
-  fs.mkdirSync(reportsDir, { recursive: true });
-
-  console.log(`\nRunSound Daily Report - ${today}`);
-  const analytics = loadLatestAnalytics(configDir);
-  const postMetas = loadPostMetas(configDir);
-  const clickData = await fetchSpotifyClicks(config.tracking?.supabaseUrl, config.tracking?.supabaseKey, days);
-
-  const posts = postMetas.map(meta => {
-    const ap = analytics?.posts?.find(p => p.postId === meta.postizPostId);
-    if (ap) meta.stats = { ...meta.stats, ...ap };
-    return meta;
+  const res = await fetchFn(`${POSTIZ_API}/posts?since=${since}&limit=50`, {
+    headers: { 'Authorization': apiKey }
   });
 
-  const avgV = posts.reduce((s, p) => s + (p.stats?.views || 0), 0) / Math.max(posts.length, 1);
-  const avgC = clickData.total / Math.max(posts.length, 1);
-  const best = [...posts].sort((a, b) => (b.stats?.views || 0) - (a.stats?.views || 0))[0];
+  if (!res.ok) {
+    console.warn(`⚠️  Postiz posts fetch failed (${res.status})`);
+    return [];
+  }
 
-  const lines = [
-    `# RunSound Daily Report`,
-    `**${today}** | ${config.artist.name} - ${config.song.title}`,
-    '',
-    `## Performance (Last ${days} Days)`, '',
-  ];
+  const data = await res.json();
+  const posts = Array.isArray(data) ? data : (data.posts || []);
 
-  if (analytics?.posts?.length) {
-    lines.push('| Date | Views | Likes | Status |');
-    lines.push('|-----|------|------|-------|');
-    for (const p of analytics.posts.slice(0, 10)) {
-      lines.push(`| ${p.date || '-'} | ${fmt(p.views)} | ${fmt(p.likes)} | ${p.status || '-'} |`);
+  // Fetch analytics for each post
+  const enriched = [];
+  for (const post of posts) {
+    const postId = post.id || post.postId;
+    try {
+      const aRes = await fetchFn(`${POSTIZ_API}/analytics/post/${postId}`, {
+        headers: { 'Authorization': apiKey }
+      });
+      if (aRes.ok) {
+        const analytics = await aRes.json();
+        enriched.push({ ...post, analytics });
+      } else {
+        enriched.push({ ...post, analytics: null });
+      }
+    } catch {
+      enriched.push({ ...post, analytics: null });
     }
-    lines.push('');
-    lines.push(`**Avg views:** ${fmt(Math.round(avgV))}`);
-    lines.push('');
-  } else {
-    lines.push('_No TikTok analytics yet._'); lines.push('');
   }
 
-  lines.push(`## Spotify Clicks (${daysd days)`);
-  lines.push('');
-  if (clickData.total > 0) {
-    lines.push(`**Total:** ${clickData.total}`); lines.push('');
-  } else {
-    lines.push(clickData.error ? `_Supabase not connected: ${clickData.error}_` : '_No clicks yet._');
-    lines.push('');
+  return enriched;
+}
+
+// ─── Fetch smartlink click data ───────────────────────────────────────────────
+async function fetchSmartlinkClicks() {
+  if (!artistSlug) {
+    console.warn('⚠️  No artist slug — skipping smartlink analytics');
+    return { summary: [], byCampaign: [] };
   }
 
-  if (best) {
-    const bestClicks = clickData.bySlug[best.song || ''] || 0;
-    const { label, action } = diagnose(best.stats?.views || 0, bestClicks, avgV, avgC);
-    lines.push(`## Diagnosis`); lines.push('');
-    lines.push(`**${label}** - ${action}`); lines.push('');
+  try {
+    const res = await fetchFn(`${SMARTLINK_API}/api/clicks/${artistSlug}?days=${daysArg + 1}`);
+    if (!res.ok) return { summary: [], byCampaign: [] };
+    return await res.json();
+  } catch {
+    console.warn('⚠️  Smartlink server not reachable — skipping click analytics');
+    return { summary: [], byCampaign: [] };
+  }
+}
+
+// ─── Diagnostic framework (Larry's loop) ─────────────────────────────────────
+function diagnose(views, clicks) {
+  const highViews  = views  >= 10000;
+  const lowViews   = views  < 2000;
+  const highClicks = clicks >= 5;
+  const lowClicks  = clicks === 0;
+
+  if (highViews && highClicks)  return { status: '🟢 SCALE IT',    action: 'Gör 3 varianter av denna hook direkt. Testa olika postningstider.' };
+  if (highViews && lowClicks)   return { status: '🟡 FIXA CTA',    action: 'Hooken funkar — folk ser det. Men de klickar inte till streaming. Testa ny CTA på slide 6.' };
+  if (!lowViews && highClicks)  return { status: '🟡 FIXA HOOKEN', action: 'Bra konvertering men för få ser det. Testa radikalt annorlunda hook/thumbnail.' };
+  if (lowViews && lowClicks)    return { status: '🔴 FULL RESET',  action: 'Varken hook eller CTA funkar. Testa nytt format, ny vinkel, ny målgrupp.' };
+  return { status: '⚪ SAMLAR DATA', action: 'För tidigt att döma — behöver mer data.' };
+}
+
+// ─── Match posts to UTM campaigns ────────────────────────────────────────────
+function matchPostsToCampaigns(posts, clickData) {
+  const clickMap = {};
+  for (const row of (clickData.summary || [])) {
+    clickMap[row.utm_campaign] = (clickMap[row.utm_campaign] || 0) + row.total_clicks;
   }
 
-  lines.push('---');
-  lines.push(`_Generated by RunSound at ${new Date().toISOString()}_`);
+  return posts.map(post => {
+    const metaFile = post._metaPath;
+    let campaign = null;
+    let variant  = null;
 
-  const content = lines.join('\n');
-  console.log('\n' + content);
-  const outPath = path.join(reportsDir, `report-${today}.md`);
-  fs.writeFileSync(outPath, content);
-  console.log(`\nReport saved to ${outPath}\n`);
+    if (metaFile && fs.existsSync(metaFile)) {
+      const meta = JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
+      campaign = meta.utmUrl ? new URL(meta.utmUrl).searchParams.get('utm_campaign') : null;
+      variant  = meta.variant || null;
+    }
+
+    const views     = post.analytics?.views  || post.analytics?.impressions || 0;
+    const likes     = post.analytics?.likes  || 0;
+    const comments  = post.analytics?.comments || 0;
+    const shares    = post.analytics?.shares || 0;
+    const clicks    = campaign ? (clickMap[campaign] || 0) : 0;
+    const diagnosis = diagnose(views, clicks);
+
+    return { postId: post.id || post.postId, campaign, variant, views, likes, comments, shares, streamClicks: clicks, ...diagnosis };
+  });
+}
+
+// ─── Generate hook suggestions ────────────────────────────────────────────────
+function suggestHooks(results) {
+  const winners = results.filter(r => r.status.includes('SCALE') || (r.views >= 5000 && r.streamClicks >= 3));
+  const losers  = results.filter(r => r.status.includes('RESET'));
+  const suggestions = [];
+
+  if (winners.length > 0) {
+    suggestions.push(`✅ Vinnarhooks (variant ${winners.map(w => w.variant || '?').join(', ')}): Kör fler varianter av dessa.`);
+  }
+  if (losers.length > 0) {
+    suggestions.push(`🔄 ${losers.length} post(ar) behöver ny approach — prova:`);
+    suggestions.push('   • Emotion-hook: "Jag visste inte att min musik lät så här..."');
+    suggestions.push('   • Kontrast-hook: "Ingen strömmar min musik. Sedan detta."');
+    suggestions.push('   • Minimal-hook: Bara låttiteln. Låt tystnaden sälja.');
+  }
+  if (results.every(r => r.views < 1000)) {
+    suggestions.push('⚡ Alla posts har låga views — kontrollera att TikTok-kontot är tillräckligt uppvärmt.');
+  }
+  return suggestions;
+}
+
+// ─── Build + save report ─────────────────────────────────────────────────────
+function buildReport(results, clickData) {
+  const date        = new Date().toISOString().slice(0, 10);
+  const totalViews  = results.reduce((s, r) => s + r.views, 0);
+  const totalClicks = results.reduce((s, r) => s + r.streamClicks, 0);
+  const ctr         = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
+
+  const topPlatforms = {};
+  for (const row of (clickData.byCampaign || [])) {
+    topPlatforms[row.platform] = (topPlatforms[row.platform] || 0) + row.clicks;
+  }
+  const platformStr = Object.entries(topPlatforms)
+    .sort((a, b) => b[1] - a[1])
+    .map(([p, c]) => `${p}: ${c}`)
+    .join(' | ') || 'ingen data ännu';
+
+  const postRows = results.map(r =>
+    `| ${r.variant || '-'} | ${r.views.toLocaleString()} | ${r.likes} | ${r.streamClicks} | ${r.status} |`
+  ).join('\n');
+
+  const suggestions = suggestHooks(results);
+
+  const report = `# RunSound Daily Report — ${date}
+
+## Sammanfattning (senaste ${daysArg} dagar)
+
+| Metric | Värde |
+|--------|-------|
+| Totala views | ${totalViews.toLocaleString()} |
+| Streaming-klick | ${totalClicks} |
+| Click-through rate | ${ctr}% |
+| Topplattformar | ${platformStr} |
+
+## Posts
+
+| Variant | Views | Likes | Stream-klick | Diagnos |
+|---------|-------|-------|--------------|---------|
+${postRows || '| — | Ingen data | — | — | — |'}
+
+## Åtgärder
+
+${results.map(r => `**${r.variant || r.postId}** (${r.views.toLocaleString()} views, ${r.streamClicks} klick)\n→ ${r.action}`).join('\n\n') || 'Inga posts att analysera ännu.'}
+
+## Hook-förslag för idag
+
+${suggestions.join('\n') || 'Samlar data — kör igen imorgon.'}
+
+---
+*Genererad ${new Date().toISOString()} av RunSound daily-report.js*
+`;
+
+  const reportPath = path.join(REPORTS_DIR, `${date}.md`);
+  fs.writeFileSync(reportPath, report);
+  return { report, reportPath, totalViews, totalClicks, ctr };
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+(async () => {
+  console.log(`\n📊 RunSound Daily Report`);
+  console.log(`   Artist: ${artistSlug || config.artist?.name}`);
+  console.log(`   Period: senaste ${daysArg} dagar\n`);
+
+  const [posts, clickData] = await Promise.all([
+    fetchPostizPosts(),
+    fetchSmartlinkClicks()
+  ]);
+
+  console.log(`   📱 Posts hämtade: ${posts.length}`);
+  console.log(`   🔗 UTM-kampanjer: ${clickData.summary?.length || 0}`);
+
+  const results = matchPostsToCampaigns(posts, clickData);
+  const { report, reportPath, totalViews, totalClicks, ctr } = buildReport(results, clickData);
+
+  console.log('\n' + '─'.repeat(60));
+  console.log(report);
+  console.log('─'.repeat(60));
+  console.log(`\n💾 Rapport sparad: ${reportPath}\n`);
 })();
