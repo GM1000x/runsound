@@ -63,7 +63,6 @@ async function fetchPostizPosts() {
   const data = await res.json();
   const posts = Array.isArray(data) ? data : (data.posts || []);
 
-  // Fetch analytics for each post
   const enriched = [];
   for (const post of posts) {
     const postId = post.id || post.postId;
@@ -100,6 +99,41 @@ async function fetchSmartlinkClicks() {
     console.warn('⚠️  Smartlink server not reachable — skipping click analytics');
     return { summary: [], byCampaign: [] };
   }
+}
+
+// ─── Meta Ads benchmarks (industry averages, updated Q1 2026) ────────────────
+//
+// Used to show the artist what their organic TikTok reach is worth in paid terms.
+// Sources: Meta Ads Manager industry benchmarks, music/entertainment category.
+//
+// CPM         = cost per 1,000 impressions
+// CPC         = cost per link click
+// CPStream    = cost per streaming click (music vertical, estimated from CPM + CTR)
+//
+const META_BENCHMARKS = {
+  CPM:      10.50,   // $ per 1,000 impressions
+  CPC:       0.72,   // $ per link click (entertainment avg)
+  CPStream:  0.85,   // $ per streaming click (music vertical estimate)
+  CTR:       0.009   // 0.9% avg click-through rate on Meta video ads
+};
+
+// ─── Compute Meta Ads equivalent value ───────────────────────────────────────
+function metaEquivalent(totalViews, totalStreamClicks) {
+  const equivalentImpressionCost = (totalViews / 1000) * META_BENCHMARKS.CPM;
+  const equivalentStreamCost     = totalStreamClicks  * META_BENCHMARKS.CPStream;
+  const organicCTR               = totalViews > 0
+    ? ((totalStreamClicks / totalViews) * 100).toFixed(2)
+    : '0.00';
+  const metaCTR                  = (META_BENCHMARKS.CTR * 100).toFixed(1);
+
+  return {
+    equivalentImpressionCost: equivalentImpressionCost.toFixed(2),
+    equivalentStreamCost:     equivalentStreamCost.toFixed(2),
+    totalEquivalentValue:     (equivalentImpressionCost + equivalentStreamCost).toFixed(2),
+    organicCTR,
+    metaCTR,
+    ctrDelta: (parseFloat(organicCTR) - META_BENCHMARKS.CTR * 100).toFixed(2)
+  };
 }
 
 // ─── Diagnostic framework (Larry's loop) ─────────────────────────────────────
@@ -172,6 +206,7 @@ function buildReport(results, clickData) {
   const totalViews  = results.reduce((s, r) => s + r.views, 0);
   const totalClicks = results.reduce((s, r) => s + r.streamClicks, 0);
   const ctr         = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
+  const meta        = metaEquivalent(totalViews, totalClicks);
 
   const topPlatforms = {};
   for (const row of (clickData.byCampaign || [])) {
@@ -198,6 +233,28 @@ function buildReport(results, clickData) {
 | Streaming-klick | ${totalClicks} |
 | Click-through rate | ${ctr}% |
 | Topplattformar | ${platformStr} |
+
+## 💰 TikTok Organic vs Meta Ads — Värdeanalys
+
+> Vad hade samma räckvidd kostat på Meta Ads?
+
+| Metric | TikTok Organic | Meta Ads (estimat) |
+|--------|---------------|---------------------|
+| Visningar | ${totalViews.toLocaleString()} | — |
+| Kostnad för ${totalViews.toLocaleString()} visningar | **$0** | **$${meta.equivalentImpressionCost}** (CPM $${META_BENCHMARKS.CPM}) |
+| Streaming-klick | ${totalClicks} | — |
+| Kostnad för ${totalClicks} klick till streaming | **$0** | **$${meta.equivalentStreamCost}** ($${META_BENCHMARKS.CPStream}/klick) |
+| **Totalt värde genererat organiskt** | — | **≈ $${meta.totalEquivalentValue}** |
+| Click-through rate | ${ctr}% | ~${meta.metaCTR}% (Meta snitt) |
+
+${parseFloat(meta.ctrDelta) > 0
+  ? `✅ Din organiska CTR (${ctr}%) är **${meta.ctrDelta}pp högre** än Meta Ads-snittet (${meta.metaCTR}%) — folk som hittar dig organiskt konverterar bättre.`
+  : parseFloat(meta.ctrDelta) < 0
+    ? `⚠️  Din organiska CTR (${ctr}%) är ${Math.abs(parseFloat(meta.ctrDelta))}pp lägre än Meta snitt (${meta.metaCTR}%) — se över CTA på slide 6.`
+    : `⚪ Din CTR matchar Meta Ads-snittet (${meta.metaCTR}%).`
+}
+
+_Benchmarks: Meta Ads Q1 2026, musik/entertainment. CPM $${META_BENCHMARKS.CPM} | CPC $${META_BENCHMARKS.CPC} | CTR ${meta.metaCTR}%_
 
 ## Posts
 
