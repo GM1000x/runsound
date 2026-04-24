@@ -21,7 +21,11 @@
     "analytics": "node scripts/check-analytics.js --config runsound-marketing/config.json --days 3 --connect",
     "report": "node scripts/daily-report.js --config runsound-marketing/config.json --days 3",
     "usage": "node scripts/check-plan-usage.js --config runsound-marketing/config.json --action status",
-    "pay-swap": "node scripts/check-plan-usage.js --config runsound-marketing/config.json --action pay-per-swap"
+    "pay-swap": "node scripts/check-plan-usage.js --config runsound-marketing/config.json --action pay-per-swap",
+    "all-campaigns": "node scripts/run-all-campaigns.js --campaigns campaigns.json",
+    "all-campaigns:texts": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step texts",
+    "all-campaigns:overlay": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step overlay",
+    "all-campaigns:post": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step post"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.53",
