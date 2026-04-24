@@ -1,0 +1,30 @@
+{
+  "_comment": "Copy this to campaigns.json and fill in your campaigns. Do not commit campaigns.json if it contains API keys.",
+  "plan": "growth",
+  "campaigns": [
+    {
+      "slug": "summer-love",
+      "name": "Summer Love — Carly Rae Jepsen",
+      "config": "campaigns/summer-love/config.json",
+      "active": true,
+      "createdAt": "2026-04-01",
+      "notes": "Main active campaign — posting daily"
+    },
+    {
+      "slug": "bad-weather",
+      "name": "Bad Weather — Marry Jones",
+      "config": "campaigns/bad-weather/config.json",
+      "active": true,
+      "createdAt": "2026-04-15",
+      "notes": "New campaign — just launched"
+    },
+    {
+      "slug": "old-song-2025",
+      "name": "Old Song 2025 — paused",
+      "config": "campaigns/old-song-2025/config.json",
+      "active": false,
+      "createdAt": "2025-11-01",
+      "notes": "Paused — not posting right now"
+    }
+  ]
+}
