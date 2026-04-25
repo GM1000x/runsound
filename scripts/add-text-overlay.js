@@ -1,233 +1,304 @@
 #!/usr/bin/env node
 /**
- * RunSound — Add lyric text overlays to slides
+ * add-text-overlay.js — RunSound Text Overlay Engine
  *
- * Pure-JS version using Jimp (no native deps, works in Replit).
+ * Burns hook texts onto raw slide images with:
+ *   - Poppins Bold (headline) + Poppins Regular (body/CTA)
+ *   - Dark gradient for readability
+ *   - Black stroke outline on text
+ *   - Subtle film grain (luminance noise, 2.2% strength)
  *
- * Supports TWO text formats in texts.json:
- *   New format: [{headline: "...", body: "..."}, ...]  ← headline large, body small below
- *   Old format: ["slide text", ...]                    ← single text per slide (legacy)
- *
- * Layout (new format):
- *   - Headline: 128px font, centered at ~25% from top (3–5 words, emotional punch)
- *   - Body:      32px font, centered at ~58% from top (6–12 words, supporting emotion)
- *
- * Both texts use white fill + black outline (8-direction shadow).
+ * Reads:  <input>/slide1_raw.png ... slide6_raw.png
+ *         <texts>   (path to texts.json — array of 6 strings)
+ * Writes: <input>/slide1.png ... slide6.png
  *
  * Usage:
- *   node add-text-overlay.js --input <dir> --config <config.json> [--texts <texts.json>]
+ *   node scripts/add-text-overlay.js \
+ *     --input  runsound-marketing/posts/2025-01-15 \
+ *     --config runsound-marketing/config.json \
+ *     --texts  runsound-marketing/posts/2025-01-15/texts.json
+ *
+ * Requires: @napi-rs/canvas  (already in package.json)
+ *           Poppins font files (auto-downloaded if missing)
  */
 
-const Jimp = require('jimp');
+require('dotenv').config();
+
 const fs   = require('fs');
 const path = require('path');
+const https = require('https');
 
-// ─── Args ─────────────────────────────────────────────────────────────────────
+// ─── CLI args ─────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
-function getArg(name) {
-  const idx = args.indexOf(`--${name}`);
-  return idx !== -1 ? args[idx + 1] : null;
-}
+function getArg(n) { const i = args.indexOf(`--${n}`); return i !== -1 ? args[i + 1] : null; }
+
 const inputDir   = getArg('input');
 const configPath = getArg('config');
 const textsPath  = getArg('texts');
 
-if (!inputDir || !configPath) {
-  console.error('Usage: node add-text-overlay.js --input <dir> --config <config.json> [--texts <texts.json>]');
+if (!inputDir || !configPath || !textsPath) {
+  console.error('Usage: node scripts/add-text-overlay.js --input <dir> --config <config.json> --texts <texts.json>');
   process.exit(1);
 }
-const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-// ─── Legacy fallback: build texts from config hookLines ───────────────────────
-function buildTextsFromConfig() {
-  const { artist, song } = config;
-  const hookLines  = song.hookLines || [];
-  const songTitle  = song.title     || 'this song';
-  const artistName = artist.name    || '';
-  const fmt = t => t;
-  return [
-    { headline: hookLines[0] ? fmt(hookLines[0]) : 'this song has been\nin my head for weeks', body: '' },
-    { headline: hookLines[1] ? fmt(hookLines[1]) : 'every single word\nhits different', body: 'when you\'ve been there' },
-    { headline: hookLines[2] ? fmt(hookLines[2]) : 'the way this captures\nexactly how it feels', body: 'is actually insane' },
-    { headline: hookLines[3] ? fmt(hookLines[3]) : 'how did they\nput this into words', body: 'so perfectly' },
-    { headline: hookLines[4] ? fmt(hookLines[4]) : 'okay I\'m actually\nobsessed with this', body: '' },
-    { headline: `${songTitle}\nby ${artistName}`, body: 'link in bio' }
-  ];
+if (!fs.existsSync(textsPath)) {
+  console.error(`texts.json not found: ${textsPath}`);
+  process.exit(1);
 }
 
-// ─── Normalise texts array to [{headline, body}] ──────────────────────────────
-function normaliseTexts(raw) {
-  return raw.map(entry => {
-    if (typeof entry === 'string') {
-      // Legacy: single string — treat whole thing as headline, no body
-      return { headline: entry, body: '' };
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const texts  = JSON.parse(fs.readFileSync(textsPath, 'utf8'));
+
+if (!Array.isArray(texts) || texts.length < 6) {
+  console.error(`texts.json must be an array of 6 strings. Got: ${texts.length}`);
+  process.exit(1);
+}
+
+// ─── Canvas dimensions (TikTok 9:16) ─────────────────────────────────────────
+const W = 1080;
+const H = 1920;
+
+// ─── Font paths ───────────────────────────────────────────────────────────────
+const FONTS_DIR      = path.join(process.cwd(), 'assets', 'fonts');
+const FONT_BOLD_PATH = path.join(FONTS_DIR, 'Poppins-Bold.ttf');
+const FONT_REG_PATH  = path.join(FONTS_DIR, 'Poppins-Regular.ttf');
+
+const FONT_URLS = {
+  'Poppins-Bold.ttf':    'https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Bold.ttf',
+  'Poppins-Regular.ttf': 'https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Regular.ttf',
+};
+
+// ─── Download a file ──────────────────────────────────────────────────────────
+function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    // Follow redirects
+    function get(u) {
+      https.get(u, res => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          return get(res.headers.location);
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode} for ${u}`));
+          return;
+        }
+        const file = fs.createWriteStream(dest);
+        res.pipe(file);
+        file.on('finish', () => file.close(resolve));
+        file.on('error', reject);
+      }).on('error', reject);
     }
-    return { headline: entry.headline || '', body: entry.body || '' };
+    get(url);
   });
 }
 
-// ─── Font size selection ──────────────────────────────────────────────────────
-function pickFontSize(wordCount) {
-  if (wordCount <= 4)  return 128;
-  if (wordCount <= 12) return 64;
-  return 32;
-}
-
-// ─── Load jimp font pair ──────────────────────────────────────────────────────
-const fontCache = {};
-async function loadFont(size, color) {
-  const key = `${size}_${color}`;
-  if (!fontCache[key]) {
-    const constant = `FONT_SANS_${size}_${color}`;
-    fontCache[key] = await Jimp.loadFont(Jimp[constant]);
+// ─── Ensure fonts are available ───────────────────────────────────────────────
+async function ensureFonts() {
+  fs.mkdirSync(FONTS_DIR, { recursive: true });
+  for (const [filename, url] of Object.entries(FONT_URLS)) {
+    const dest = path.join(FONTS_DIR, filename);
+    if (!fs.existsSync(dest)) {
+      process.stdout.write(`   Downloading ${filename}...`);
+      await downloadFile(url, dest);
+      console.log(' ✅');
+    }
   }
-  return fontCache[key];
 }
 
-// ─── Print one text block with outline ───────────────────────────────────────
-async function printText(image, text, fontSize, yCenter) {
-  const { width, height } = image.bitmap;
-  const clean = text
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1FFFF}]/gu, '')
-    .trim();
-  if (!clean) return;
-
-  const fontBlack = await loadFont(fontSize, 'BLACK');
-  const fontWhite = await loadFont(fontSize, 'WHITE');
-
-  const boxWidth = Math.round(width * 0.78);
-  const boxX     = Math.round((width - boxWidth) / 2);
-
-  const lineCount  = clean.split('\n').length;
-  const lineHeight = Math.round(fontSize * 1.3);
-  const blockH     = lineCount * lineHeight;
-
-  let y = Math.round(yCenter - blockH / 2);
-  const minY = Math.round(height * 0.08);
-  const maxY = Math.round(height * 0.82) - blockH;
-  y = Math.max(minY, Math.min(y, maxY));
-
-  const printOpts = {
-    text:       clean,
-    alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-    alignmentY: Jimp.VERTICAL_ALIGN_TOP
-  };
-
-  // Black outline (8 directions)
-  const outline = Math.max(2, Math.round(fontSize * 0.07));
-  const offsets = [
-    [-outline, 0], [outline, 0], [0, -outline], [0, outline],
-    [-outline, -outline], [outline, -outline], [-outline, outline], [outline, outline]
-  ];
-  for (const [dx, dy] of offsets) {
-    image.print(fontBlack, boxX + dx, y + dy, printOpts, boxWidth);
+// ─── Film grain ────────────────────────────────────────────────────────────────
+function addFilmGrain(ctx, strength = 0.022) {
+  const imageData = ctx.getImageData(0, 0, W, H);
+  const data      = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * 2 * 255 * strength;
+    data[i]     = Math.max(0, Math.min(255, data[i]     + noise));
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
   }
-  // White fill on top
-  image.print(fontWhite, boxX, y, printOpts, boxWidth);
+  ctx.putImageData(imageData, 0, 0);
 }
 
-// ─── Film grain effect ────────────────────────────────────────────────────────
-// Adds subtle analogue noise (2–3% intensity) to make slides feel organic.
-// Applied after text overlay, before saving.
-function addFilmGrain(image, intensity = 0.025) {
-  const maxDelta = Math.round(255 * intensity); // ~6 at 2.5%
-  image.scan(0, 0, image.bitmap.width, image.bitmap.height, function(x, y, idx) {
-    // Apply same delta to all three channels → luminance noise (not colour noise)
-    const delta = Math.floor(Math.random() * (maxDelta * 2 + 1)) - maxDelta;
-    this.bitmap.data[idx]     = Math.max(0, Math.min(255, this.bitmap.data[idx]     + delta));
-    this.bitmap.data[idx + 1] = Math.max(0, Math.min(255, this.bitmap.data[idx + 1] + delta));
-    this.bitmap.data[idx + 2] = Math.max(0, Math.min(255, this.bitmap.data[idx + 2] + delta));
-    // idx+3 = alpha — leave unchanged
+// ─── Gradient overlay for text readability ────────────────────────────────────
+function drawGradient(ctx, position) {
+  if (position === 'bottom') {
+    const grad = ctx.createLinearGradient(0, H * 0.45, 0, H);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.82)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  } else if (position === 'center') {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0,    'rgba(0,0,0,0.3)');
+    grad.addColorStop(0.35, 'rgba(0,0,0,0.55)');
+    grad.addColorStop(0.65, 'rgba(0,0,0,0.55)');
+    grad.addColorStop(1,    'rgba(0,0,0,0.3)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  } else { // top
+    const grad = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+    grad.addColorStop(0, 'rgba(0,0,0,0.8)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// ─── Draw text with stroke ────────────────────────────────────────────────────
+function drawStrokedText(ctx, text, x, y, strokeWidth = 8) {
+  ctx.lineWidth   = strokeWidth * 2;
+  ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+  ctx.lineJoin    = 'round';
+  ctx.strokeText(text, x, y);
+  ctx.fillText(text, x, y);
+}
+
+// ─── Detect if a slide is a CTA (last slide) ─────────────────────────────────
+function detectPosition(text, slideIndex) {
+  if (slideIndex === 5) return 'center'; // CTA slide
+  if (slideIndex === 0) return 'bottom'; // Hook slide — text near bottom
+  return 'bottom';
+}
+
+// ─── Render one slide ─────────────────────────────────────────────────────────
+async function renderSlide(canvas, createCanvas, loadImage, registerFont, slideIndex, rawPath, text, outPath) {
+  // Load raw image
+  const img = await loadImage(rawPath);
+  const ctx = canvas.getContext('2d');
+
+  // Draw background image
+  ctx.drawImage(img, 0, 0, W, H);
+
+  // Determine text position
+  const position = detectPosition(text, slideIndex);
+
+  // Draw gradient
+  drawGradient(ctx, position);
+
+  // Parse text: first line(s) = headline, last line after blank = body (if any)
+  const lines = text.split('\n').map(l => l.trim());
+
+  // Split into headline lines and optional body
+  // Body is recognised as: last 1-2 lines that are italic-style or follow emoji
+  let headlineLines = lines;
+  let bodyLines     = [];
+
+  // Heuristic: if text has 4+ lines, treat last line as body
+  if (lines.length >= 4) {
+    bodyLines     = [lines[lines.length - 1]];
+    headlineLines = lines.slice(0, lines.length - 1);
+  }
+
+  // Font sizes
+  const headlineFontSize = slideIndex === 5 ? 72 : 90;  // CTA slide slightly smaller
+  const bodyFontSize     = 46;
+  const lineHeight       = headlineFontSize * 1.12;
+  const bodyLineHeight   = bodyFontSize * 1.3;
+
+  // Total text block height
+  const totalH = headlineLines.length * lineHeight +
+                 (bodyLines.length > 0 ? bodyLineHeight + 20 : 0);
+
+  // Y anchor
+  let startY;
+  if (position === 'bottom') {
+    startY = H - 220 - totalH;
+  } else {
+    startY = H / 2 - totalH / 2;
+  }
+
+  // Draw headline
+  registerFont(FONT_BOLD_PATH, { family: 'Poppins', weight: 'bold' });
+  ctx.font      = `bold ${headlineFontSize}px Poppins`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  headlineLines.forEach((line, i) => {
+    drawStrokedText(ctx, line, W / 2, startY + i * lineHeight, 9);
   });
-}
 
-// ─── Add overlay (headline + body) to one slide ───────────────────────────────
-async function addTextOverlay(imgPath, slideText, outPath) {
-  const image = await Jimp.read(imgPath);
-  const { height } = image.bitmap;
+  // Draw body
+  if (bodyLines.length > 0) {
+    registerFont(FONT_REG_PATH, { family: 'Poppins', weight: 'normal' });
+    ctx.font      = `${bodyFontSize}px Poppins`;
+    ctx.fillStyle = 'rgba(230,230,230,0.95)';
 
-  const headlineRaw = (slideText.headline || '').replace(/\\n/g, '\n');
-  const bodyRaw     = (slideText.body     || '').replace(/\\n/g, '\n');
-
-  const headlineWords = headlineRaw.split(/\s+/).length;
-  const headlineFontSize = pickFontSize(headlineWords);
-
-  // Headline: centred at 28% from top
-  if (headlineRaw.trim()) {
-    await printText(image, headlineRaw, headlineFontSize, Math.round(height * 0.28));
+    const bodyStartY = startY + headlineLines.length * lineHeight + 20;
+    bodyLines.forEach((line, i) => {
+      drawStrokedText(ctx, line, W / 2, bodyStartY + i * bodyLineHeight, 5);
+    });
   }
 
-  // Body: centred at 62% from top (always 32px — readable but not competing with headline)
-  if (bodyRaw.trim()) {
-    await printText(image, bodyRaw, 32, Math.round(height * 0.62));
-  }
+  // Film grain
+  addFilmGrain(ctx);
 
-  // Film grain — subtle analogue texture (2.5% intensity)
-  addFilmGrain(image, 0.025);
-
-  await image.writeAsync(outPath);
-  const hPreview = headlineRaw.replace(/\n/g, ' / ').substring(0, 35);
-  const bPreview = bodyRaw.replace(/\n/g, ' / ').substring(0, 35);
-  const num = path.basename(outPath, '.png').replace(/\D/g, '');
-  console.log(`  ✅ slide${num} — "${hPreview}"${bPreview ? ` | ${bPreview}` : ''}`);
+  // Save
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(outPath, buffer);
 }
 
-// ─── Find slide input file ────────────────────────────────────────────────────
-function findSlideFile(dir, num) {
-  for (const name of [`slide${num}_raw.png`, `slide_${num}.png`, `slide${num}.png`]) {
-    const p = path.join(dir, name);
-    if (fs.existsSync(p)) return p;
-  }
-  return null;
-}
+// ─── Main ──────────────────────────────────────────────────────────────────────
+async function main() {
+  console.log('\n🎨 RunSound — Text Overlay');
+  console.log('===========================');
+  console.log(`   Input:  ${inputDir}`);
+  console.log(`   Texts:  ${textsPath}`);
+  console.log('');
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-(async () => {
-  const defaultTextsPath = path.join(inputDir, 'texts.json');
-  const resolvedTextsPath = (textsPath && fs.existsSync(textsPath))
-    ? textsPath
-    : (fs.existsSync(defaultTextsPath) ? defaultTextsPath : null);
+  // Ensure fonts
+  await ensureFonts();
 
-  const rawTexts = resolvedTextsPath
-    ? JSON.parse(fs.readFileSync(resolvedTextsPath, 'utf-8'))
-    : buildTextsFromConfig();
-
-  const texts = normaliseTexts(rawTexts);
-
-  if (texts.length !== 6) {
-    console.error('ERROR: Need exactly 6 text entries (one per slide)');
+  // Dynamic import of @napi-rs/canvas
+  let canvasModule;
+  try {
+    canvasModule = require('@napi-rs/canvas');
+  } catch (e) {
+    console.error('❌ @napi-rs/canvas not installed. Run: npm install');
     process.exit(1);
   }
 
-  const isNewFormat = rawTexts[0] && typeof rawTexts[0] === 'object';
-  console.log('\n📝 Adding text overlays (jimp / pure-JS)...\n');
-  console.log(`Format:   ${isNewFormat ? 'headline + body (new)' : 'single text (legacy)'}`);
-  console.log('Fonts:    128px headline / 32px body (white + black outline)');
-  console.log('Position: headline at 28%, body at 62% from top');
-  console.log('Grain:    2.5% luminance noise (analogue texture)\n');
+  const { createCanvas, loadImage, GlobalFonts } = canvasModule;
 
-  // Save texts used for reference / A-B iteration
-  fs.writeFileSync(path.join(inputDir, 'texts-used.json'), JSON.stringify(texts, null, 2));
+  // Register fonts
+  if (fs.existsSync(FONT_BOLD_PATH)) {
+    GlobalFonts.registerFromPath(FONT_BOLD_PATH, 'Poppins');
+  }
+  if (fs.existsSync(FONT_REG_PATH)) {
+    GlobalFonts.registerFromPath(FONT_REG_PATH, 'Poppins');
+  }
+
+  const registerFont = () => {}; // fonts registered globally above
 
   let success = 0;
+
   for (let i = 0; i < 6; i++) {
-    const num       = i + 1;
-    const inputFile = findSlideFile(inputDir, num);
-    if (!inputFile) {
-      console.error(`  ❌ Slide ${num}: no raw file found in ${inputDir}`);
+    const slideNum = i + 1;
+    const rawPath  = path.join(inputDir, `slide${slideNum}_raw.png`);
+    const outPath  = path.join(inputDir, `slide${slideNum}.png`);
+    const text     = texts[i] || '';
+
+    if (!fs.existsSync(rawPath)) {
+      console.error(`   ❌ ${path.basename(rawPath)} not found — skipping`);
       continue;
     }
-    const outPath = path.join(inputDir, `slide${num}.png`);
+
+    process.stdout.write(`   Slide ${slideNum}/6 — "${text.split('\n')[0].slice(0, 40)}"... `);
+
     try {
-      await addTextOverlay(inputFile, texts[i], outPath);
+      const canvas = createCanvas(W, H);
+      await renderSlide(canvas, createCanvas, loadImage, registerFont, i, rawPath, text, outPath);
+      console.log('✅');
       success++;
     } catch (err) {
-      console.error(`  ❌ Slide ${num} failed: ${err.message}`);
+      console.log(`❌ ${err.message}`);
     }
   }
 
-  console.log(`\n✨ ${success}/6 overlays complete!`);
-  if (success < 6) process.exit(1);
-  console.log('\nNext step: npm run post');
-  console.log('  (posts the carousel to TikTok via Postiz)\n');
-})();
+  console.log(`\n✅ ${success}/6 slides rendered`);
+  console.log(`   Output: ${inputDir}/slide1.png ... slide6.png`);
+  console.log(`\n   Next: npm run post\n`);
+}
+
+main().catch(err => {
+  console.error(`\n💥 Fatal: ${err.message}`);
+  process.exit(1);
+});
