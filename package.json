@@ -27,7 +27,10 @@
     "all-campaigns": "node scripts/run-all-campaigns.js --campaigns campaigns.json",
     "all-campaigns:texts": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step texts",
     "all-campaigns:overlay": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step overlay",
-    "all-campaigns:post": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step post"
+    "all-campaigns:post": "node scripts/run-all-campaigns.js --campaigns campaigns.json --step post",
+    "scheduler": "node scripts/scheduler.js",
+    "scheduler:now": "node scripts/scheduler.js --run-now",
+    "scheduler:dry": "node scripts/scheduler.js --dry-run"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.53",
@@ -37,6 +40,7 @@
     "@supabase/supabase-js": "^2.43.0",
     "form-data": "^4.0.0",
     "node-fetch": "^3.3.2",
+    "node-cron": "^3.0.3",
     "dotenv": "^16.4.5"
   },
   "engines": {
