@@ -1,181 +1,224 @@
 #!/usr/bin/env node
 /**
- * RunSound — Run All Campaigns
+ * run-all-campaigns.js — RunSound Multi-Campaign Runner
  *
- * Loops through every active campaign listed in campaigns.json and runs the
- * full daily posting pipeline for each one:
- *   1. npm run texts    → generate slide texts + pick images
- *   2. npm run overlay  → add text overlays
- *   3. npm run post     → schedule to TikTok via Postiz
+ * Runs the full pipeline (or a single step) across all active campaigns
+ * defined in campaigns.json.
  *
- * Plan limits on simultaneous active campaigns:
- *   Starter  ($29/mo) → 1 active campaign
- *   Growth   ($49/mo) → 3 active campaigns
- *   Pro      ($79/mo) → 5 active campaigns
+ * Unlike scheduler.js (which runs on a cron), this is a one-shot command
+ * you can call manually or from CI. Good for testing, catch-up runs, or
+ * running just one step across all campaigns at once.
+ *
+ * Full pipeline per campaign (default):
+ *   analytics  → fetch TikTok stats from Postiz
+ *   learn      → compute streamingCTR, find patterns
+ *   optimize   → GPT-4o generates smarter strategy.json
+ *   pick-slides → select 6 images from library
+ *   texts      → hook texts + variant selection → texts.json
+ *   overlay    → burn text + film grain onto images
+ *   post       → send carousel to TikTok as draft
  *
  * Usage:
- *   node run-all-campaigns.js --campaigns campaigns.json [--dry-run] [--step texts|overlay|post|all]
+ *   node scripts/run-all-campaigns.js --campaigns campaigns.json
+ *   node scripts/run-all-campaigns.js --campaigns campaigns.json --step texts
+ *   node scripts/run-all-campaigns.js --campaigns campaigns.json --step overlay
+ *   node scripts/run-all-campaigns.js --campaigns campaigns.json --step post
+ *   node scripts/run-all-campaigns.js --campaigns campaigns.json --dry-run
  *
- * --dry-run   Print what would run without executing
- * --step      Run only one step (default: all)
- *
- * campaigns.json lives next to package.json (project root).
+ * --step <name>   Run only this step (texts | overlay | post | analytics | learn | optimize | pick-slides)
+ * --dry-run       Print commands without executing
+ * --campaign <slug>  Run only this one campaign
  */
 
-const fs            = require('fs');
-const path          = require('path');
-const { execSync }  = require('child_process');
+require('dotenv').config();
 
-// ─── Args ─────────────────────────────────────────────────────────────────────
+const fs           = require('fs');
+const path         = require('path');
+const { execSync } = require('child_process');
+
+// ─── CLI args ─────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
-function getArg(name) {
-  const idx = args.indexOf(`--${name}`);
-  return idx !== -1 ? args[idx + 1] : null;
+function getArg(n) { const i = args.indexOf(`--${n}`); return i !== -1 ? args[i + 1] : null; }
+
+const CAMPAIGNS_FILE    = getArg('campaigns') || 'campaigns.json';
+const STEP_FILTER       = getArg('step')      || null;  // run only this step
+const CAMPAIGN_FILTER   = getArg('campaign')  || null;  // run only this slug
+const DRY_RUN           = args.includes('--dry-run');
+
+// ─── Logging ──────────────────────────────────────────────────────────────────
+function log(msg) {
+  console.log(`[${new Date().toISOString()}] ${msg}`);
 }
 
-const campaignsPath = getArg('campaigns') || 'campaigns.json';
-const dryRun        = args.includes('--dry-run');
-const stepArg       = getArg('step') || 'all';
-
-if (!fs.existsSync(campaignsPath)) {
-  console.error(`campaigns.json not found at: ${campaignsPath}`);
-  console.error('\nRun: node scripts/run-all-campaigns.js --campaigns campaigns.json');
-  console.error('Or create campaigns.json first — see campaigns.example.json for format.');
-  process.exit(1);
+// ─── Execute a command (with dry-run support) ─────────────────────────────────
+function exec(cmd, label) {
+  if (DRY_RUN) {
+    log(`  [dry-run] ${label}: ${cmd}`);
+    return true;
+  }
+  try {
+    log(`  ▶ ${label}`);
+    execSync(cmd, { stdio: 'inherit', cwd: process.cwd() });
+    log(`  ✅ ${label}`);
+    return true;
+  } catch (err) {
+    log(`  ❌ ${label} failed: ${err.message}`);
+    return false;
+  }
 }
 
-// ─── Plan limits ──────────────────────────────────────────────────────────────
-const CAMPAIGN_LIMITS = {
-  starter: 1,
-  growth:  3,
-  pro:     5
-};
-
-// ─── Load campaigns registry ──────────────────────────────────────────────────
-const registry = JSON.parse(fs.readFileSync(campaignsPath, 'utf-8'));
-const planTier  = (registry.plan || 'starter').toLowerCase();
-const limit     = CAMPAIGN_LIMITS[planTier] ?? 1;
-
-const allCampaigns    = registry.campaigns || [];
-const activeCampaigns = allCampaigns.filter(c => c.active !== false);
-
-console.log(`\n🎵 RunSound — All Campaigns`);
-console.log(`   Plan:       ${planTier.charAt(0).toUpperCase() + planTier.slice(1)}`);
-console.log(`   Campaigns:  ${activeCampaigns.length} active / ${allCampaigns.length} total (limit: ${limit})`);
-if (dryRun) console.log('   Mode:       DRY RUN — no commands will execute');
-if (stepArg !== 'all') console.log(`   Step:       ${stepArg} only`);
-console.log('');
-
-// ─── Enforce plan campaign limit ──────────────────────────────────────────────
-if (activeCampaigns.length > limit) {
-  const tierName = planTier.charAt(0).toUpperCase() + planTier.slice(1);
-  console.error(`
-╔══════════════════════════════════════════════════════════╗
-║  ⛔  Too many active campaigns (${String(activeCampaigns.length + '/' + limit).padEnd(5)})  (${tierName} plan)  ║
-╚══════════════════════════════════════════════════════════╝
-
-  Your plan allows ${limit} active campaign${limit !== 1 ? 's' : ''} at a time.
-  You have ${activeCampaigns.length} active in campaigns.json.
-
-  FIX: Set  "active": false  on campaigns you're not currently running,
-       or upgrade to a higher plan:
-         Starter  ($29/mo) → 1 campaign
-         Growth   ($49/mo) → 3 campaigns
-         Pro      ($79/mo) → 5 campaigns
-`);
-  process.exit(1);
+// ─── Build commands ────────────────────────────────────────────────────────────
+function cmd(script, configPath, extraArgs = '') {
+  return `node scripts/${script} --config "${configPath}" ${extraArgs}`.trim();
 }
-
-// ─── Steps to run ─────────────────────────────────────────────────────────────
-const STEPS = {
-  texts:   (cfg) => `node scripts/generate-texts.js --config "${cfg}" --output "${outputDir(cfg)}"`,
-  overlay: (cfg) => `node scripts/add-text-overlay.js --input "${outputDir(cfg)}" --config "${cfg}" --texts "${outputDir(cfg)}/texts.json"`,
-  post:    (cfg) => `node scripts/post-to-tiktok.js --input "${outputDir(cfg)}" --config "${cfg}"`
-};
 
 function outputDir(configPath) {
-  return path.join(path.dirname(configPath), 'posts', 'latest');
+  const today = new Date().toISOString().slice(0, 10);
+  return path.join(path.dirname(configPath), 'posts', today);
 }
 
-function stepsToRun() {
-  if (stepArg === 'all') return ['texts', 'overlay', 'post'];
-  if (STEPS[stepArg]) return [stepArg];
-  console.error(`Unknown step: ${stepArg}. Use texts | overlay | post | all`);
-  process.exit(1);
+// ─── All pipeline steps ────────────────────────────────────────────────────────
+function buildSteps(configPath) {
+  const out = outputDir(configPath);
+  if (!DRY_RUN) fs.mkdirSync(out, { recursive: true });
+
+  return [
+    {
+      name: 'analytics',
+      label: 'analytics',
+      cmd: cmd('check-analytics.js', configPath, '--days 3'),
+      critical: false,
+    },
+    {
+      name: 'learn',
+      label: 'learn',
+      cmd: cmd('learn.js', configPath),
+      critical: false,
+    },
+    {
+      name: 'optimize',
+      label: 'optimize',
+      cmd: cmd('optimize-strategy.js', configPath),
+      critical: false,
+    },
+    {
+      name: 'pick-slides',
+      label: 'pick-slides',
+      cmd: cmd('pick-slides.js', configPath, `--output "${out}"`),
+      critical: true,
+    },
+    {
+      name: 'texts',
+      label: 'generate-texts',
+      cmd: cmd('generate-texts.js', configPath, `--output "${out}"`),
+      critical: true,
+    },
+    {
+      name: 'overlay',
+      label: 'overlay',
+      cmd: `node scripts/add-text-overlay.js --input "${out}" --config "${configPath}" --texts "${out}/texts.json"`,
+      critical: true,
+    },
+    {
+      name: 'post',
+      label: 'post',
+      cmd: `node scripts/post-to-tiktok.js --input "${out}" --config "${configPath}"`,
+      critical: true,
+    },
+  ];
 }
 
 // ─── Run one campaign ──────────────────────────────────────────────────────────
-function runCampaign(campaign, stepNames) {
+function runCampaign(campaign) {
   const { name, slug, config: configPath } = campaign;
+  const label = name || slug;
 
-  console.log(`\n${'─'.repeat(56)}`);
-  console.log(`🎵 Campaign: ${name || slug}`);
-  console.log(`   Config:   ${configPath}`);
-  console.log(`   Steps:    ${stepNames.join(' → ')}`);
-  console.log(`${'─'.repeat(56)}`);
+  log(`\n${'─'.repeat(60)}`);
+  log(`🎵 Campaign: ${label}`);
+  log(`   Config:   ${configPath}`);
+  log(`${'─'.repeat(60)}`);
 
   if (!fs.existsSync(configPath)) {
-    console.error(`  ❌ Config not found: ${configPath} — skipping`);
+    log(`❌ Config not found: ${configPath} — skipping`);
     return { slug, success: false, error: 'config not found' };
   }
 
-  const outDir = outputDir(configPath);
-  if (!dryRun) fs.mkdirSync(outDir, { recursive: true });
+  const allSteps = buildSteps(configPath);
+  const steps = STEP_FILTER
+    ? allSteps.filter(s => s.name === STEP_FILTER)
+    : allSteps;
 
-  const results = [];
-  for (const step of stepNames) {
-    const cmd = STEPS[step](configPath);
-    console.log(`\n  ▶ ${step.toUpperCase()}`);
-    console.log(`    ${cmd}`);
+  if (steps.length === 0) {
+    log(`❌ Unknown step: "${STEP_FILTER}". Valid steps: ${allSteps.map(s => s.name).join(', ')}`);
+    return { slug, success: false, error: `unknown step ${STEP_FILTER}` };
+  }
 
-    if (dryRun) {
-      console.log(`    [dry-run — skipped]`);
-      results.push({ step, success: true, dryRun: true });
-      continue;
-    }
+  let firstFailure = null;
 
-    try {
-      execSync(cmd, { stdio: 'inherit', cwd: process.cwd() });
-      console.log(`  ✅ ${step} done`);
-      results.push({ step, success: true });
-    } catch (e) {
-      console.error(`  ❌ ${step} failed: ${e.message}`);
-      results.push({ step, success: false, error: e.message });
-      break;
+  for (const step of steps) {
+    const ok = exec(step.cmd, step.label);
+    if (!ok) {
+      if (step.critical) {
+        firstFailure = step.label;
+        log(`💥 Critical step "${step.label}" failed — stopping campaign`);
+        break;
+      } else {
+        log(`⚠️  Non-critical step "${step.label}" failed — continuing`);
+      }
     }
   }
 
-  const allOk = results.every(r => r.success);
-  return { slug, success: allOk, steps: results };
+  if (firstFailure) {
+    return { slug, success: false, error: `failed at ${firstFailure}` };
+  }
+
+  log(`✅ Campaign "${label}" complete`);
+  return { slug, success: true };
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-(async () => {
-  const stepNames = stepsToRun();
-  const summary   = [];
+// ─── Main ──────────────────────────────────────────────────────────────────────
+log(`\n${'═'.repeat(60)}`);
+log('🚀 RunSound — Run All Campaigns');
+if (STEP_FILTER)     log(`   Step filter:  ${STEP_FILTER}`);
+if (CAMPAIGN_FILTER) log(`   Campaign:     ${CAMPAIGN_FILTER}`);
+if (DRY_RUN)         log('   Mode:         DRY RUN');
+log(`${'═'.repeat(60)}\n`);
 
-  for (const campaign of activeCampaigns) {
-    const result = runCampaign(campaign, stepNames);
-    summary.push(result);
-  }
+if (!fs.existsSync(CAMPAIGNS_FILE)) {
+  log(`❌ campaigns.json not found: ${CAMPAIGNS_FILE}`);
+  log('   Create a campaigns.json with a "campaigns" array of { name, slug, config } objects.');
+  process.exit(1);
+}
 
-  console.log(`\n${'═'.repeat(56)}`);
-  console.log('📋 SUMMARY');
-  console.log(`${'═'.repeat(56)}`);
+const registry = JSON.parse(fs.readFileSync(CAMPAIGNS_FILE, 'utf8'));
+let campaigns  = (registry.campaigns || []).filter(c => c.active !== false);
 
-  for (const s of summary) {
-    const icon = s.success ? '✅' : '❌';
-    console.log(`  ${icon} ${s.slug}${s.error ? ` — ${s.error}` : ''}`);
-  }
+// Respect plan limits
+const LIMITS = { starter: 1, growth: 3, pro: 5 };
+const limit  = LIMITS[(registry.plan || 'starter').toLowerCase()] ?? 1;
+campaigns    = campaigns.slice(0, limit);
 
-  const succeeded = summary.filter(s => s.success).length;
-  const failed    = summary.filter(s => !s.success).length;
-
-  console.log(`\n  ${succeeded}/${summary.length} campaigns completed successfully`);
-  if (failed > 0) {
-    console.log(`  ⚠️  ${failed} failed — check logs above`);
+// Optional single-campaign filter
+if (CAMPAIGN_FILTER) {
+  campaigns = campaigns.filter(c => c.slug === CAMPAIGN_FILTER);
+  if (campaigns.length === 0) {
+    log(`❌ No campaign found with slug "${CAMPAIGN_FILTER}"`);
     process.exit(1);
   }
+}
 
-  console.log('\n🎉 All campaigns posted!\n');
-})();
+log(`📋 ${campaigns.length} campaign(s) to run (${registry.plan || 'starter'} plan)`);
+
+const results = campaigns.map(runCampaign);
+
+// ─── Summary ───────────────────────────────────────────────────────────────────
+log(`\n${'═'.repeat(60)}`);
+log('📋 SUMMARY');
+log(`${'═'.repeat(60)}`);
+const ok  = results.filter(r => r.success).length;
+const bad = results.filter(r => !r.success);
+log(`   ${ok}/${results.length} campaigns completed successfully`);
+for (const r of bad) log(`   ❌ ${r.slug}: ${r.error}`);
+log('');
+
+process.exit(bad.length > 0 ? 1 : 0);
