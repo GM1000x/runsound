@@ -7,10 +7,15 @@
  * from TikTok's music library, then publishes.
  *
  * Usage: node post-to-tiktok.js --input <dir> --config <config.json> [--variant A|B|C] [--caption "override"]
+ *
+ * CHANGE LOG:
+ *   - UTM campaign is now a unique per-post ID (rs-<timestamp>-<variant>)
+ *     instead of date+variant, so Supabase click data can be attributed
+ *     to a specific post. This feeds learn.js → optimize-strategy.js.
  */
 
-const fs      = require('fs');
-const path    = require('path');
+const fs       = require('fs');
+const path     = require('path');
 const FormData = require('form-data');
 
 // Force node-fetch for form-data compatibility
@@ -27,10 +32,10 @@ function getArg(name) {
   return idx !== -1 ? args[idx + 1] : null;
 }
 
-const inputDir    = getArg('input');
-const configPath  = getArg('config');
-const captionArg  = getArg('caption');
-const variantArg  = (getArg('variant') || 'A').toUpperCase();
+const inputDir   = getArg('input');
+const configPath = getArg('config');
+const captionArg = getArg('caption');
+const variantArg = (getArg('variant') || 'A').toUpperCase();
 
 if (!inputDir || !configPath) {
   console.error('Usage: node post-to-tiktok.js --input <dir> --config <config.json>');
@@ -50,11 +55,16 @@ if (!apiKey || !integrationId) {
 
 const metaPath = path.join(inputDir, 'meta.json');
 
+// ─── Unique post identifier (generated BEFORE posting) ───────────────────────
+// Used as the UTM campaign tag so clicks can be traced back to this exact post.
+// Format: rs-<unix-ms>-<variant-lowercase>
+// Example: rs-1714060800000-a
+const POST_UID = `rs-${Date.now()}-${variantArg.toLowerCase()}`;
+
 // ─── Find slide images ────────────────────────────────────────────────────────
 function findSlides() {
   const slides = [];
   for (let i = 1; i <= 6; i++) {
-    // Try slide1_final.png first, then slide1.png
     const finalPath = path.join(inputDir, `slide${i}_final.png`);
     const basicPath = path.join(inputDir, `slide${i}.png`);
     if (fs.existsSync(finalPath)) {
@@ -66,19 +76,19 @@ function findSlides() {
   return slides;
 }
 
-// ─── Step 1: Upload a single image to Postiz ────────────────────────────────
+// ─── Step 1: Upload a single image to Postiz ─────────────────────────────────
 async function uploadImage(imagePath) {
   const filename = path.basename(imagePath);
-  const form = new FormData();
+  const form     = new FormData();
   form.append('file', fs.createReadStream(imagePath), {
     filename,
-    contentType: 'image/png'
+    contentType: 'image/png',
   });
 
   const res = await fetchFn(`${POSTIZ_API}/upload`, {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Authorization': apiKey, ...form.getHeaders() },
-    body: form
+    body:    form,
   });
 
   if (!res.ok) {
@@ -101,7 +111,8 @@ async function uploadAllSlides(slides) {
   return uploaded;
 }
 
-// ─── UTM URL builder ─────────────────────────────────────────────────────────
+// ─── UTM URL builder ──────────────────────────────────────────────────────────
+// Uses POST_UID as campaign so each post is individually attributable in Supabase.
 function buildUtmUrl() {
   const { song } = config;
   const base = song.smartLinkSlug
@@ -109,10 +120,8 @@ function buildUtmUrl() {
     : (song.spotifyUrl || '');
   if (!base) return '';
 
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const campaign = `${dateStr}-${variantArg}`;
   const sep = base.includes('?') ? '&' : '?';
-  return `${base}${sep}utm_source=tiktok&utm_medium=carousel&utm_campaign=${campaign}`;
+  return `${base}${sep}utm_source=tiktok&utm_medium=carousel&utm_campaign=${POST_UID}`;
 }
 
 // ─── Step 3: Build caption ────────────────────────────────────────────────────
@@ -125,7 +134,7 @@ function buildCaption(utmUrl) {
   return [
     `${song.title} by ${artist.name}`,
     link ? `🎵 Stream it: ${link}` : '',
-    `#${artist.genre?.replace(/\s+/g, '') || 'music'} #newmusic #${artist.name?.replace(/\s+/g, '').toLowerCase() || 'artist'} #indiefolk`
+    `#${artist.genre?.replace(/\s+/g, '') || 'music'} #newmusic #${artist.name?.replace(/\s+/g, '').toLowerCase() || 'artist'} #indiefolk`,
   ].filter(Boolean).join('\n');
 }
 
@@ -137,10 +146,10 @@ async function createPost(images, utmUrl) {
   const scheduleDate = new Date(Date.now() + 2 * 60 * 1000).toISOString();
 
   const body = {
-    type: 'now',
-    date: scheduleDate,
+    type:      'now',
+    date:      scheduleDate,
     shortLink: false,
-    tags: [],
+    tags:      [],
     posts: [
       {
         integration: { id: integrationId },
@@ -153,16 +162,16 @@ async function createPost(images, utmUrl) {
           autoAddMusic:           'no',
           brand_content_toggle:   false,
           brand_organic_toggle:   false,
-          content_posting_method: 'UPLOAD'
-        }
-      }
-    ]
+          content_posting_method: 'UPLOAD',
+        },
+      },
+    ],
   };
 
   const res = await fetchFn(`${POSTIZ_API}/posts`, {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Authorization': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body:    JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -182,16 +191,20 @@ function savePostMeta(postData, slideCount, utmUrl) {
   if (fs.existsSync(metaPath)) {
     try { meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')); } catch {}
   }
+
   meta.postizPostId  = postData.postId || postData.id;
   meta.postedAt      = new Date().toISOString();
   meta.status        = 'pending_publish';
   meta.slideCount    = slideCount;
   meta.variant       = variantArg;
+  meta.postUid       = POST_UID;          // ← unique per-post UTM identifier
   meta.utmUrl        = utmUrl || null;
   meta.tiktokVideoId = null;
+
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
   console.log(`\n💾 Post metadata saved to ${metaPath}`);
-  if (utmUrl) console.log(`   UTM: ${utmUrl}`);
+  console.log(`   Post UID: ${POST_UID}`);
+  if (utmUrl) console.log(`   UTM URL:  ${utmUrl}`);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -206,11 +219,12 @@ function savePostMeta(postData, slideCount, utmUrl) {
     }
 
     console.log(`\n🎵 RunSound — TikTok Carousel Post`);
-    console.log(`   Artist: ${config.artist.name}`);
-    console.log(`   Song:   ${config.song.title}`);
-    console.log(`   Slides: ${slides.length} images found`);
+    console.log(`   Artist:  ${config.artist.name}`);
+    console.log(`   Song:    ${config.song.title}`);
+    console.log(`   Slides:  ${slides.length} images found`);
     console.log(`   Variant: ${variantArg}`);
-    console.log(`   Mode:   UPLOAD → TikTok inbox notification\n`);
+    console.log(`   Post UID: ${POST_UID}`);
+    console.log(`   Mode:    UPLOAD → TikTok inbox notification\n`);
 
     const utmUrl         = buildUtmUrl();
     const uploadedImages = await uploadAllSlides(slides);
@@ -226,7 +240,7 @@ function savePostMeta(postData, slideCount, utmUrl) {
     console.log(`   3. Search for: "${config.song?.title || 'your song'}" (or any trending sound)`);
     console.log(`   4. Tap Post!\n`);
     console.log(`After posting, run:`);
-    console.log(`   npm run analytics\n`);
+    console.log(`   npm run analytics  →  npm run learn  →  npm run optimize\n`);
 
   } catch (err) {
     console.error(`\n❌ Error: ${err.message}`);

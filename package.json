@@ -7,6 +7,8 @@
     "onboard": "node scripts/onboarding.js --validate --config runsound-marketing/config.json",
     "init": "node scripts/onboarding.js --init --dir runsound-marketing",
     "optimize": "node scripts/optimize-strategy.js --config runsound-marketing/config.json",
+    "learn": "node scripts/learn.js --config runsound-marketing/config.json",
+    "learn:deep": "node scripts/learn.js --config runsound-marketing/config.json --days 60",
     "research": "node scripts/research-trends.js --config runsound-marketing/config.json",
     "library": "node scripts/build-image-library.js --config runsound-marketing/config.json",
     "pick": "node scripts/pick-slides.js --config runsound-marketing/config.json --output runsound-marketing/posts/latest",
