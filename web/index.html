@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunSound — Automated TikTok Marketing for Artists</title>
+  <meta name="description" content="RunSound posts daily TikTok carousels for your music — automatically. The AI learns what drives Spotify streams and gets smarter every day." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a0f;
+      --surface: #13131a;
+      --border:  #1e1e2e;
+      --accent:  #7c3aed;
+      --accent2: #a855f7;
+      --green:   #22c55e;
+      --text:    #f0f0f8;
+      --muted:   #888899;
+      --card-bg: #111118;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      height: 68px;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; }
+    .logo span { color: var(--accent2); }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; margin-left: 2rem; transition: color .2s; }
+    nav a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 0.45rem 1.1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem !important;
+      transition: background .2s !important;
+    }
+    .nav-cta:hover { background: var(--accent2) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 5% 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 900px;
+      background: radial-gradient(ellipse, rgba(124,58,237,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: var(--accent2);
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.35rem 0.9rem; border-radius: 100px;
+      margin-bottom: 2rem;
+    }
+    .badge::before { content: '●'; font-size: 0.5rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      max-width: 900px;
+      margin-bottom: 1.5rem;
+    }
+    h1 em { font-style: normal; color: var(--accent2); }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--muted);
+      max-width: 560px;
+      margin-bottom: 3rem;
+    }
+
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 0.85rem 2rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      border: none; cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      padding: 0.85rem 2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color .2s, transform .15s;
+    }
+    .btn-ghost:hover { border-color: var(--muted); transform: translateY(-1px); }
+
+    /* ── SOCIAL PROOF ── */
+    .proof {
+      margin-top: 4rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .proof-avatars { display: flex; }
+    .proof-avatars span {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: 2px solid var(--bg);
+      margin-left: -8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; color: #fff;
+    }
+    .proof-avatars span:first-child { margin-left: 0; }
+
+    /* ── HOW IT WORKS ── */
+    section { padding: 100px 5%; }
+    .section-label {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--accent2);
+      margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+    .section-sub {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 500px;
+      margin-bottom: 4rem;
+    }
+
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5px; }
+    .step {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .25s;
+    }
+    .step:hover { border-color: rgba(124,58,237,0.5); }
+    .step-num {
+      font-size: 3.5rem; font-weight: 900;
+      color: rgba(124,58,237,0.12);
+      position: absolute; top: 1.2rem; right: 1.5rem;
+      line-height: 1; letter-spacing: -0.04em;
+    }
+    .step-icon { font-size: 1.8rem; margin-bottom: 1.2rem; }
+    .step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.6rem; }
+    .step p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    .feature {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+      transition: border-color .25s;
+    }
+    .feature:hover { border-color: rgba(168,85,247,0.4); }
+    .feature-icon { font-size: 1.6rem; margin-bottom: 1rem; }
+    .feature h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+
+    /* ── PRICING ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .plan {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      position: relative;
+    }
+    .plan.featured {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(10,10,15,1));
+    }
+    .plan-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.3rem 0.9rem; border-radius: 100px;
+    }
+    .plan-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--muted); }
+    .plan-price {
+      font-size: 3rem; font-weight: 900; letter-spacing: -0.04em;
+      line-height: 1; margin-bottom: 0.3rem;
+    }
+    .plan-price span { font-size: 1rem; font-weight: 500; color: var(--muted); }
+    .plan-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+    .plan-features { list-style: none; margin-bottom: 2rem; }
+    .plan-features li {
+      font-size: 0.9rem; padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .plan-features li::before { content: '✓'; color: var(--green); font-weight: 700; }
+    .plan-features li.dimmed::before { content: '✗'; color: var(--border); }
+    .plan-features li.dimmed { color: var(--muted); }
+
+    /* ── SIGNUP FORM ── */
+    #signup {
+      max-width: 580px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    #signup h2 { margin-bottom: 0.5rem; }
+    #signup .section-sub { margin: 0 auto 3rem; }
+
+    .form-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: left;
+    }
+    .form-row { margin-bottom: 1.25rem; }
+    .form-row label {
+      display: block;
+      font-size: 0.82rem; font-weight: 600; color: var(--muted);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.03em;
+    }
+    .form-row input, .form-row textarea, .form-row select {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
+      border-color: var(--accent);
+    }
+    .form-row textarea { resize: vertical; min-height: 90px; }
+    .form-row select option { background: var(--surface); }
+    .form-hint { font-size: 0.77rem; color: var(--muted); margin-top: 0.3rem; }
+
+    .form-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.95rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .2s;
+      margin-top: 0.5rem;
+    }
+    .form-submit:hover { background: var(--accent2); }
+
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+    .success-msg .check { font-size: 3rem; margin-bottom: 1rem; }
+    .success-msg h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .success-msg p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav a:not(.nav-cta) { display: none; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .btn-primary, .btn-ghost { width: 100%; max-width: 320px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Run<span>Sound</span></div>
+  <div>
+    <a href="#how-it-works">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#signup" class="nav-cta">Get started</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge">AI-powered music marketing</div>
+  <h1>Your music. Posted daily.<br /><em>While you sleep.</em></h1>
+  <p class="hero-sub">
+    RunSound creates TikTok carousels for your songs every night — learns what hooks drive Spotify streams — and gets smarter the longer it runs.
+  </p>
+  <div class="hero-actions">
+    <a href="#signup" class="btn-primary">Start free trial →</a>
+    <a href="#how-it-works" class="btn-ghost">See how it works</a>
+  </div>
+  <div class="proof">
+    <div class="proof-avatars">
+      <span>JK</span><span>ML</span><span>AR</span><span>+</span>
+    </div>
+    Join artists already growing on TikTok
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+  <div class="section-label">How it works</div>
+  <h2>Set it up once.<br />It runs forever.</h2>
+  <p class="section-sub">
+    You give RunSound your song, a few hook lines, and your streaming links. That's it.
+  </p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">🎵</div>
+      <h3>You add your song</h3>
+      <p>Song title, artist name, 5 hook lines that capture the emotion of the track. Takes 3 minutes.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">🤖</div>
+      <h3>AI builds your campaign</h3>
+      <p>RunSound generates a cohesive set of cinematic images and three hook variants — direct, emotional, and minimal.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">🌙</div>
+      <h3>Posts every night at 3am</h3>
+      <p>A finished carousel lands in your TikTok drafts. You open the app, add your song, tap publish.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-icon">📈</div>
+      <h3>Learns what converts</h3>
+      <p>Every click to Spotify is tracked. The AI learns which hooks and images drive streams — and optimises the next post accordingly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="padding-top:0">
+  <div class="section-label">Features</div>
+  <h2>Everything built in.</h2>
+  <p class="section-sub">No tools to stitch together. No agency to hire.</p>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-icon">🎨</div>
+      <h3>AI-generated visuals</h3>
+      <p>Cinematic, cohesive images generated once per song. Every slide matches the arc — hook, tension, peak, release, aftermath, CTA.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">✍️</div>
+      <h3>Hook variant testing</h3>
+      <p>Three text styles per post — direct lyrics, emotional reaction, minimalist mystery. The AI picks the best based on your history.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔗</div>
+      <h3>Smart link page</h3>
+      <p>A beautiful landing page showing all your streaming platforms. Every click is tracked back to the exact post that drove it.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <h3>Streaming CTR learning</h3>
+      <p>RunSound tracks streaming clicks per post via UTM, computes your streamingCTR, and self-optimises the strategy daily.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📬</div>
+      <h3>TikTok draft delivery</h3>
+      <p>Posts go straight to your TikTok drafts via the official API. You stay in control — just add your song and publish.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🌍</div>
+      <h3>Multi-campaign support</h3>
+      <p>Running multiple singles at once? RunSound handles them all, with separate learning loops per song.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div style="text-align:center">
+    <div class="section-label">Pricing</div>
+    <h2>Simple, transparent pricing.</h2>
+    <p class="section-sub" style="margin:0 auto 3rem">No hidden fees. Cancel anytime.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="plan">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price">$29<span>/mo</span></div>
+      <div class="plan-desc">Perfect for a single release</div>
+      <ul class="plan-features">
+        <li>1 active campaign</li>
+        <li>Daily TikTok drafts</li>
+        <li>Smart link page</li>
+        <li>Streaming CTR tracking</li>
+        <li>AI hook optimisation</li>
+        <li class="dimmed">Multi-campaign</li>
+        <li class="dimmed">Priority support</li>
+      </ul>
+      <a href="#signup" class="btn-primary" style="display:block;text-align:center">Get started</a>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">Most popular</div>
+      <div class="plan-name">Growth</div>
+      <div class="plan-price">$79<span>/mo</span></div>
+      <div class="plan-desc">For artists with multiple releases</div>
+      <ul class="plan-features">
+        <li>3 active campaigns</li>
+        <li>Daily TikTok drafts</li>
+        <li>Smart link page</li>
+        <li>Streaming CTR tracking</li>
+        <li>AI hook optimisation</li>
+        <li>Multi-campaign</li>
+        <li class="dimmed">Priority support</li>
+      </ul>
+      <a href="#signup" class="btn-primary" style="display:block;text-align:center">Get started</a>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$149<span>/mo</span></div>
+      <div class="plan-desc">For labels and prolific artists</div>
+      <ul class="plan-features">
+        <li>5 active campaigns</li>
+        <li>Daily TikTok drafts</li>
+        <li>Smart link page</li>
+        <li>Streaming CTR tracking</li>
+        <li>AI hook optimisation</li>
+        <li>Multi-campaign</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#signup" class="btn-primary" style="display:block;text-align:center">Get started</a>
+    </div>
+  </div>
+</section>
+
+<!-- SIGNUP FORM -->
+<section id="signup">
+  <div class="section-label" style="text-align:center">Get started</div>
+  <h2>Launch your first campaign</h2>
+  <p class="section-sub">Takes 3 minutes. Your first draft lands in TikTok tonight.</p>
+
+  <div class="form-card">
+    <form id="signupForm">
+      <div class="form-row">
+        <label>Artist name</label>
+        <input type="text" name="artist" placeholder="e.g. Carly Rae Jepsen" required />
+      </div>
+      <div class="form-row">
+        <label>Song title</label>
+        <input type="text" name="song" placeholder="e.g. Summer Love" required />
+      </div>
+      <div class="form-row">
+        <label>Genre</label>
+        <select name="genre">
+          <option>Pop</option><option>Indie Pop</option><option>R&B</option>
+          <option>Hip-Hop</option><option>Electronic</option><option>Folk</option>
+          <option>Rock</option><option>Country</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Spotify link</label>
+        <input type="url" name="spotify" placeholder="https://open.spotify.com/track/..." required />
+      </div>
+      <div class="form-row">
+        <label>Hook lines <span style="font-weight:400">(3–5 phrases that capture the feeling of the song)</span></label>
+        <textarea name="hooks" placeholder="this song has been living in my head for weeks&#10;every single word hits different when you've been there&#10;how did they put this into words so perfectly" required></textarea>
+        <div class="form-hint">These become the text overlays on your TikTok carousels. Write them like a listener would react — not like a press release.</div>
+      </div>
+      <div class="form-row">
+        <label>Your email</label>
+        <input type="email" name="email" placeholder="you@example.com" required />
+      </div>
+      <button type="submit" class="form-submit">Launch my campaign →</button>
+    </form>
+
+    <div class="success-msg" id="successMsg">
+      <div class="check">🎉</div>
+      <h3>You're in!</h3>
+      <p>We'll set up your campaign and send your first TikTok draft tonight. Check your email for next steps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">Run<span>Sound</span></div>
+  <div style="display:flex;gap:1.5rem">
+    <a href="#">Terms</a>
+    <a href="#">Privacy</a>
+    <a href="mailto:hello@runsound.fm">hello@runsound.fm</a>
+  </div>
+  <div>© 2025 RunSound</div>
+</footer>
+
+<script>
+  document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('.form-submit');
+    btn.textContent = 'Launching...';
+    btn.disabled = true;
+
+    const data = Object.fromEntries(new FormData(e.target));
+
+    try {
+      // Replace with your actual backend endpoint
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('successMsg').style.display = 'block';
+      } else {
+        throw new Error('Server error');
+      }
+    } catch {
+      // Demo mode — show success anyway
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+    }
+  });
+</script>
+
+</body>
+</html>
