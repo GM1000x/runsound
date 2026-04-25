@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Listen — RunSound Smart Link</title>
+  <meta name="description" content="Stream this song on your favourite platform." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0c0c12;
+      --card:      #13131e;
+      --border:    #1a1a28;
+      --text:      #f2f2fa;
+      --muted:     #7a7a95;
+      --accent:    #7c3aed;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 20px 60px;
+      min-height: 100%;
+    }
+
+    /* ── ARTWORK ── */
+    .artwork {
+      width: min(280px, 72vw);
+      height: min(280px, 72vw);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    }
+    .artwork img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .artwork-placeholder {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #1a0a3a 0%, #3b1576 50%, #0d0621 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem;
+    }
+
+    /* ── SONG INFO ── */
+    .song-info { text-align: center; margin-bottom: 2.5rem; }
+    .song-title {
+      font-size: clamp(1.5rem, 6vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+    .song-artist {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ── STREAMING BUTTONS ── */
+    .platforms { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .platform-btn {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color .2s, transform .15s, background .2s;
+      cursor: pointer;
+    }
+    .platform-btn:hover {
+      border-color: rgba(124,58,237,0.5);
+      background: rgba(124,58,237,0.06);
+      transform: translateY(-1px);
+    }
+    .platform-btn:active { transform: translateY(0); }
+
+    .platform-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .platform-text { flex: 1; }
+    .platform-label { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .platform-name  { font-size: 0.95rem; font-weight: 700; }
+
+    .platform-arrow { color: var(--muted); font-size: 0.9rem; }
+
+    /* Platform colours */
+    .icon-spotify    { background: #1DB954; color: #000; }
+    .icon-apple      { background: #fc3c44; color: #fff; }
+    .icon-youtube    { background: #FF0000; color: #fff; }
+    .icon-tidal      { background: #000; color: #fff; border: 1px solid #333; }
+    .icon-deezer     { background: #A238FF; color: #fff; }
+    .icon-amazon     { background: #00A8E0; color: #fff; }
+    .icon-soundcloud { background: #FF5500; color: #fff; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      margin-top: 3rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .page-footer a { color: var(--muted); text-decoration: none; }
+    .page-footer a:hover { color: var(--text); }
+    .powered {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 0.5rem;
+      font-size: 0.72rem; color: rgba(122,122,149,0.5);
+    }
+    .powered a { color: rgba(168,85,247,0.6); }
+    .powered a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- ARTWORK -->
+<div class="artwork">
+  <div class="artwork-placeholder" id="artworkPlaceholder">🎵</div>
+  <img id="artworkImg" src="" alt="" style="display:none"
+       onload="this.style.display='block';document.getElementById('artworkPlaceholder').style.display='none'"
+       onerror="this.style.display='none'" />
+</div>
+
+<!-- SONG INFO -->
+<div class="song-info">
+  <div class="song-title" id="songTitle">Song Title</div>
+  <div class="song-artist" id="songArtist">Artist Name</div>
+</div>
+
+<!-- STREAMING PLATFORMS -->
+<div class="platforms" id="platforms">
+
+  <a class="platform-btn" id="btn-spotify" href="#" data-platform="spotify" style="display:none">
+    <div class="platform-icon icon-spotify">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+      </svg>
+    </div>
+    <div class="platform-text">
+      <div class="platform-label">Stream on</div>
+      <div class="platform-name">Spotify</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+  <a class="platform-btn" id="btn-apple" href="#" data-platform="apple" style="display:none">
+    <div class="platform-icon icon-apple">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+      </svg>
+    </div>
+    <div class="platform-text">
+      <div class="platform-label">Stream on</div>
+      <div class="platform-name">Apple Music</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+  <a class="platform-btn" id="btn-youtube" href="#" data-platform="youtube" style="display:none">
+    <div class="platform-icon icon-youtube">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      </svg>
+    </div>
+    <div class="platform-text">
+      <div class="platform-label">Watch on</div>
+      <div class="platform-name">YouTube Music</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+  <a class="platform-btn" id="btn-tidal" href="#" data-platform="tidal" style="display:none">
+    <div class="platform-icon icon-tidal">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12.012 3.992L8.008 7.996 4.004 3.992 0 7.996l4.004 4.004 4.004-4.004 4.004 4.004 4.004-4.004L12.012 3.992zM8.008 12.008l-4.004 4.004L0 12.008l4.004-4.004 4.004 4.004zm8.016 0l-4.004 4.004-4.004-4.004 4.004-4.004 4.004 4.004z"/>
+      </svg>
+    </div>
+    <div class="platform-text">
+      <div class="platform-label">Stream on</div>
+      <div class="platform-name">Tidal</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+  <a class="platform-btn" id="btn-deezer" href="#" data-platform="deezer" style="display:none">
+    <div class="platform-icon icon-deezer">♪</div>
+    <div class="platform-text">
+      <div class="platform-label">Stream on</div>
+      <div class="platform-name">Deezer</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+  <a class="platform-btn" id="btn-amazon" href="#" data-platform="amazon" style="display:none">
+    <div class="platform-icon icon-amazon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13.958 10.09c0 1.232.029 2.256-.591 3.351-.502.891-1.301 1.438-2.186 1.438-1.214 0-1.922-.924-1.922-2.292 0-2.692 2.415-3.182 4.7-3.182v.685zm3.186 7.705c-.209.189-.512.201-.745.074-1.047-.87-1.234-1.274-1.813-2.106-1.73 1.765-2.954 2.293-5.192 2.293-2.652 0-4.714-1.637-4.714-4.91 0-2.556 1.386-4.296 3.357-5.148 1.71-.75 4.102-.883 5.927-1.089v-.407c0-.748.06-1.633-.383-2.278-.384-.578-1.124-.817-1.776-.817-1.207 0-2.284.619-2.548 1.903-.054.285-.265.567-.556.582l-3.104-.335c-.262-.058-.552-.271-.476-.673.714-3.764 4.113-4.895 7.153-4.895 1.556 0 3.59.414 4.818 1.593 1.556 1.452 1.407 3.39 1.407 5.5v4.982c0 1.497.621 2.155 1.207 2.963.207.289.251.635-.01.849l-2.552 2.123z"/>
+      </svg>
+    </div>
+    <div class="platform-text">
+      <div class="platform-label">Stream on</div>
+      <div class="platform-name">Amazon Music</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+  <a class="platform-btn" id="btn-soundcloud" href="#" data-platform="soundcloud" style="display:none">
+    <div class="platform-icon icon-soundcloud">☁</div>
+    <div class="platform-text">
+      <div class="platform-label">Listen on</div>
+      <div class="platform-name">SoundCloud</div>
+    </div>
+    <div class="platform-arrow">›</div>
+  </a>
+
+</div>
+
+<!-- FOOTER -->
+<div class="page-footer">
+  <div class="powered">Powered by <a href="https://runsound.fm" target="_blank">RunSound</a></div>
+</div>
+
+<script>
+/**
+ * Smart Link loader
+ *
+ * Reads config from:
+ *   1. URL query params: ?artist=X&song=Y&spotify=URL&...
+ *   2. window.RUNSOUND_CONFIG (set by server-side render)
+ *
+ * Query params (all optional):
+ *   artist    Artist name
+ *   song      Song title
+ *   art       Album artwork URL
+ *   spotify   Spotify track/album URL
+ *   apple     Apple Music URL
+ *   youtube   YouTube Music URL
+ *   tidal     Tidal URL
+ *   deezer    Deezer URL
+ *   amazon    Amazon Music URL
+ *   soundcloud SoundCloud URL
+ *   utm       UTM campaign tag (for click tracking)
+ */
+
+(function() {
+  // Merge server config + URL params
+  const cfg = Object.assign({}, window.RUNSOUND_CONFIG || {});
+  const params = new URLSearchParams(window.location.search);
+  for (const [k, v] of params) cfg[k] = v;
+
+  // Populate song info
+  if (cfg.song)   document.getElementById('songTitle').textContent  = cfg.song;
+  if (cfg.artist) document.getElementById('songArtist').textContent = cfg.artist;
+
+  // Artwork
+  if (cfg.art) {
+    document.getElementById('artworkImg').src = cfg.art;
+  }
+
+  // Set page title
+  if (cfg.song && cfg.artist) {
+    document.title = `${cfg.song} — ${cfg.artist}`;
+  }
+
+  // Platform map: id → config key → display
+  const platformMap = [
+    ['spotify',    'spotify',     true],   // add UTM click tracking
+    ['apple',      'apple',       true],
+    ['youtube',    'youtube',     true],
+    ['tidal',      'tidal',       false],
+    ['deezer',     'deezer',      false],
+    ['amazon',     'amazon',      false],
+    ['soundcloud', 'soundcloud',  false],
+  ];
+
+  platformMap.forEach(([id, key, trackClicks]) => {
+    const url = cfg[key];
+    if (!url) return;
+
+    const btn = document.getElementById(`btn-${id}`);
+    if (!btn) return;
+
+    // Append UTM for click tracking
+    let finalUrl = url;
+    if (trackClicks && cfg.utm) {
+      try {
+        const u = new URL(url);
+        u.searchParams.set('utm_source',   'runsound');
+        u.searchParams.set('utm_medium',   'tiktok');
+        u.searchParams.set('utm_campaign', cfg.utm);
+        finalUrl = u.toString();
+      } catch {}
+    }
+
+    btn.href = finalUrl;
+    btn.style.display = 'flex';
+
+    // Click event — fire tracking pixel
+    btn.addEventListener('click', () => {
+      if (cfg.utm) {
+        navigator.sendBeacon('/api/click', JSON.stringify({
+          utm:      cfg.utm,
+          platform: id,
+          ts:       Date.now(),
+        }));
+      }
+    });
+  });
+
+  // If only Spotify is configured, make it prominent
+  const visibleBtns = platformMap.filter(([id, key]) => cfg[key]);
+  if (visibleBtns.length === 1 && cfg.spotify) {
+    const btn = document.getElementById('btn-spotify');
+    if (btn) {
+      btn.style.padding = '1.4rem 1.5rem';
+      btn.querySelector('.platform-name').style.fontSize = '1.1rem';
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
