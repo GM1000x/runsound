@@ -1,14 +1,22 @@
-node_modules/
+# Environment
 .env
 .env.local
-runsound-marketing/assets/
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Generated output
 runsound-marketing/posts/
-runsound-marketing/analytics/
-runsound-marketing/reports/
-runsound-marketing/logs/
-runsound-marketing/config.json
-runsound-marketing/strategy.json
-vercel-smart-link/.env.local
-vercel-smart-link/node_modules/
-vercel-smart-link/.next/
+logs/
+assets/fonts/
+test-carousel/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Pick history (campaign-specific, not committed)
+pick-history.json
+learning-history.json
+strategy.json
