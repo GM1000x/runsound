@@ -1,0 +1,11 @@
+{
+  "plan": "starter",
+  "campaigns": [
+    {
+      "name": "MBN — Summer Love",
+      "slug": "mbn-summer-love",
+      "config": "runsound-marketing/config.json",
+      "active": true
+    }
+  ]
+}

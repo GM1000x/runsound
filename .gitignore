@@ -8,6 +8,7 @@ node_modules/
 
 # Generated output
 runsound-marketing/posts/
+runsound-marketing/image-library/
 logs/
 assets/fonts/
 test-carousel/
