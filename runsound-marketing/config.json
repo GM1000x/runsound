@@ -1,0 +1,43 @@
+{
+  "artist": {
+    "name": "MBN",
+    "genre": "pop",
+    "tiktokHandle": "@mbn19902"
+  },
+
+  "song": {
+    "title": "Summer Love",
+    "spotifyUrl": "",
+    "appleUrl": "",
+    "youtubeUrl": "",
+    "tidalUrl": "",
+    "deezerUrl": "",
+    "amazonUrl": "",
+    "soundcloudUrl": "",
+    "smartLinkSlug": ""
+  },
+
+  "postiz": {
+    "apiKey": "POSTIZ_API_KEY",
+    "integrationIds": {
+      "tiktok": "cmo4835sz048tqj0yse5bxxeg"
+    }
+  },
+
+  "imageLibrary": {
+    "dir": "runsound-marketing/image-library",
+    "count": 18,
+    "style": "cinematic, moody, aesthetic",
+    "themes": ["summer", "love", "nostalgia", "night", "golden hour", "urban"]
+  },
+
+  "hooks": {
+    "count": 6,
+    "tone": "emotional, relatable, scroll-stopping"
+  },
+
+  "output": {
+    "postsDir": "runsound-marketing/posts",
+    "latestDir": "runsound-marketing/posts/latest"
+  }
+}
