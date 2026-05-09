@@ -148,6 +148,7 @@ router.post('/', async (req, res) => {
       slug,
       smartLinkUrl,
       campaignId:   campaign.id,
+      artistId:     artistRow.id,   // used to redirect artist to TikTok OAuth
     });
 
   } catch (err) {

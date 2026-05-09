@@ -574,23 +574,22 @@
     const data = Object.fromEntries(new FormData(e.target));
 
     try {
-      // Replace with your actual backend endpoint
       const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
-      if (res.ok) {
-        document.getElementById('signupForm').style.display = 'none';
-        document.getElementById('successMsg').style.display = 'block';
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        window.location.href = `/connect?artist_id=${encodeURIComponent(json.artistId)}`;
       } else {
-        throw new Error('Server error');
+        throw new Error(json.error || 'Server error');
       }
-    } catch {
-      // Demo mode — show success anyway
-      document.getElementById('signupForm').style.display = 'none';
-      document.getElementById('successMsg').style.display = 'block';
+    } catch (err) {
+      btn.textContent = 'Try again';
+      btn.disabled = false;
+      alert(err.message || 'Something went wrong. Please try again.');
     }
   });
 </script>
