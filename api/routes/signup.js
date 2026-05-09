@@ -124,18 +124,17 @@ router.post('/', async (req, res) => {
     const { data: campaign, error: campaignErr } = await supabase
       .from('campaigns')
       .insert({
-        artist_id:      artistRow.id,
+        artist_id:     artistRow.id,
         slug,
-        artist_name:    artist,
-        song_title:     song,
-        genre:          genre       || null,
-        spotify_url:    spotify     || null,
-        song_description: description || null,
-        song_mood:      mood        || null,
-        hook_lines:     [],          // Populated later by TikTok trend scanner
-        config,
+        artist_name:   artist,
+        song_title:    song,
+        genre:         genre    || null,
+        spotify_url:   spotify  || null,
+        mood:          mood     || null,   // existing column — vibe/feeling
+        hook_lines:    [],                  // populated later by TikTok trend scanner
+        config,                             // full details incl. description in config.song.description
         smart_link_url: smartLinkUrl,
-        active:         true,
+        active:        true,
       })
       .select()
       .single();
