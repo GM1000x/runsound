@@ -74,9 +74,9 @@ const FONT_ANTON_PATH    = path.join(FONTS_DIR, 'Anton-Regular.ttf');
 const FONT_BEBAS_PATH    = path.join(FONTS_DIR, 'BebasNeue-Regular.ttf');
 
 const FONT_URLS = {
-  'Anton-Regular.ttf':  'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf',
-  'Inter-Regular.ttf':  'https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Regular.ttf',
-  'Inter-SemiBold.ttf': 'https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-SemiBold.ttf',
+  'Anton-Regular.ttf':    'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf',
+  'Inter-Regular.woff2':  'https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-normal.woff2',
+  'Inter-SemiBold.woff2': 'https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-600-normal.woff2',
 };
 
 // ─── Per-slide style definitions ──────────────────────────────────────────────
@@ -296,8 +296,8 @@ async function main() {
   if (fs.existsSync(FONT_BEBAS_PATH))  GlobalFonts.registerFromPath(FONT_BEBAS_PATH,  'Bebas Neue');
 
   // Load Inter fonts if available
-  const FONT_INTER_PATH          = path.join(FONTS_DIR, 'Inter-Regular.ttf');
-  const FONT_INTER_SEMIBOLD_PATH = path.join(FONTS_DIR, 'Inter-SemiBold.ttf');
+  const FONT_INTER_PATH          = path.join(FONTS_DIR, 'Inter-Regular.woff2');
+  const FONT_INTER_SEMIBOLD_PATH = path.join(FONTS_DIR, 'Inter-SemiBold.woff2');
   if (fs.existsSync(FONT_INTER_PATH))          GlobalFonts.registerFromPath(FONT_INTER_PATH,          'Inter');
   if (fs.existsSync(FONT_INTER_SEMIBOLD_PATH)) GlobalFonts.registerFromPath(FONT_INTER_SEMIBOLD_PATH, 'Inter SemiBold');
 

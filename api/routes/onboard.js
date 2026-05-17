@@ -157,7 +157,7 @@ async function materializeConfig(campaign) {
     imageGen: {
       ...(dbConfig.imageGen || {}),
       // Always override model + count — db config may have stale dall-e-3 / 18
-      model:  process.env.IMAGE_MODEL || 'gpt-image-1',
+      model:  process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21',
       count:  2,
     },
     output: {
