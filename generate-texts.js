@@ -152,7 +152,7 @@ function fmt(t) {
 
 // ─── Slide texts per archetype ────────────────────────────────────────────────
 function buildTexts(variant) {
-  const cta    = `${st}\nby ${an}\n🎵 link in bio`;
+  const cta    = `${st}\nby ${an}\nlink in bio`;
   const song   = st.toLowerCase();
   const pov    = deriveListenerPOV();
   const genre  = deriveGenreFamily();

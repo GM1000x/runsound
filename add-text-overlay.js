@@ -74,9 +74,9 @@ const FONT_ANTON_PATH    = path.join(FONTS_DIR, 'Anton-Regular.ttf');
 const FONT_BEBAS_PATH    = path.join(FONTS_DIR, 'BebasNeue-Regular.ttf');
 
 const FONT_URLS = {
-  'Anton-Regular.ttf':    'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf',
-  'Inter-Regular.ttf':    'https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf',
-  'Inter-SemiBold.ttf':   'https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf',
+  'Anton-Regular.ttf':  'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf',
+  'Inter-Regular.ttf':  'https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Regular.ttf',
+  'Inter-SemiBold.ttf': 'https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-SemiBold.ttf',
 };
 
 // ─── Per-slide style definitions ──────────────────────────────────────────────
@@ -243,7 +243,7 @@ async function renderSlide(slideIndex, rawPath, text, outPath, canvasModule, saf
   const fontSize   = slideStyle.size;
   const lineHeight = fontSize * 1.4;
   const align      = slideStyle.align || 'left';
-  ctx.font         = `600 ${fontSize}px "${slideStyle.font}", "Anton", sans-serif`;
+  ctx.font         = `600 ${fontSize}px "Inter SemiBold", "Inter", "Anton", sans-serif`;
   ctx.textAlign    = align;
   ctx.textBaseline = 'middle';
 
@@ -295,9 +295,11 @@ async function main() {
   if (fs.existsSync(FONT_ANTON_PATH))  GlobalFonts.registerFromPath(FONT_ANTON_PATH,  'Anton');
   if (fs.existsSync(FONT_BEBAS_PATH))  GlobalFonts.registerFromPath(FONT_BEBAS_PATH,  'Bebas Neue');
 
-  // Load Inter font if available
-  const FONT_INTER_PATH = path.join(FONTS_DIR, 'Inter-Regular.ttf');
-  if (fs.existsSync(FONT_INTER_PATH))  GlobalFonts.registerFromPath(FONT_INTER_PATH,  'Inter');
+  // Load Inter fonts if available
+  const FONT_INTER_PATH          = path.join(FONTS_DIR, 'Inter-Regular.ttf');
+  const FONT_INTER_SEMIBOLD_PATH = path.join(FONTS_DIR, 'Inter-SemiBold.ttf');
+  if (fs.existsSync(FONT_INTER_PATH))          GlobalFonts.registerFromPath(FONT_INTER_PATH,          'Inter');
+  if (fs.existsSync(FONT_INTER_SEMIBOLD_PATH)) GlobalFonts.registerFromPath(FONT_INTER_SEMIBOLD_PATH, 'Inter SemiBold');
 
   // Load safe zones from picks.json (set by pick-slides.js via face detection)
   const picksPath = path.join(inputDir, 'picks.json');
