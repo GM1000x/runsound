@@ -7,7 +7,10 @@
 
   "song": {
     "title": "Summer Love",
-    "spotifyUrl": "",
+    "genre": "pop",
+    "mood": "warm, nostalgic, golden hour, bittersweet summer romance, cinematic, emotional",
+    "description": "A song about summer love — that feeling of a perfect season with someone, the warmth, the memories, the bittersweetness when it ends.",
+    "spotifyUrl": "https://open.spotify.com/track/3UK2G7CRI6aYnJyI0Aedl7?si=1ed95fb618204c02",
     "appleUrl": "",
     "youtubeUrl": "",
     "tidalUrl": "",

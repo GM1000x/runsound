@@ -48,10 +48,12 @@ app.use((req, res, next) => {
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/signup',  require('./routes/signup'));
-app.use('/api/click',   require('./routes/click'));
-app.use('/api/link',    require('./routes/link'));
-app.use('/auth/tiktok', require('./routes/tiktok-auth'));
+app.use('/api/signup',     require('./routes/signup'));
+app.use('/api/click',      require('./routes/click'));
+app.use('/api/link',       require('./routes/link'));
+app.use('/api/dashboard',  require('./routes/dashboard'));
+app.use('/api/onboard',    require('./routes/onboard'));
+app.use('/auth/tiktok',    require('./routes/tiktok-auth'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -126,7 +128,7 @@ app.get('/l/:slug', async (req, res) => {
 // ─── Static files (web/) ──────────────────────────────────────────────────────
 const webDir = path.join(__dirname, '..', 'web');
 if (fs.existsSync(webDir)) {
-  app.use(express.static(webDir));
+  app.use(express.static(webDir, { extensions: ['html'] }));
 }
 
 // Root → landing page
@@ -160,6 +162,7 @@ app.listen(PORT, () => {
   console.log(`\n🚀 RunSound API running on http://localhost:${PORT}`);
   console.log(`   Landing page:  http://localhost:${PORT}/`);
   console.log(`   Smart link:    http://localhost:${PORT}/l/:slug`);
+  console.log(`   Dashboard:     http://localhost:${PORT}/dashboard.html`);
   console.log(`   Health check:  http://localhost:${PORT}/api/health\n`);
 });
 

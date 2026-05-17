@@ -294,6 +294,38 @@
     .form-row select option { background: var(--surface); }
     .form-hint { font-size: 0.77rem; color: var(--muted); margin-top: 0.3rem; }
 
+    /* More platforms toggle */
+    .more-platforms { margin-bottom: 1.25rem; }
+    .more-platforms-toggle {
+      width: 100%;
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--muted);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color .2s, color .2s;
+    }
+    .more-platforms-toggle:hover { border-color: var(--accent); color: var(--accent2); }
+    .more-platforms-toggle.open { border-color: var(--accent); color: var(--accent2); }
+    .toggle-hint { font-size: 0.75rem; opacity: 0.6; }
+    .more-platforms-fields {
+      display: none;
+      padding-top: 1rem;
+    }
+    .more-platforms-fields.open { display: block; }
+    .platforms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 1rem;
+    }
+    @media (max-width: 500px) { .platforms-grid { grid-template-columns: 1fr; } }
+
     .form-submit {
       width: 100%;
       background: var(--accent);
@@ -519,16 +551,76 @@
       <div class="form-row">
         <label>Genre</label>
         <select name="genre">
-          <option>Pop</option><option>Indie Pop</option><option>R&B</option>
-          <option>Hip-Hop</option><option>Electronic</option><option>Folk</option>
-          <option>Rock</option><option>Country</option><option>Other</option>
+          <option value="">Select genre...</option>
+          <option>Pop</option>
+          <option>Indie Pop</option>
+          <option>R&amp;B / Soul</option>
+          <option>Hip-Hop</option>
+          <option>Rap</option>
+          <option>Electronic</option>
+          <option>House</option>
+          <option>Tech House</option>
+          <option>Dance / EDM</option>
+          <option>Afrobeats</option>
+          <option>Afropop</option>
+          <option>Latin</option>
+          <option>Reggaeton</option>
+          <option>Folk</option>
+          <option>Singer-Songwriter</option>
+          <option>Indie Rock</option>
+          <option>Rock</option>
+          <option>Alternative</option>
+          <option>Country</option>
+          <option>Reggae</option>
+          <option>Jazz</option>
+          <option>K-Pop</option>
+          <option>Classical</option>
+          <option>Other</option>
         </select>
       </div>
       <div class="form-row">
         <label>Spotify link</label>
         <input type="url" name="spotify" placeholder="https://open.spotify.com/track/..." required />
       </div>
-      <div class="form-row">
+
+      <!-- More platforms — collapsible -->
+      <div class="more-platforms">
+        <button type="button" class="more-platforms-toggle" id="morePlatformsBtn">
+          <span>+ Add Apple Music, Tidal &amp; more</span>
+          <span class="toggle-hint">optional but recommended</span>
+        </button>
+        <div class="more-platforms-fields" id="morePlatformsFields">
+          <div class="platforms-grid">
+            <div class="form-row">
+              <label>Apple Music</label>
+              <input type="url" name="apple" placeholder="https://music.apple.com/..." />
+            </div>
+            <div class="form-row">
+              <label>YouTube Music</label>
+              <input type="url" name="youtube" placeholder="https://music.youtube.com/..." />
+            </div>
+            <div class="form-row">
+              <label>Tidal</label>
+              <input type="url" name="tidal" placeholder="https://tidal.com/browse/track/..." />
+            </div>
+            <div class="form-row">
+              <label>Deezer</label>
+              <input type="url" name="deezer" placeholder="https://www.deezer.com/track/..." />
+            </div>
+            <div class="form-row">
+              <label>Amazon Music</label>
+              <input type="url" name="amazon" placeholder="https://music.amazon.com/..." />
+            </div>
+            <div class="form-row">
+              <label>SoundCloud</label>
+              <input type="url" name="soundcloud" placeholder="https://soundcloud.com/..." />
+            </div>
+          </div>
+          <p class="form-hint" style="margin-top:0.25rem">RunSound tracks which platform each listener chooses so you know where your fans stream.</p>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:1.25rem">
         <label>What is the song about?</label>
         <textarea name="description" placeholder="e.g. A late-night drive after a breakup, trying to let go but still holding on. It's about that moment when you realise someone is gone for real." required></textarea>
         <div class="form-hint">Story, theme, what the song deals with. This is used to generate the visuals.</div>
@@ -537,6 +629,11 @@
         <label>Mood &amp; feeling</label>
         <textarea name="mood" placeholder="e.g. Melancholic but freeing. Nostalgic, cinematic, bittersweet. Like a 3am drive with the windows down." required></textarea>
         <div class="form-hint">The vibe and emotion of the song. RunSound scans TikTok for trending hooks that match this mood and your genre — you don't need to write them yourself.</div>
+      </div>
+      <div class="form-row">
+        <label>Who listens to this song?</label>
+        <input type="text" name="target_audience" placeholder="e.g. Young women going through a breakup, 18–25, fans of Olivia Rodrigo" />
+        <div class="form-hint">Describe your target listener. The AI uses this to write hooks that speak directly to them.</div>
       </div>
       <div class="form-row">
         <label>Your email</label>
@@ -565,6 +662,17 @@
 </footer>
 
 <script>
+  // More platforms toggle
+  const morePlatformsBtn = document.getElementById('morePlatformsBtn');
+  const morePlatformsFields = document.getElementById('morePlatformsFields');
+  morePlatformsBtn.addEventListener('click', () => {
+    const isOpen = morePlatformsFields.classList.toggle('open');
+    morePlatformsBtn.classList.toggle('open', isOpen);
+    morePlatformsBtn.querySelector('span').textContent = isOpen
+      ? '− Hide extra platforms'
+      : '+ Add Apple Music, Tidal & more';
+  });
+
   document.getElementById('signupForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('.form-submit');
@@ -582,7 +690,11 @@
 
       const json = await res.json();
       if (res.ok && json.ok) {
-        window.location.href = `/connect?artist_id=${encodeURIComponent(json.artistId)}`;
+        // Redirect to connect.html with campaign ID, token and song name
+        // connect.html will show live onboarding progress and then link to dashboard
+        const song = encodeURIComponent(data.song || '');
+        window.location.href =
+          `/connect.html?campaign_id=${encodeURIComponent(json.campaignId)}&token=${encodeURIComponent(json.dashToken)}&song=${song}`;
       } else {
         throw new Error(json.error || 'Server error');
       }

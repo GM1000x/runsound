@@ -26,8 +26,8 @@
  *   --force       Regenerate even if library already exists
  *   --dry-run     Show prompts without generating
  *
- * Cost: ~$0.04/image with gpt-image-1 (standard quality, 1024x1792)
- *       18 images ≈ $0.72 per campaign swap
+ * Cost: ~$0.04/image with gpt-image-1.5 (standard quality, 1024x1792)
+ *       6 images ≈ $0.24 per campaign swap (one per arc role)
  *
  * Requires: OPENAI_API_KEY in .env
  */
@@ -44,7 +44,7 @@ const args = process.argv.slice(2);
 function getArg(n) { const i = args.indexOf(`--${n}`); return i !== -1 ? args[i + 1] : null; }
 
 const configPath = getArg('config');
-const COUNT      = parseInt(getArg('count') || '18', 10);
+const COUNT      = parseInt(getArg('count') || '12', 10);  // 3 per arc × 4 arcs
 const FORCE      = args.includes('--force');
 const DRY_RUN    = args.includes('--dry-run');
 
@@ -66,52 +66,68 @@ const artist = config.artist?.name   || 'Unknown Artist';
 const song   = config.song?.title    || 'Unknown Song';
 const genre  = config.song?.genre    || 'indie pop';
 const mood   = config.song?.mood     || 'emotional, nostalgic';
-const style  = config.imageGen?.style || 'cinematic photography, moody, film grain, 35mm';
+const model  = config.imageGen?.model  || process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21';
+// gpt-image-2 / gpt-image-1 / gpt-image-1.5 use 'low'|'medium'|'high'; dall-e-3 uses 'standard'|'hd'
+const quality = (model === 'dall-e-3') ? 'hd' : 'high';
+const style  = config.imageGen?.style  || 'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light';
 const extra  = config.imageGen?.extraPrompt || '';
 
-// ─── Arc roles — mirrors pick-slides.js ───────────────────────────────────────
+// ─── Arc roles — mirrors pick-slides.js (4-slide structure) ──────────────────
+// Pinterest/lifestyle style: real photography feel, intimate moments, natural light.
+// Inspired by viral TikTok format: mirror selfies, silhouettes, candid life scenes.
+// Each role has 3 prompt variations so the library has visual diversity.
 const ARC_ROLES = [
   {
     role: 'hook',
-    tags: ['hook', 'dramatic', 'cinematic'],
-    prompt: 'striking, attention-grabbing, bold composition, first frame energy',
+    tags: ['hook', 'lifestyle', 'candid'],
+    prompts: [
+      'young woman in minimal apartment standing in front of full-length mirror, warm tungsten evening light, simple black outfit, gold jewellery, candid getting-ready moment, iPhone lifestyle photo, aesthetic Pinterest',
+      'person sitting on bedroom floor against the bed, late night soft lamp light, cozy and intimate, looking thoughtful, candid unposed lifestyle moment',
+      'person standing at floor-to-ceiling window in a city apartment at dusk, lights of the city below, moody warm interior light from behind, cinematic silhouette lifestyle shot',
+    ],
   },
   {
-    role: 'tension',
-    tags: ['tension', 'moody', 'dark'],
-    prompt: 'moody, dark atmosphere, close and intimate, building emotion',
+    role: 'story',
+    tags: ['story', 'intimate', 'warm'],
+    prompts: [
+      'two silhouettes slow dancing in a warmly lit kitchen at night, photographed from outside through a window, dark garden foreground, romantic warm glow inside, cinematic and intimate',
+      'couple driving at golden hour, shot from passenger seat, sun streaming through windshield, warm haze, candid, slightly overexposed like film photo',
+      'person sitting alone at a table in a dim restaurant or bar, single candle, warm bokeh lights in background, intimate atmosphere, candid lifestyle',
+    ],
   },
   {
     role: 'peak',
-    tags: ['peak', 'emotional', 'powerful'],
-    prompt: 'peak emotional moment, raw and powerful, wide shot or dramatic close-up',
-  },
-  {
-    role: 'release',
-    tags: ['release', 'warm', 'golden'],
-    prompt: 'soft light, warm golden tones, sense of release and relief',
-  },
-  {
-    role: 'aftermath',
-    tags: ['aftermath', 'dreamy', 'atmospheric'],
-    prompt: 'quiet aftermath, dreamy and atmospheric, hazy light, stillness',
+    tags: ['peak', 'golden', 'silhouette'],
+    prompts: [
+      'silhouette of two people on a rooftop at sunset, city skyline behind them, golden and orange sky, romantic and cinematic, backlit',
+      'person lying on bed staring at the ceiling, late afternoon golden light cutting across the room through blinds, emotional and still, candid intimate photography',
+      'two people sitting close on a beach at dusk, seen from behind, calm water, soft gradient sky, warm golden and purple tones, peaceful and emotional',
+    ],
   },
   {
     role: 'cta',
-    tags: ['cta', 'clean', 'minimal'],
-    prompt: 'clean minimal composition, strong identity feel, clear and calm',
+    tags: ['cta', 'minimal', 'aesthetic'],
+    prompts: [
+      'aesthetic nightstand flatlay — iPhone with white earbuds coiled, soft warm lamp glow, linen texture, minimal and clean, cozy evening atmosphere',
+      'close-up of hands holding a warm coffee cup, soft morning window light, minimal table surface, clean Pinterest lifestyle composition',
+      'open window with sheer curtain blowing in soft breeze, golden morning light flooding in, simple and cinematic, calm aesthetic',
+    ],
   },
 ];
 
 // ─── Build image prompt for a given arc role ───────────────────────────────────
-function buildPrompt(arcRole) {
+// arcRole.prompts is an array; index selects which variation to use.
+function buildPrompt(arcRole, variationIndex) {
+  const basePrompts = arcRole.prompts || [arcRole.prompt || ''];
+  const base = basePrompts[variationIndex % basePrompts.length];
   return [
-    `${style}.`,
-    `${arcRole.prompt}.`,
+    `Candid lifestyle photograph, Pinterest aesthetic, real photography.`,
+    `${base}.`,
     `Mood: ${mood}.`,
-    `Genre aesthetic: ${genre}.`,
-    `No text, no words, no watermarks, no people looking directly at camera.`,
-    `Portrait orientation (9:16), suitable for TikTok/Instagram.`,
+    `Inspired by ${genre} music.`,
+    `Shot on iPhone or 35mm film, natural light, ultra-realistic photographic quality, not illustrated, not AI-looking.`,
+    `No text, no words, no watermarks, no logos.`,
+    `Portrait orientation for TikTok/mobile.`,
     extra,
   ].filter(Boolean).join(' ');
 }
@@ -131,7 +147,7 @@ function downloadFile(url, dest) {
   });
 }
 
-// ─── Generate one image ────────────────────────────────────────────────────────
+// ─── Generate one image (with retry on 429) ───────────────────────────────────
 async function generateImage(openai, prompt, arcRole, index) {
   const tags     = arcRole.tags.join('_');
   const filename = `img-${String(index).padStart(3, '0')}_${tags}.png`;
@@ -148,18 +164,34 @@ async function generateImage(openai, prompt, arcRole, index) {
     return filename;
   }
 
-  const response = await openai.images.generate({
-    model:   'dall-e-3',
-    prompt,
-    n:       1,
-    size:    '1024x1792',
-    quality: 'standard',
-  });
+  const MAX_RETRIES = 4;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await openai.images.generate({
+        model,
+        prompt,
+        n:       1,
+        size:    '1024x1792', // portrait for TikTok
+        quality,
+        // response_format not supported by gpt-image-2 — b64_json is returned by default
+      });
 
-  const imageUrl = response.data[0].url;
-  await downloadFile(imageUrl, destPath);
-  console.log(`   ✅ ${filename}`);
-  return filename;
+      const b64    = response.data[0].b64_json;
+      const buffer = Buffer.from(b64, 'base64');
+      fs.writeFileSync(destPath, buffer);
+      console.log(`   ✅ ${filename}`);
+      return filename;
+    } catch (err) {
+      const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.toLowerCase().includes('rate limit');
+      if (is429 && attempt < MAX_RETRIES) {
+        const wait = attempt * 20000; // 20s, 40s, 60s
+        console.log(`   ⏳ Rate limited — waiting ${wait / 1000}s before retry ${attempt}/${MAX_RETRIES - 1}...`);
+        await new Promise(r => setTimeout(r, wait));
+      } else {
+        throw err;
+      }
+    }
+  }
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
@@ -170,6 +202,7 @@ async function main() {
   console.log(`   Song:    ${song}`);
   console.log(`   Genre:   ${genre}`);
   console.log(`   Mood:    ${mood}`);
+  console.log(`   Model:   ${model}`);
   console.log(`   Style:   ${style}`);
   console.log(`   Count:   ${COUNT} images`);
   console.log(`   Output:  ${libraryDir}`);
@@ -203,8 +236,8 @@ async function main() {
 
   console.log('🖼  Generating images...\n');
 
-  // Estimate cost
-  const costPerImage = 0.04;
+  // Estimate cost — gpt-image-2 high quality 1024×1792 ≈ $0.19/image (Batch API) or $0.37 (standard)
+  const costPerImage = 0.19;
   const existingCount = fs.existsSync(libraryDir)
     ? fs.readdirSync(libraryDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f)).length
     : 0;
@@ -216,7 +249,9 @@ async function main() {
 
   for (let i = 0; i < plan.length; i++) {
     const arcRole = plan[i];
-    const prompt  = buildPrompt(arcRole);
+    // variationIndex cycles through the prompts array within each arc role
+    const variationIndex = Math.floor(i / ARC_ROLES.length);
+    const prompt  = buildPrompt(arcRole, variationIndex);
 
     try {
       const filename = await generateImage(openai, prompt, arcRole, i + 1);
@@ -230,9 +265,9 @@ async function main() {
       // Continue with remaining images
     }
 
-    // Small delay to avoid rate limiting
+    // Delay between requests — gpt-image-2 high quality: ~5 img/min, need ≥12s gap
     if (!DRY_RUN && i < plan.length - 1) {
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 15000));
     }
   }
 
@@ -263,6 +298,12 @@ async function main() {
   console.log(`   ${generated} generated, ${skipped} skipped`);
   console.log(`   Total: ${meta.images.length} images in ${libraryDir}`);
   console.log(`\n   Next: npm run pick\n`);
+
+  // Hard fail if nothing was generated — lets the pipeline know something went wrong
+  if (meta.images.length === 0 && !DRY_RUN) {
+    console.error('💥 Fatal: 0 images in library. All generation attempts failed. Check OPENAI_API_KEY and model name above.');
+    process.exit(1);
+  }
 }
 
 main().catch(err => {

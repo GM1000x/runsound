@@ -9,6 +9,10 @@ node_modules/
 # Generated output
 runsound-marketing/posts/
 runsound-marketing/image-library/
+runsound-marketing/analytics/
+runsound-marketing/learning-history.json
+campaigns/
+reports/
 logs/
 assets/fonts/
 test-carousel/

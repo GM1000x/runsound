@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Connect TikTok — RunSound</title>
+  <title>Setting up RunSound — Hang tight!</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
@@ -30,316 +30,314 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 2rem;
-      -webkit-font-smoothing: antialiased;
+      padding: 24px;
     }
 
-    body::before {
-      content: '';
+    .glow {
       position: fixed;
-      top: -200px; left: 50%; transform: translateX(-50%);
-      width: 800px; height: 800px;
-      background: radial-gradient(ellipse, rgba(124,58,237,0.15) 0%, transparent 70%);
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(124,58,237,.18) 0%, transparent 70%);
       pointer-events: none;
-      z-index: 0;
-    }
-
-    .card {
-      position: relative;
-      z-index: 1;
-      background: #111118;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 3rem 2.5rem;
-      max-width: 480px;
-      width: 100%;
-      text-align: center;
     }
 
     .logo {
-      font-size: 1.1rem;
+      font-size: 20px;
       font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 2.5rem;
-      display: block;
+      letter-spacing: -.5px;
       color: var(--text);
-      text-decoration: none;
+      margin-bottom: 48px;
     }
     .logo span { color: var(--accent2); }
 
-    .step-indicator {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-    }
-    .step {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.75rem; font-weight: 700;
-    }
-    .step.done   { background: var(--green); color: #fff; }
-    .step.active { background: var(--accent); color: #fff; }
-    .step.pending { background: var(--border); color: var(--muted); }
-    .step-line {
-      flex: 1; max-width: 48px; height: 2px;
-      background: var(--border); border-radius: 2px;
-    }
-    .step-line.done { background: var(--green); }
-
-    .state { display: none; }
-    .state.active { display: block; }
-
-    .tiktok-icon {
-      width: 64px; height: 64px;
-      margin: 0 auto 1.5rem;
-      background: #000;
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem;
-      border: 1px solid #222;
-    }
-
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.75rem;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 2rem;
-    }
-
-    .connect-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.6rem;
-      background: #000;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 0.9rem 2rem;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-decoration: none;
-      width: 100%;
-      transition: background 0.2s, border-color 0.2s;
-      font-family: 'Inter', sans-serif;
-    }
-    .connect-btn:hover { background: #111; border-color: #555; }
-    .connect-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
-
-    .permissions {
-      margin-top: 1.5rem;
-      background: rgba(255,255,255,0.03);
+    .card {
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.25rem;
-      text-align: left;
+      border-radius: 20px;
+      padding: 40px 36px;
+      max-width: 480px;
+      width: 100%;
     }
-    .permissions p {
-      font-size: 0.8rem; color: var(--muted);
-      margin-bottom: 0.5rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .permissions ul { list-style: none; }
-    .permissions li {
-      font-size: 0.85rem; color: #aaa;
-      padding: 0.3rem 0;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-    .permissions li::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 0.8rem; }
 
-    .success-icon {
-      width: 72px; height: 72px;
-      margin: 0 auto 1.5rem;
-      background: rgba(34,197,94,0.1);
-      border: 2px solid var(--green);
+    .card-header { text-align: center; margin-bottom: 32px; }
+
+    .card-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .card-header p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Pulse icon */
+    .pulse-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
+    .pulse {
+      width: 56px; height: 56px;
       border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
       display: flex; align-items: center; justify-content: center;
-      font-size: 2rem;
+      font-size: 24px; position: relative;
     }
-
-    .next-steps { margin-top: 1.5rem; text-align: left; }
-    .next-step {
-      display: flex; gap: 1rem;
-      padding: 0.9rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .next-step:last-child { border-bottom: none; }
-    .step-num {
-      width: 28px; height: 28px;
-      background: rgba(124,58,237,0.2);
-      border: 1px solid rgba(124,58,237,0.4);
+    .pulse::before {
+      content: ''; position: absolute; inset: -8px;
       border-radius: 50%;
+      background: rgba(124,58,237,.22);
+      animation: pulse-ring 1.8s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(.9); opacity: .8; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    .pulse.done { background: linear-gradient(135deg, #16a34a, var(--green)); }
+    .pulse.done::before { animation: none; }
+    .pulse.error { background: linear-gradient(135deg, #b91c1c, var(--red)); }
+    .pulse.error::before { animation: none; }
+
+    /* Progress bar */
+    .progress-wrap {
+      background: var(--border); border-radius: 4px;
+      height: 4px; overflow: hidden; margin-bottom: 8px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 4px; transition: width .6s ease;
+    }
+    .eta-note {
+      text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 24px;
+    }
+
+    /* Steps list */
+    .steps { display: flex; flex-direction: column; }
+    .step {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 11px 0; border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+
+    .step-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; font-weight: 700; color: var(--accent2);
-      flex-shrink: 0; margin-top: 0.1rem;
+      font-size: 11px; flex-shrink: 0; margin-top: 2px;
+      font-weight: 700; transition: all .3s;
     }
-    .next-step-text h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.2rem; }
-    .next-step-text p { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .step.completed .step-icon { background: var(--green); border-color: var(--green); color: #fff; }
+    .step.active .step-icon {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: var(--accent2); color: #fff;
+      animation: glow-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,.5); }
+      50%       { box-shadow: 0 0 0 5px rgba(168,85,247,0); }
+    }
+    .step.pending .step-icon { color: var(--border); }
+    .step.error   .step-icon { background: var(--red); border-color: var(--red); color: #fff; }
 
-    .home-btn {
-      display: block; margin-top: 2rem; padding: 0.85rem;
-      background: var(--accent); color: #fff;
-      border-radius: 12px; font-weight: 700; font-size: 0.95rem;
-      text-decoration: none; text-align: center; transition: background 0.2s;
-    }
-    .home-btn:hover { background: var(--accent2); }
+    .step-text { flex: 1; }
+    .step-label { font-size: 14px; font-weight: 500; }
+    .step.pending .step-label { color: var(--muted); }
+    .step-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .step.active .step-sub { color: var(--accent2); }
 
-    .error-icon {
-      width: 72px; height: 72px;
-      margin: 0 auto 1.5rem;
-      background: rgba(239,68,68,0.1);
-      border: 2px solid var(--red);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem;
+    /* Done box */
+    .done-box {
+      display: none;
+      background: rgba(34,197,94,.07);
+      border: 1px solid rgba(34,197,94,.18);
+      border-radius: 14px; padding: 24px; text-align: center; margin-top: 24px;
+    }
+    .done-box h2 { font-size: 17px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
+    .done-box p  { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 18px; }
+
+    .tiktok-steps {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px; margin-bottom: 18px; text-align: left;
+    }
+    .tiktok-steps h3 {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px;
+    }
+    .tt-step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
+    .tt-step:last-child { margin-bottom: 0; }
+    .tt-num {
+      background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      margin-top: 1px;
     }
 
-    .retry-btn {
-      display: block; margin-top: 1.5rem; padding: 0.85rem;
-      background: var(--accent); color: #fff;
-      border-radius: 12px; font-weight: 700; font-size: 0.95rem;
-      text-decoration: none; text-align: center; transition: background 0.2s;
+    .btn-primary {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 14px; font-weight: 600;
+      padding: 12px 28px; border-radius: 10px;
+      text-decoration: none; cursor: pointer;
+      transition: opacity .2s;
     }
-    .retry-btn:hover { background: var(--accent2); }
+    .btn-primary:hover { opacity: .85; }
 
-    .skip-link {
-      display: block; margin-top: 1rem;
-      font-size: 0.85rem; color: var(--muted);
-      text-decoration: none; transition: color 0.2s;
+    /* Error box */
+    .error-box {
+      display: none;
+      background: rgba(239,68,68,.07);
+      border: 1px solid rgba(239,68,68,.18);
+      border-radius: 14px; padding: 20px; text-align: center; margin-top: 24px;
     }
-    .skip-link:hover { color: var(--text); }
+    .error-box h2 { font-size: 16px; font-weight: 700; color: var(--red); margin-bottom: 6px; }
+    .error-box p  { font-size: 13px; color: var(--muted); line-height: 1.5; }
   </style>
 </head>
 <body>
+  <div class="glow"></div>
+  <div class="logo">Run<span>Sound</span></div>
 
-<div class="card">
-  <a href="/" class="logo">Run<span>Sound</span></a>
-
-  <div class="step-indicator">
-    <div class="step done">✓</div>
-    <div class="step-line done"></div>
-    <div class="step active" id="step2indicator">2</div>
-    <div class="step-line"></div>
-    <div class="step pending">3</div>
-  </div>
-
-  <!-- DEFAULT: Connect TikTok -->
-  <div class="state active" id="stateConnect">
-    <div class="tiktok-icon">
-      <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
-      </svg>
-    </div>
-    <h1>Connect your TikTok</h1>
-    <p class="subtitle">RunSound needs access to post daily carousels on your behalf. Every post lands in your drafts first — you add the sound and publish.</p>
-    <a href="#" id="connectBtn" class="connect-btn">
-      <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
-      </svg>
-      Continue with TikTok
-    </a>
-    <div class="permissions">
-      <p>RunSound will be able to:</p>
-      <ul>
-        <li>Post photo carousels to your drafts</li>
-        <li>Read basic profile info</li>
-      </ul>
-    </div>
-    <a href="/" class="skip-link">I'll do this later</a>
-  </div>
-
-  <!-- SUCCESS -->
-  <div class="state" id="stateSuccess">
-    <div class="success-icon">🎉</div>
-    <h1>TikTok connected!</h1>
-    <p class="subtitle">Your account is live. RunSound will start preparing your first carousel.</p>
-    <div class="next-steps">
-      <div class="next-step">
-        <div class="step-num">1</div>
-        <div class="next-step-text">
-          <h4>First draft arriving tonight</h4>
-          <p>RunSound posts daily at 03:00 CET. Check your TikTok inbox — you'll get a notification.</p>
-        </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="pulse-wrap">
+        <div class="pulse" id="pulseIcon">🎵</div>
       </div>
-      <div class="next-step">
-        <div class="step-num">2</div>
-        <div class="next-step-text">
-          <h4>Add your song &amp; publish</h4>
-          <p>Open the draft, tap "Add sound", search for your track, then publish. Takes 30 seconds.</p>
-        </div>
-      </div>
-      <div class="next-step">
-        <div class="step-num">3</div>
-        <div class="next-step-text">
-          <h4>RunSound learns &amp; optimises</h4>
-          <p>Every post is tracked. Streaming clicks feed back into the AI — hooks and visuals improve automatically.</p>
-        </div>
-      </div>
+      <h1 id="mainTitle">Generating your first post…</h1>
+      <p id="mainSub">We're building your AI image set and crafting your first TikTok draft. Takes about 5–8 minutes — then you're on autopilot.</p>
     </div>
-    <a href="/" class="home-btn">Back to RunSound</a>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar" style="width: 2%"></div>
+    </div>
+    <div class="eta-note" id="etaNote">Usually done in 5–8 minutes</div>
+
+    <div class="steps" id="stepsList"></div>
+
+    <!-- Done state -->
+    <div class="done-box" id="doneBox">
+      <h2>Your draft is in your TikTok inbox!</h2>
+      <p>From now on a new draft arrives automatically every night. Your only job is to open TikTok, add a sound, and publish.</p>
+      <div class="tiktok-steps">
+        <h3>Publish your first post — 30 seconds</h3>
+        <div class="tt-step"><span class="tt-num">1</span><span>Open TikTok → tap the <strong>notification in your inbox</strong></span></div>
+        <div class="tt-step"><span class="tt-num">2</span><span>Tap <strong>"Add sound"</strong></span></div>
+        <div class="tt-step"><span class="tt-num">3</span><span>Search for <strong id="songInStep">your song</strong> or any trending sound</span></div>
+        <div class="tt-step"><span class="tt-num">4</span><span>Tap <strong>Post ✓</strong></span></div>
+      </div>
+      <a href="#" id="dashboardBtn" class="btn-primary">Go to my dashboard →</a>
+    </div>
+
+    <!-- Error state -->
+    <div class="error-box" id="errorBox">
+      <h2>Something went wrong</h2>
+      <p id="errorMsg">We couldn't generate your first post. We've been notified and will fix it shortly — check back in a few minutes.</p>
+    </div>
   </div>
 
-  <!-- ERROR -->
-  <div class="state" id="stateError">
-    <div class="error-icon">⚠️</div>
-    <h1>Something went wrong</h1>
-    <p class="subtitle" id="errorMsg">We couldn't connect your TikTok account. Please try again.</p>
-    <a href="#" id="retryBtn" class="retry-btn">Try again</a>
-    <a href="mailto:hello@runsound.fm" class="skip-link">Contact support</a>
-  </div>
-</div>
+  <script>
+    const params     = new URLSearchParams(location.search);
+    const campaignId = params.get('campaign_id');
+    const token      = params.get('token');
+    const song       = params.get('song') || 'your song';
 
-<script>
-  const params   = new URLSearchParams(window.location.search);
-  const artistId = params.get('artist_id');
-  const success  = params.get('success');
-  const error    = params.get('error');
+    document.getElementById('songInStep').textContent    = `"${song}"`;
+    document.getElementById('dashboardBtn').href =
+      `/dashboard.html?campaign_id=${campaignId}&token=${token || ''}`;
 
-  const connectBtn = document.getElementById('connectBtn');
-  if (artistId) {
-    connectBtn.href = `/auth/tiktok?artist_id=${encodeURIComponent(artistId)}`;
-  } else {
-    connectBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      alert('Please sign up first to connect your TikTok account.');
-      window.location.href = '/#signup';
-    });
-  }
-
-  document.getElementById('retryBtn').href = connectBtn.href;
-
-  function showState(id) {
-    document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  }
-
-  if (success === 'true') {
-    showState('stateSuccess');
-    document.getElementById('step2indicator').textContent = '✓';
-    document.getElementById('step2indicator').className = 'step done';
-  } else if (error) {
-    showState('stateError');
-    const messages = {
-      cancelled:      'You cancelled the TikTok connection. Click below to try again.',
-      token_exchange: 'We couldn\'t exchange the authorisation code. Please try again.',
-      missing_params: 'The redirect from TikTok was missing required data. Please try again.',
+    // ── Step rendering ─────────────────────────────────────────────────────
+    const ICON = { completed: '✓', active: '⟳', pending: '·', error: '✕' };
+    const SUBS = {
+      setup:   'Loading your campaign data',
+      library: 'Creating AI images (~30 sec)',
+      pick:    'Selecting today\'s 6 best images',
+      texts:   'Writing hook, story & CTA slides',
+      overlay: 'Burning text onto images',
+      post:    'Uploading carousel to TikTok inbox',
+      done:    'Done!',
     };
-    document.getElementById('errorMsg').textContent = messages[error] || 'Something went wrong. Please try again.';
-    if (artistId) document.getElementById('retryBtn').href = `/auth/tiktok?artist_id=${encodeURIComponent(artistId)}`;
-  } else {
-    showState('stateConnect');
-  }
-</script>
+    const ETA = {
+      setup:   'Usually done in 5–8 minutes',
+      library: 'Creating your image set — ~30 more seconds',
+      pick:    'Almost ready…',
+      texts:   'Writing your copy…',
+      overlay: 'Finishing up…',
+      post:    'Sending to TikTok…',
+    };
+
+    function render(steps, activeIdx, failed) {
+      const list = document.getElementById('stepsList');
+      list.innerHTML = steps.map((s, i) => {
+        const state = i < activeIdx ? 'completed'
+                    : i === activeIdx ? (failed ? 'error' : 'active')
+                    : 'pending';
+        return `<div class="step ${state}">
+          <div class="step-icon">${ICON[state]}</div>
+          <div class="step-text">
+            <div class="step-label">${s.label}</div>
+            <div class="step-sub">${SUBS[s.id] || ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function setProgress(idx, total) {
+      const pct = idx === total - 1 ? 100 : Math.round((idx / (total - 1)) * 94) + 2;
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    // ── Polling ────────────────────────────────────────────────────────────
+    let timer = null, misses = 0;
+
+    async function poll() {
+      if (!campaignId) return;
+      try {
+        const res  = await fetch(`/api/onboard/${campaignId}/status`);
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const { steps = [], currentIndex = 0, done, failed, error, currentStep } = data;
+        misses = 0;
+
+        render(steps, currentIndex, failed || false);
+        setProgress(currentIndex, steps.length);
+
+        if (ETA[currentStep]) {
+          document.getElementById('etaNote').textContent = ETA[currentStep];
+        }
+
+        if (done) {
+          clearInterval(timer);
+          document.getElementById('pulseIcon').textContent = '✅';
+          document.getElementById('pulseIcon').className   = 'pulse done';
+          document.getElementById('mainTitle').textContent = 'You\'re live!';
+          document.getElementById('mainSub').textContent   = 'Your first TikTok draft is ready.';
+          document.getElementById('etaNote').style.display = 'none';
+          document.getElementById('doneBox').style.display = 'block';
+          return;
+        }
+
+        if (failed) {
+          clearInterval(timer);
+          document.getElementById('pulseIcon').textContent = '❌';
+          document.getElementById('pulseIcon').className   = 'pulse error';
+          document.getElementById('mainTitle').textContent = 'Something went wrong';
+          document.getElementById('mainSub').textContent   = '';
+          document.getElementById('errorBox').style.display = 'block';
+          if (error) document.getElementById('errorMsg').textContent = error;
+        }
+      } catch {
+        if (++misses > 20) { // 60s with no connection
+          clearInterval(timer);
+          document.getElementById('mainSub').textContent =
+            'Connection lost — refresh to check progress.';
+        }
+      }
+    }
+
+    if (campaignId) {
+      poll();
+      timer = setInterval(poll, 3000);
+    }
+  </script>
 </body>
 </html>

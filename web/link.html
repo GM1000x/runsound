@@ -10,13 +10,16 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Same design tokens as index.html */
     :root {
-      --bg:        #0c0c12;
-      --card:      #13131e;
-      --border:    #1a1a28;
-      --text:      #f2f2fa;
-      --muted:     #7a7a95;
-      --accent:    #7c3aed;
+      --bg:      #0a0a0f;
+      --surface: #13131a;
+      --border:  #1e1e2e;
+      --accent:  #7c3aed;
+      --accent2: #a855f7;
+      --text:    #f0f0f8;
+      --muted:   #888899;
+      --card-bg: #111118;
     }
 
     html, body {
@@ -31,19 +34,45 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 48px 20px 60px;
+      padding: 0 20px 60px;
       min-height: 100%;
+    }
+
+    /* ── HEADER ── */
+    .site-header {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 20px 0 32px;
+    }
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo span { color: var(--accent2); }
+
+    /* Ambient glow — matches hero on index.html */
+    .glow {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     /* ── ARTWORK ── */
     .artwork {
-      width: min(280px, 72vw);
-      height: min(280px, 72vw);
+      width: min(240px, 65vw);
+      height: min(240px, 65vw);
       border-radius: 16px;
       overflow: hidden;
       margin-bottom: 1.5rem;
       position: relative;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+      z-index: 1;
     }
     .artwork img {
       width: 100%; height: 100%;
@@ -58,59 +87,68 @@
     }
 
     /* ── SONG INFO ── */
-    .song-info { text-align: center; margin-bottom: 2.5rem; }
+    .song-info { text-align: center; margin-bottom: 2rem; z-index: 1; }
     .song-title {
-      font-size: clamp(1.5rem, 6vw, 2rem);
+      font-size: clamp(1.4rem, 6vw, 1.9rem);
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.35rem;
       color: var(--text);
     }
     .song-artist {
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: var(--muted);
       font-weight: 500;
     }
 
     /* ── STREAMING BUTTONS ── */
-    .platforms { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 0.75rem; }
+    .platforms {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      z-index: 1;
+    }
 
     .platform-btn {
       display: flex;
       align-items: center;
       gap: 1rem;
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 1rem 1.25rem;
       text-decoration: none;
       color: var(--text);
       transition: border-color .2s, transform .15s, background .2s;
-      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
-    .platform-btn:hover {
-      border-color: rgba(124,58,237,0.5);
-      background: rgba(124,58,237,0.06);
-      transform: translateY(-1px);
+    @media (hover: hover) {
+      .platform-btn:hover {
+        border-color: rgba(168,85,247,0.45);
+        background: rgba(124,58,237,0.07);
+        transform: translateY(-1px);
+      }
     }
-    .platform-btn:active { transform: translateY(0); }
+    .platform-btn:active { transform: scale(0.98); opacity: 0.9; }
 
     .platform-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
+      width: 38px; height: 38px;
+      border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       flex-shrink: 0;
     }
 
     .platform-text { flex: 1; }
-    .platform-label { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-    .platform-name  { font-size: 0.95rem; font-weight: 700; }
+    .platform-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .platform-name  { font-size: 0.92rem; font-weight: 700; }
 
     .platform-arrow { color: var(--muted); font-size: 0.9rem; }
 
-    /* Platform colours */
+    /* Platform icon colours */
     .icon-spotify    { background: #1DB954; color: #000; }
     .icon-apple      { background: #fc3c44; color: #fff; }
     .icon-youtube    { background: #FF0000; color: #fff; }
@@ -121,23 +159,31 @@
 
     /* ── FOOTER ── */
     .page-footer {
-      margin-top: 3rem;
+      margin-top: 2.5rem;
       text-align: center;
-      color: var(--muted);
-      font-size: 0.78rem;
+      z-index: 1;
     }
-    .page-footer a { color: var(--muted); text-decoration: none; }
-    .page-footer a:hover { color: var(--text); }
     .powered {
       display: inline-flex; align-items: center; gap: 5px;
-      margin-top: 0.5rem;
-      font-size: 0.72rem; color: rgba(122,122,149,0.5);
+      font-size: 0.72rem;
+      color: rgba(136,136,153,0.4);
     }
-    .powered a { color: rgba(168,85,247,0.6); }
-    .powered a:hover { color: var(--accent); }
+    .powered a {
+      color: rgba(168,85,247,0.5);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .powered a:hover { color: var(--accent2); }
   </style>
 </head>
 <body>
+
+<div class="glow"></div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <a href="/" class="logo">Run<span>Sound</span></a>
+</header>
 
 <!-- ARTWORK -->
 <div class="artwork">
@@ -243,7 +289,7 @@
 
 <!-- FOOTER -->
 <div class="page-footer">
-  <div class="powered">Powered by <a href="https://runsound.fm" target="_blank">RunSound</a></div>
+  <div class="powered">Powered by <a href="/" >Run<span style="color:rgba(168,85,247,0.7)">Sound</span></a></div>
 </div>
 
 <script>

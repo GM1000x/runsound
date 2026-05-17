@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>RunSound — Dashboard</title>
+  <meta name="theme-color" content="#0a0a0f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1a1a24;
+      --border:  #1e1e2e;
+      --accent:  #7c3aed;
+      --accent2: #a855f7;
+      --green:   #22c55e;
+      --yellow:  #eab308;
+      --red:     #ef4444;
+      --text:    #f0f0f8;
+      --muted:   #888899;
+      --card-bg: #111118;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,10,15,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
+      color: var(--text); text-decoration: none;
+    }
+    .logo span { color: var(--accent2); }
+
+    .campaign-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      max-width: 200px;
+    }
+    .campaign-badge strong { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── AMBIENT GLOW ── */
+    .glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 70%);
+    }
+
+    /* ── MAIN CONTENT ── */
+    .page { position: relative; z-index: 1; max-width: 540px; margin: 0 auto; padding: 1.25rem 1.25rem 6rem; }
+
+    /* ── TODAY'S ACTION ── */
+    .action-card {
+      background: linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(168,85,247,0.08) 100%);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 18px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .action-card.idle {
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    .action-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 1rem;
+    }
+    .action-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent2);
+      box-shadow: 0 0 8px rgba(168,85,247,0.8);
+      animation: pulse-dot 2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
+    .action-dot.green { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.7); }
+    .action-dot.grey  { background: var(--muted); box-shadow: none; animation: none; }
+    .action-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent2);
+    }
+    .action-label.green { color: var(--green); }
+    .action-label.muted { color: var(--muted); }
+
+    .action-title {
+      font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.3; margin-bottom: 0.75rem;
+    }
+
+    .action-steps {
+      list-style: none; display: flex; flex-direction: column; gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .action-steps li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.88rem; color: rgba(240,240,248,0.8);
+    }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(168,85,247,0.2);
+      border: 1px solid rgba(168,85,247,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: var(--accent2);
+      flex-shrink: 0; margin-top: 0.05rem;
+    }
+
+    .action-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none; border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.95rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; text-decoration: none;
+      transition: background .2s, transform .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .action-btn:active { transform: scale(0.98); }
+    @media (hover:hover) { .action-btn:hover { background: var(--accent2); } }
+
+    .posts-count-badge {
+      background: rgba(255,255,255,0.2);
+      border-radius: 100px;
+      padding: 0.15rem 0.55rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem; margin-bottom: 1.25rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 0.75rem;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.5rem; font-weight: 900; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1; margin-bottom: 0.2rem;
+    }
+    .stat-label { font-size: 0.68rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-delta {
+      font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem;
+    }
+    .stat-delta.up   { color: var(--green); }
+    .stat-delta.down { color: var(--red); }
+    .stat-delta.flat { color: var(--muted); }
+
+    /* ── AI LEARNING CARD ── */
+    .learning-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .learning-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .learning-text { flex: 1; }
+    .learning-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .learning-body  { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+    .learning-body strong { color: var(--accent2); font-weight: 600; }
+
+    /* Variant pills */
+    .variant-pills { display: flex; gap: 6px; margin-top: 0.6rem; flex-wrap: wrap; }
+    .variant-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+    }
+    .variant-pill.winning {
+      background: rgba(34,197,94,0.12);
+      border-color: rgba(34,197,94,0.3);
+      color: var(--green);
+    }
+    .variant-pill.testing {
+      background: rgba(234,179,8,0.1);
+      border-color: rgba(234,179,8,0.25);
+      color: var(--yellow);
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-head {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── POST LIST ── */
+    .post-list { display: flex; flex-direction: column; gap: 0.65rem; }
+
+    .post-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex; align-items: center; gap: 1rem;
+      transition: border-color .2s;
+    }
+    .post-card:hover { border-color: rgba(168,85,247,0.3); }
+
+    .post-thumb {
+      width: 44px; height: 78px; border-radius: 8px;
+      background: linear-gradient(135deg, #1a0a3a 0%, #3b1576 50%, #0d0621 100%);
+      flex-shrink: 0; overflow: hidden;
+    }
+    .post-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    .post-info { flex: 1; min-width: 0; }
+    .post-hook {
+      font-size: 0.85rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 0.3rem;
+    }
+    .post-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+
+    .post-stats { display: flex; gap: 0.75rem; }
+    .post-stat  { font-size: 0.75rem; font-weight: 600; }
+    .post-stat span { color: var(--muted); font-weight: 400; }
+
+    .post-status {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+      flex-shrink: 0;
+    }
+    .status-pill {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+      padding: 0.2rem 0.55rem; border-radius: 100px;
+    }
+    .status-pill.live     { background: rgba(34,197,94,0.12); color: var(--green); }
+    .status-pill.pending  { background: rgba(168,85,247,0.12); color: var(--accent2); }
+    .status-pill.draft    { background: rgba(136,136,153,0.12); color: var(--muted); }
+    .variant-tag {
+      font-size: 0.65rem; font-weight: 600; color: var(--muted);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 100px; padding: 0.15rem 0.45rem;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 2.5rem 1rem;
+      color: var(--muted); font-size: 0.88rem;
+    }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+
+    /* ── SMART LINK CARD ── */
+    .smart-link-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .smart-link-info { flex: 1; min-width: 0; }
+    .smart-link-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.25rem; }
+    .smart-link-url   { font-size: 0.82rem; color: var(--accent2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .copy-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.4rem 0.75rem;
+      font-size: 0.78rem; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: inherit; transition: border-color .2s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent2); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(34,197,94,0.4); }
+
+    /* ── SKELETON LOADING ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10,10,15,0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      padding: 0.6rem 0 calc(0.6rem + env(safe-area-inset-bottom));
+      display: flex; justify-content: space-around;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      font-size: 0.62rem; font-weight: 600; color: var(--muted);
+      text-decoration: none; padding: 0.25rem 1rem;
+      transition: color .2s;
+    }
+    .nav-item.active { color: var(--accent2); }
+    .nav-item svg { width: 22px; height: 22px; }
+
+    /* ── ERROR STATE ── */
+    .error-banner {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 12px; padding: 1rem 1.25rem;
+      font-size: 0.85rem; color: #fca5a5; margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+<div class="glow"></div>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <a href="/" class="logo">Run<span>Sound</span></a>
+  <div class="campaign-badge" id="campaignBadge">
+    <strong id="campaignTitle">Loading...</strong>
+  </div>
+</nav>
+
+<main class="page">
+
+  <!-- TODAY'S ACTION -->
+  <div id="actionCard" class="action-card">
+    <div class="action-header">
+      <div class="action-dot" id="actionDot"></div>
+      <div class="action-label" id="actionLabel">Today's action</div>
+    </div>
+    <div class="action-title" id="actionTitle">
+      <div class="skeleton" style="height:1.5rem;width:80%;border-radius:8px"></div>
+    </div>
+    <ul class="action-steps" id="actionSteps"></ul>
+    <div id="actionCta"></div>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" id="statViews">—</div>
+      <div class="stat-label">Views</div>
+      <div class="stat-delta flat" id="statViewsDelta">this week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statClicks">—</div>
+      <div class="stat-label">Stream clicks</div>
+      <div class="stat-delta flat" id="statClicksDelta">this week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statPosts">—</div>
+      <div class="stat-label">Posts live</div>
+      <div class="stat-delta flat" id="statPostsDelta">total</div>
+    </div>
+  </div>
+
+  <!-- AI LEARNING STATUS -->
+  <div class="learning-card" id="learningCard">
+    <div class="learning-icon">🧠</div>
+    <div class="learning-text">
+      <div class="learning-title">RunSound is learning</div>
+      <div class="learning-body" id="learningBody">
+        Analysing your posts to find what drives streams...
+      </div>
+      <div class="variant-pills" id="variantPills"></div>
+    </div>
+  </div>
+
+  <!-- SMART LINK -->
+  <div class="smart-link-card" id="smartLinkCard" style="display:none">
+    <div class="smart-link-info">
+      <div class="smart-link-label">Your smart link</div>
+      <div class="smart-link-url" id="smartLinkUrl">—</div>
+    </div>
+    <button class="copy-btn" id="copyBtn">Copy</button>
+  </div>
+
+  <!-- RECENT POSTS -->
+  <div class="section-head">Recent posts</div>
+  <div class="post-list" id="postList">
+    <!-- skeleton -->
+    <div class="post-card">
+      <div class="post-thumb skeleton"></div>
+      <div class="post-info">
+        <div class="skeleton" style="height:14px;width:75%;margin-bottom:8px;border-radius:4px"></div>
+        <div class="skeleton" style="height:12px;width:50%;border-radius:4px"></div>
+      </div>
+    </div>
+    <div class="post-card">
+      <div class="post-thumb skeleton"></div>
+      <div class="post-info">
+        <div class="skeleton" style="height:14px;width:65%;margin-bottom:8px;border-radius:4px"></div>
+        <div class="skeleton" style="height:12px;width:45%;border-radius:4px"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="#" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+  <a href="#" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Campaign
+  </a>
+  <a href="#" class="nav-item" id="smartLinkNavBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Smart link
+  </a>
+</nav>
+
+<script>
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const _p         = new URLSearchParams(location.search);
+const artistId   = _p.get('artist_id')   || localStorage.getItem('rs_artist_id');
+const campaignId = _p.get('campaign_id') || localStorage.getItem('rs_campaign_id');
+// Magic-link token — stored in sessionStorage so it doesn't persist beyond this tab
+const dashToken  = _p.get('token')       || sessionStorage.getItem('rs_token');
+
+if (artistId)  localStorage.setItem('rs_artist_id',   artistId);
+if (campaignId) localStorage.setItem('rs_campaign_id', campaignId);
+if (dashToken)  sessionStorage.setItem('rs_token',     dashToken);
+
+// If no token at all, show a locked state (can still see page structure but data won't load)
+if (!dashToken) {
+  console.warn('[dashboard] No auth token — set ?token= in the URL');
+}
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ago`;
+  if (h > 0) return `${h}h ago`;
+  return 'just now';
+}
+
+// ─── Render today's action card ───────────────────────────────────────────────
+function renderAction(data) {
+  const dot   = document.getElementById('actionDot');
+  const label = document.getElementById('actionLabel');
+  const title = document.getElementById('actionTitle');
+  const steps = document.getElementById('actionSteps');
+  const cta   = document.getElementById('actionCta');
+  const card  = document.getElementById('actionCard');
+
+  const pending = data.pendingPosts || 0;
+
+  if (pending > 0) {
+    // Active state — posts waiting
+    dot.className   = 'action-dot';
+    label.className = 'action-label';
+    label.textContent = "Today's action";
+    title.textContent = pending === 1
+      ? 'You have 1 post ready in your TikTok inbox'
+      : `You have ${pending} posts ready in your TikTok inbox`;
+
+    steps.innerHTML = `
+      <li><span class="step-num">1</span>Open TikTok on your phone</li>
+      <li><span class="step-num">2</span>Go to Inbox → System Notifications</li>
+      <li><span class="step-num">3</span>Tap the post → <strong>Add a trending sound</strong></li>
+      <li><span class="step-num">4</span>Hit Publish — done ✓</li>
+    `;
+
+    cta.innerHTML = `
+      <a href="https://www.tiktok.com" target="_blank" rel="noopener" class="action-btn">
+        Open TikTok
+        <span class="posts-count-badge">${pending}</span>
+      </a>
+    `;
+
+  } else if (data.nextPostIn) {
+    // No post yet today — show countdown
+    dot.className   = 'action-dot grey';
+    label.className = 'action-label muted';
+    label.textContent = 'Next post';
+    title.textContent = `Your next post is being prepared`;
+    card.classList.add('idle');
+
+    steps.innerHTML = `
+      <li><span class="step-num" style="background:rgba(136,136,153,0.15);border-color:rgba(136,136,153,0.25);color:var(--muted)">✓</span>RunSound will generate tonight's post automatically</li>
+      <li><span class="step-num" style="background:rgba(136,136,153,0.15);border-color:rgba(136,136,153,0.25);color:var(--muted)">✓</span>It lands in your TikTok inbox — just add a sound and publish</li>
+    `;
+    cta.innerHTML = '';
+
+  } else {
+    // All done today
+    dot.className   = 'action-dot green';
+    label.className = 'action-label green';
+    label.textContent = "All done today ✓";
+    title.textContent = `Great work — check back tomorrow`;
+    card.classList.add('idle');
+    steps.innerHTML = '';
+    cta.innerHTML = '';
+  }
+}
+
+// ─── Render stats ─────────────────────────────────────────────────────────────
+function renderStats(data) {
+  document.getElementById('statViews').textContent     = fmt(data.weekViews);
+  document.getElementById('statClicks').textContent    = fmt(data.weekClicks);
+  document.getElementById('statPosts').textContent     = fmt(data.totalPosts);
+  document.getElementById('statPostsDelta').textContent = 'all time';
+
+  // Week-over-week deltas
+  function setDelta(elId, val) {
+    const el = document.getElementById(elId);
+    if (val === null || val === undefined) { el.className = 'stat-delta flat'; el.textContent = 'this week'; return; }
+    const pct = Math.round(val * 100);
+    if (pct > 0)  { el.className = 'stat-delta up';   el.textContent = `↑ ${pct}% vs last week`; }
+    else if (pct < 0) { el.className = 'stat-delta down'; el.textContent = `↓ ${Math.abs(pct)}% vs last week`; }
+    else { el.className = 'stat-delta flat'; el.textContent = '= same as last week'; }
+  }
+  setDelta('statViewsDelta',  data.viewsDelta);
+  setDelta('statClicksDelta', data.clicksDelta);
+}
+
+// ─── Render AI learning card ──────────────────────────────────────────────────
+function renderLearning(data) {
+  const body  = document.getElementById('learningBody');
+  const pills = document.getElementById('variantPills');
+
+  if (!data.learning) {
+    body.innerHTML = 'RunSound is collecting data. Learning starts after your first posts go live.';
+    return;
+  }
+
+  const { testedVariants, winningVariant, winningLift, diagnosis } = data.learning;
+
+  if (diagnosis) {
+    // Show specific diagnosis from last report
+    const diagMap = {
+      'scale':       { icon: '📈', text: `<strong>${winningVariant}</strong> is working — RunSound is scaling it${winningLift ? ` (+${winningLift}% more clicks)` : ''}.` },
+      'fix_cta':     { icon: '🎯', text: `High views but few clicks. RunSound is testing new CTA texts to convert more viewers.` },
+      'fix_hook':    { icon: '🪝', text: `Good click rate, but reach is low. RunSound is testing stronger opening hooks.` },
+      'full_reset':  { icon: '🔄', text: `Trying a fresh direction — RunSound is testing a new format this week.` },
+    };
+    const d = diagMap[diagnosis] || { icon: '🧠', text: `RunSound is actively optimising based on your post data.` };
+    body.innerHTML = `${d.icon} ${d.text}`;
+  } else if (testedVariants > 0) {
+    body.innerHTML = `RunSound has tested <strong>${testedVariants} hook variant${testedVariants > 1 ? 's' : ''}</strong>${winningVariant ? `. <strong>Variant ${winningVariant}</strong> is currently driving the most clicks.` : ` — still collecting data.`}`;
+  }
+
+  // Variant pills
+  if (data.learning.variants) {
+    pills.innerHTML = data.learning.variants.map(v => {
+      const cls = v.status === 'winning' ? 'winning' : v.status === 'testing' ? 'testing' : '';
+      return `<span class="variant-pill ${cls}">Variant ${v.name}${v.status === 'winning' ? ' 🏆' : v.status === 'testing' ? ' …' : ''}</span>`;
+    }).join('');
+  }
+}
+
+// ─── Render smart link ────────────────────────────────────────────────────────
+function renderSmartLink(url) {
+  if (!url) return;
+  const card = document.getElementById('smartLinkCard');
+  const el   = document.getElementById('smartLinkUrl');
+  card.style.display = 'flex';
+  el.textContent = url.replace(/^https?:\/\//, '');
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+
+  document.getElementById('smartLinkNavBtn').href = url;
+}
+
+// ─── Render posts list ────────────────────────────────────────────────────────
+function renderPosts(posts) {
+  const list = document.getElementById('postList');
+  if (!posts || posts.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><p>Your first posts will appear here once RunSound starts your campaign.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = posts.map(p => {
+    const status = p.status === 'live' ? 'live' : p.status === 'pending' ? 'pending' : 'draft';
+    const statusText = status === 'live' ? 'Live' : status === 'pending' ? 'In inbox' : 'Draft';
+    return `
+      <div class="post-card">
+        <div class="post-thumb">
+          ${p.thumbUrl ? `<img src="${p.thumbUrl}" alt="" loading="lazy" />` : ''}
+        </div>
+        <div class="post-info">
+          <div class="post-hook">${p.hook || 'Post'}</div>
+          <div class="post-meta">${timeAgo(p.createdAt)}</div>
+          <div class="post-stats">
+            <div class="post-stat">${fmt(p.views)} <span>views</span></div>
+            ${p.clicks > 0 ? `<div class="post-stat">${fmt(p.clicks)} <span>clicks</span></div>` : ''}
+          </div>
+        </div>
+        <div class="post-status">
+          <span class="status-pill ${status}">${statusText}</span>
+          ${p.variant ? `<span class="variant-tag">${p.variant}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── Load dashboard data ──────────────────────────────────────────────────────
+async function loadDashboard() {
+  if (!artistId && !campaignId) {
+    // No ID — show generic empty state
+    renderAction({ pendingPosts: 0 });
+    renderStats({ weekViews: 0, weekClicks: 0, totalPosts: 0 });
+    renderLearning({});
+    renderPosts([]);
+    document.getElementById('campaignTitle').textContent = 'No campaign';
+    return;
+  }
+
+  const id = campaignId || artistId;
+  const qs = dashToken ? `?token=${dashToken}` : '';
+  const endpoint = campaignId
+    ? `/api/dashboard/campaign/${id}${qs}`
+    : `/api/dashboard/artist/${id}${qs}`;
+
+  try {
+    const res  = await fetch(endpoint);
+    const data = await res.json();
+
+    if (res.status === 401 || res.status === 403) {
+      document.getElementById('campaignTitle').textContent = 'Access denied';
+      renderAction({ pendingPosts: 0 });
+      renderStats({ weekViews: 0, weekClicks: 0, totalPosts: 0 });
+      renderLearning({});
+      renderPosts([]);
+      return;
+    }
+
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load');
+
+    // Campaign badge
+    document.getElementById('campaignTitle').textContent =
+      `${data.artistName} — ${data.songTitle}`;
+
+    renderAction(data);
+    renderStats(data);
+    renderLearning(data);
+    renderSmartLink(data.smartLinkUrl);
+    renderPosts(data.posts || []);
+
+  } catch (err) {
+    console.error('Dashboard load failed:', err);
+    // Show error but keep UI usable
+    const list = document.getElementById('postList');
+    list.innerHTML = `<div class="error-banner">Couldn't load your data. We'll retry automatically. (${err.message})</div>`;
+    renderAction({ pendingPosts: 0 });
+    renderStats({ weekViews: 0, weekClicks: 0, totalPosts: 0 });
+    renderLearning({});
+  }
+}
+
+loadDashboard();
+
+// Refresh every 5 minutes while page is open
+setInterval(loadDashboard, 5 * 60 * 1000);
+</script>
+</body>
+</html>

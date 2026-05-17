@@ -14,6 +14,7 @@
  *     to a specific post. This feeds learn.js → optimize-strategy.js.
  */
 
+require('dotenv').config();
 const fs       = require('fs');
 const path     = require('path');
 const FormData = require('form-data');
@@ -25,6 +26,17 @@ try {
 } catch {
   fetchFn = require('node-fetch');
 }
+
+// Optional Supabase — writes to post_log so the artist dashboard has real data
+let supabase = null;
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  const sbUrl = process.env.SUPABASE_URL;
+  const sbKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (sbUrl && sbKey) {
+    supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
+  }
+} catch { /* supabase not installed — post_log won't be updated */ }
 
 const args = process.argv.slice(2);
 function getArg(name) {
@@ -45,11 +57,15 @@ if (!inputDir || !configPath) {
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
 const POSTIZ_API    = 'https://api.postiz.com/public/v1';
-const apiKey        = process.env[config.postiz.apiKey] || config.postiz.apiKey;
-const integrationId = config.postiz.integrationIds?.tiktok;
+// apiKey: support both env-var-name string ('POSTIZ_API_KEY') and literal value
+const apiKey        = process.env[config.postiz?.apiKey] || config.postiz?.apiKey || process.env.POSTIZ_API_KEY;
+// integrationId: config first, then env fallback
+const integrationId = config.postiz?.integrationIds?.tiktok || process.env.POSTIZ_TIKTOK_ID;
 
 if (!apiKey || !integrationId) {
   console.error('❌ Missing postiz.apiKey or postiz.integrationIds.tiktok in config');
+  console.error(`   apiKey: ${apiKey ? 'ok' : 'MISSING (set POSTIZ_API_KEY)'}`);
+  console.error(`   integrationId: ${integrationId ? 'ok' : 'MISSING (set POSTIZ_TIKTOK_ID)'}`);
   process.exit(1);
 }
 
@@ -185,7 +201,7 @@ async function createPost(images, utmUrl) {
   return post;
 }
 
-// ─── Step 5: Save meta ────────────────────────────────────────────────────────
+// ─── Step 5: Save meta to disk ───────────────────────────────────────────────
 function savePostMeta(postData, slideCount, utmUrl) {
   let meta = {};
   if (fs.existsSync(metaPath)) {
@@ -197,7 +213,7 @@ function savePostMeta(postData, slideCount, utmUrl) {
   meta.status        = 'pending_publish';
   meta.slideCount    = slideCount;
   meta.variant       = variantArg;
-  meta.postUid       = POST_UID;          // ← unique per-post UTM identifier
+  meta.postUid       = POST_UID;
   meta.utmUrl        = utmUrl || null;
   meta.tiktokVideoId = null;
 
@@ -205,6 +221,69 @@ function savePostMeta(postData, slideCount, utmUrl) {
   console.log(`\n💾 Post metadata saved to ${metaPath}`);
   console.log(`   Post UID: ${POST_UID}`);
   if (utmUrl) console.log(`   UTM URL:  ${utmUrl}`);
+
+  return meta;
+}
+
+// ─── Step 6: Write to Supabase post_log (so dashboard has data) ───────────────
+async function writeToSupabase(meta) {
+  if (!supabase) return;
+
+  // campaign_id comes from config (materialized by run-all-campaigns.js)
+  const campaignId = config.campaign?.id || null;
+  if (!campaignId) {
+    console.log('   ℹ️  No campaign.id in config — post_log not written to Supabase');
+    console.log('      (This is fine for single-artist local runs)');
+    return;
+  }
+
+  // Load hook/angle/archetype from texts-meta.json (written by generate-texts.js)
+  let hookLine = null, hookAngle = null, hookArchetype = null, visualDirection = null;
+
+  const textsMetaPath = path.join(inputDir, 'texts-meta.json');
+  if (fs.existsSync(textsMetaPath)) {
+    try {
+      const tm     = JSON.parse(fs.readFileSync(textsMetaPath, 'utf-8'));
+      hookArchetype = tm.hook_archetype || null;
+      hookAngle     = tm.hook_archetype || null; // backwards compat
+    } catch {}
+  }
+
+  // Also check texts.json for hookLine
+  const textsPath = path.join(inputDir, 'texts.json');
+  if (fs.existsSync(textsPath)) {
+    try {
+      const texts = JSON.parse(fs.readFileSync(textsPath, 'utf-8'));
+      // texts.json is an array of slide strings — slide 0 is the hook
+      hookLine = Array.isArray(texts) ? texts[0]?.replace(/\n/g, ' / ') : (texts.hook || texts.slide1 || null);
+    } catch {}
+  }
+
+  try {
+    const { error } = await supabase.from('post_log').upsert({
+      campaign_id:      campaignId,
+      post_uid:         POST_UID,
+      variant:          variantArg,
+      hook_line:        hookLine,
+      hook_angle:       hookAngle,
+      hook_archetype:   hookArchetype,
+      visual_direction: visualDirection,
+      tiktok_post_id:   meta.postizPostId || null,
+      status:           'pending_publish',
+      views:            0,
+      likes:            0,
+      shares:           0,
+      comments:         0,
+      streaming_clicks: 0,
+      posted_at:        meta.postedAt,
+    }, { onConflict: 'post_uid' });
+
+    if (error) throw error;
+    console.log(`   ✅ post_log written to Supabase (campaign: ${campaignId.slice(0, 8)}...)`);
+  } catch (err) {
+    // Non-fatal — local meta.json is the source of truth for single-artist
+    console.log(`   ⚠️  Supabase post_log write failed: ${err.message}`);
+  }
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -229,7 +308,8 @@ function savePostMeta(postData, slideCount, utmUrl) {
     const utmUrl         = buildUtmUrl();
     const uploadedImages = await uploadAllSlides(slides);
     const postData       = await createPost(uploadedImages, utmUrl);
-    savePostMeta(postData, slides.length, utmUrl);
+    const meta           = savePostMeta(postData, slides.length, utmUrl);
+    await writeToSupabase(meta);
 
     console.log(`\n${'─'.repeat(60)}`);
     console.log(`✅ CAROUSEL IS IN YOUR TIKTOK INBOX`);
