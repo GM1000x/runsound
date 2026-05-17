@@ -204,9 +204,9 @@ async function generateImage(openai, prompt, arcRole, index) {
         model,
         prompt,
         n:       1,
-        size:    '1024x1792', // portrait for TikTok
+        size:    '1024x1536', // portrait for TikTok (gpt-image-1 max portrait)
         quality,
-        // response_format not supported by gpt-image-2 — b64_json is returned by default
+        // response_format not supported by gpt-image-1 — b64_json is returned by default
       });
 
       const b64    = response.data[0].b64_json;
