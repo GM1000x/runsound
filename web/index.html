@@ -550,33 +550,55 @@
       </div>
       <div class="form-row">
         <label>Genre</label>
-        <select name="genre">
+        <select name="genre" required>
           <option value="">Select genre...</option>
-          <option>Pop</option>
-          <option>Indie Pop</option>
-          <option>R&amp;B / Soul</option>
-          <option>Hip-Hop</option>
-          <option>Rap</option>
-          <option>Electronic</option>
-          <option>House</option>
-          <option>Tech House</option>
-          <option>Dance / EDM</option>
-          <option>Afrobeats</option>
-          <option>Afropop</option>
-          <option>Latin</option>
-          <option>Reggaeton</option>
-          <option>Folk</option>
-          <option>Singer-Songwriter</option>
-          <option>Indie Rock</option>
-          <option>Rock</option>
-          <option>Alternative</option>
-          <option>Country</option>
-          <option>Reggae</option>
-          <option>Jazz</option>
-          <option>K-Pop</option>
-          <option>Classical</option>
-          <option>Other</option>
+          <optgroup label="Pop">
+            <option>Pop</option>
+            <option>Indie Pop</option>
+            <option>Singer-Songwriter</option>
+            <option>Bedroom Pop</option>
+          </optgroup>
+          <optgroup label="Electronic / Dance">
+            <option>Deep House</option>
+            <option>Tech House</option>
+            <option>Afro House</option>
+            <option>Melodic House</option>
+            <option>Tropical House</option>
+            <option>Progressive House</option>
+            <option>Dance / EDM</option>
+            <option>Techno</option>
+            <option>Trance</option>
+            <option>Drum &amp; Bass</option>
+            <option>Electronic / Other</option>
+          </optgroup>
+          <optgroup label="Hip-Hop / R&amp;B">
+            <option>Hip-Hop</option>
+            <option>Rap</option>
+            <option>Trap</option>
+            <option>Drill</option>
+            <option>R&amp;B</option>
+            <option>Soul / Neo-Soul</option>
+          </optgroup>
+          <optgroup label="Rock / Alternative">
+            <option>Indie Rock</option>
+            <option>Rock</option>
+            <option>Alternative</option>
+            <option>Folk</option>
+            <option>Country</option>
+          </optgroup>
+          <optgroup label="World / Other">
+            <option>Afrobeats</option>
+            <option>Afropop</option>
+            <option>Latin</option>
+            <option>Reggaeton</option>
+            <option>Reggae</option>
+            <option>Jazz</option>
+            <option>K-Pop</option>
+            <option>Classical</option>
+            <option>Other</option>
+          </optgroup>
         </select>
+        <div class="form-hint">Be specific — "Deep House" gives RunSound much better images than just "House".</div>
       </div>
       <div class="form-row">
         <label>Spotify link</label>
@@ -630,7 +652,22 @@
         <textarea name="mood" placeholder="e.g. Melancholic but freeing. Nostalgic, cinematic, bittersweet. Like a 3am drive with the windows down." required></textarea>
         <div class="form-hint">The vibe and emotion of the song. RunSound scans TikTok for trending hooks that match this mood and your genre — you don't need to write them yourself.</div>
       </div>
-      <div class="form-row">
+      <!-- Lyrics — collapsible, optional -->
+      <div class="more-platforms" style="margin-top:0.5rem">
+        <button type="button" class="more-platforms-toggle" id="lyricsBtn">
+          <span>+ Paste your lyrics (optional but powerful)</span>
+          <span class="toggle-hint">helps AI write better hooks</span>
+        </button>
+        <div class="more-platforms-fields" id="lyricsFields">
+          <div class="form-row" style="margin-top:0.75rem">
+            <label>Lyrics</label>
+            <textarea name="lyrics" rows="7" placeholder="Paste the full lyrics here…&#10;&#10;RunSound reads them to extract the song's real emotion, key phrases and story — so hooks and images match what the song actually says, not a generic version of the genre."></textarea>
+            <div class="form-hint">Optional. Kept private — never shown publicly.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:1rem">
         <label>Who listens to this song?</label>
         <input type="text" name="target_audience" placeholder="e.g. Young women going through a breakup, 18–25, fans of Olivia Rodrigo" />
         <div class="form-hint">Describe your target listener. The AI uses this to write hooks that speak directly to them.</div>
@@ -671,6 +708,17 @@
     morePlatformsBtn.querySelector('span').textContent = isOpen
       ? '− Hide extra platforms'
       : '+ Add Apple Music, Tidal & more';
+  });
+
+  // Lyrics toggle
+  const lyricsBtn = document.getElementById('lyricsBtn');
+  const lyricsFields = document.getElementById('lyricsFields');
+  lyricsBtn.addEventListener('click', () => {
+    const isOpen = lyricsFields.classList.toggle('open');
+    lyricsBtn.classList.toggle('open', isOpen);
+    lyricsBtn.querySelector('span').textContent = isOpen
+      ? '− Hide lyrics'
+      : '+ Paste your lyrics (optional but powerful)';
   });
 
   document.getElementById('signupForm').addEventListener('submit', async (e) => {

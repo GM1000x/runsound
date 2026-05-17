@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setting up RunSound — Hang tight!</title>
+  <title>RunSound — You're all set!</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
@@ -16,7 +16,6 @@
       --accent:  #7c3aed;
       --accent2: #a855f7;
       --green:   #22c55e;
-      --red:     #ef4444;
       --text:    #f0f0f8;
       --muted:   #888899;
     }
@@ -43,10 +42,8 @@
     }
 
     .logo {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -.5px;
-      color: var(--text);
+      font-size: 20px; font-weight: 800;
+      letter-spacing: -.5px; color: var(--text);
       margin-bottom: 48px;
     }
     .logo span { color: var(--accent2); }
@@ -55,142 +52,109 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 40px 36px;
-      max-width: 480px;
+      padding: 44px 36px;
+      max-width: 460px;
       width: 100%;
+      text-align: center;
     }
 
-    .card-header { text-align: center; margin-bottom: 32px; }
-
-    .card-header h1 {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .card-header p {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    /* Pulse icon */
-    .pulse-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
-    .pulse {
-      width: 56px; height: 56px;
-      border-radius: 50%;
+    /* Icon */
+    .icon-wrap { margin-bottom: 28px; }
+    .icon-circle {
+      width: 64px; height: 64px; border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px; position: relative;
-    }
-    .pulse::before {
-      content: ''; position: absolute; inset: -8px;
-      border-radius: 50%;
-      background: rgba(124,58,237,.22);
-      animation: pulse-ring 1.8s ease-out infinite;
-    }
-    @keyframes pulse-ring {
-      0%   { transform: scale(.9); opacity: .8; }
-      100% { transform: scale(1.5); opacity: 0; }
-    }
-    .pulse.done { background: linear-gradient(135deg, #16a34a, var(--green)); }
-    .pulse.done::before { animation: none; }
-    .pulse.error { background: linear-gradient(135deg, #b91c1c, var(--red)); }
-    .pulse.error::before { animation: none; }
-
-    /* Progress bar */
-    .progress-wrap {
-      background: var(--border); border-radius: 4px;
-      height: 4px; overflow: hidden; margin-bottom: 8px;
-    }
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 4px; transition: width .6s ease;
-    }
-    .eta-note {
-      text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 24px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 28px;
     }
 
-    /* Steps list */
-    .steps { display: flex; flex-direction: column; }
-    .step {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 11px 0; border-bottom: 1px solid var(--border);
+    h1 {
+      font-size: 24px; font-weight: 800;
+      letter-spacing: -.4px;
+      margin-bottom: 12px;
     }
-    .step:last-child { border-bottom: none; }
 
-    .step-icon {
-      width: 28px; height: 28px; border-radius: 50%;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; flex-shrink: 0; margin-top: 2px;
-      font-weight: 700; transition: all .3s;
+    .subtitle {
+      font-size: 15px; color: var(--muted);
+      line-height: 1.6; margin-bottom: 32px;
     }
-    .step.completed .step-icon { background: var(--green); border-color: var(--green); color: #fff; }
-    .step.active .step-icon {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-color: var(--accent2); color: #fff;
-      animation: glow-pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes glow-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,.5); }
-      50%       { box-shadow: 0 0 0 5px rgba(168,85,247,0); }
-    }
-    .step.pending .step-icon { color: var(--border); }
-    .step.error   .step-icon { background: var(--red); border-color: var(--red); color: #fff; }
+    .subtitle strong { color: var(--text); }
 
-    .step-text { flex: 1; }
-    .step-label { font-size: 14px; font-weight: 500; }
-    .step.pending .step-label { color: var(--muted); }
-    .step-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .step.active .step-sub { color: var(--accent2); }
-
-    /* Done box */
-    .done-box {
-      display: none;
-      background: rgba(34,197,94,.07);
-      border: 1px solid rgba(34,197,94,.18);
-      border-radius: 14px; padding: 24px; text-align: center; margin-top: 24px;
+    /* What happens next */
+    .next-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 28px;
+      text-align: left;
     }
-    .done-box h2 { font-size: 17px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
-    .done-box p  { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 18px; }
-
-    .tiktok-steps {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px; margin-bottom: 18px; text-align: left;
-    }
-    .tiktok-steps h3 {
+    .next-box h3 {
       font-size: 11px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: .6px;
+      margin-bottom: 14px;
     }
-    .tt-step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
-    .tt-step:last-child { margin-bottom: 0; }
-    .tt-num {
-      background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
-      width: 18px; height: 18px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-      margin-top: 1px;
+    .next-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      margin-bottom: 12px; font-size: 13px; line-height: 1.5;
     }
-
-    .btn-primary {
-      display: inline-block;
+    .next-item:last-child { margin-bottom: 0; }
+    .next-num {
+      width: 20px; height: 20px; border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; font-size: 14px; font-weight: 600;
-      padding: 12px 28px; border-radius: 10px;
+      color: #fff; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .next-item span { color: var(--muted); }
+    .next-item strong { color: var(--text); }
+
+    /* Email notice */
+    .email-note {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(124,58,237,.08);
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: 10px; padding: 12px 16px;
+      font-size: 13px; color: var(--muted);
+      margin-bottom: 28px; text-align: left;
+    }
+    .email-note .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent2); flex-shrink: 0;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+    .email-note strong { color: var(--text); }
+
+    /* Buttons */
+    .btn-primary {
+      display: block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 15px; font-weight: 600;
+      padding: 14px 28px; border-radius: 12px;
       text-decoration: none; cursor: pointer;
       transition: opacity .2s;
     }
     .btn-primary:hover { opacity: .85; }
 
-    /* Error box */
-    .error-box {
+    /* Subtle done toast — appears when pipeline finishes */
+    .toast {
       display: none;
-      background: rgba(239,68,68,.07);
-      border: 1px solid rgba(239,68,68,.18);
-      border-radius: 14px; padding: 20px; text-align: center; margin-top: 24px;
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--green); color: #fff;
+      font-size: 14px; font-weight: 600;
+      padding: 12px 24px; border-radius: 40px;
+      box-shadow: 0 4px 24px rgba(34,197,94,.35);
+      animation: slide-up .4s ease;
+      white-space: nowrap;
     }
-    .error-box h2 { font-size: 16px; font-weight: 700; color: var(--red); margin-bottom: 6px; }
-    .error-box p  { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    @keyframes slide-up {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -198,95 +162,53 @@
   <div class="logo">Run<span>Sound</span></div>
 
   <div class="card">
-    <div class="card-header">
-      <div class="pulse-wrap">
-        <div class="pulse" id="pulseIcon">🎵</div>
+    <div class="icon-wrap">
+      <div class="icon-circle">🚀</div>
+    </div>
+
+    <h1>You're all set up!</h1>
+    <p class="subtitle">
+      Your first TikTok draft is being created right now.<br>
+      <strong>We'll email you the moment it lands in your inbox</strong> — usually within 5 minutes.
+    </p>
+
+    <div class="next-box">
+      <h3>What happens next</h3>
+      <div class="next-item">
+        <span class="next-num">1</span>
+        <span>You get an <strong>email notification</strong> when your draft is ready in TikTok</span>
       </div>
-      <h1 id="mainTitle">Generating your first post…</h1>
-      <p id="mainSub">We're building your AI image set and crafting your first TikTok draft. Takes about 5–8 minutes — then you're on autopilot.</p>
-    </div>
-
-    <div class="progress-wrap">
-      <div class="progress-bar" id="progressBar" style="width: 2%"></div>
-    </div>
-    <div class="eta-note" id="etaNote">Usually done in 5–8 minutes</div>
-
-    <div class="steps" id="stepsList"></div>
-
-    <!-- Done state -->
-    <div class="done-box" id="doneBox">
-      <h2>Your draft is in your TikTok inbox!</h2>
-      <p>From now on a new draft arrives automatically every night. Your only job is to open TikTok, add a sound, and publish.</p>
-      <div class="tiktok-steps">
-        <h3>Publish your first post — 30 seconds</h3>
-        <div class="tt-step"><span class="tt-num">1</span><span>Open TikTok → tap the <strong>notification in your inbox</strong></span></div>
-        <div class="tt-step"><span class="tt-num">2</span><span>Tap <strong>"Add sound"</strong></span></div>
-        <div class="tt-step"><span class="tt-num">3</span><span>Search for <strong id="songInStep">your song</strong> or any trending sound</span></div>
-        <div class="tt-step"><span class="tt-num">4</span><span>Tap <strong>Post ✓</strong></span></div>
+      <div class="next-item">
+        <span class="next-num">2</span>
+        <span>Open TikTok → tap the draft → <strong>add your song as sound</strong> → publish</span>
       </div>
-      <a href="#" id="dashboardBtn" class="btn-primary">Go to my dashboard →</a>
+      <div class="next-item">
+        <span class="next-num">3</span>
+        <span>A <strong>new draft arrives automatically every night</strong> — you just publish</span>
+      </div>
     </div>
 
-    <!-- Error state -->
-    <div class="error-box" id="errorBox">
-      <h2>Something went wrong</h2>
-      <p id="errorMsg">We couldn't generate your first post. We've been notified and will fix it shortly — check back in a few minutes.</p>
+    <div class="email-note">
+      <div class="dot"></div>
+      <span>Creating your images and copy now — <strong>sit back, we've got it</strong></span>
     </div>
+
+    <a href="#" id="dashboardBtn" class="btn-primary">Go to my dashboard →</a>
   </div>
+
+  <!-- Toast when pipeline finishes while user is still on page -->
+  <div class="toast" id="doneToast">✅ Draft sent to your TikTok inbox!</div>
 
   <script>
     const params     = new URLSearchParams(location.search);
     const campaignId = params.get('campaign_id');
-    const token      = params.get('token');
-    const song       = params.get('song') || 'your song';
+    const token      = params.get('token') || '';
 
-    document.getElementById('songInStep').textContent    = `"${song}"`;
     document.getElementById('dashboardBtn').href =
-      `/dashboard.html?campaign_id=${campaignId}&token=${token || ''}`;
+      `/dashboard.html?campaign_id=${campaignId}&token=${token}`;
 
-    // ── Step rendering ─────────────────────────────────────────────────────
-    const ICON = { completed: '✓', active: '⟳', pending: '·', error: '✕' };
-    const SUBS = {
-      setup:   'Loading your campaign data',
-      library: 'Creating AI images (~30 sec)',
-      pick:    'Selecting today\'s 6 best images',
-      texts:   'Writing hook, story & CTA slides',
-      overlay: 'Burning text onto images',
-      post:    'Uploading carousel to TikTok inbox',
-      done:    'Done!',
-    };
-    const ETA = {
-      setup:   'Usually done in 5–8 minutes',
-      library: 'Creating your image set — ~30 more seconds',
-      pick:    'Almost ready…',
-      texts:   'Writing your copy…',
-      overlay: 'Finishing up…',
-      post:    'Sending to TikTok…',
-    };
-
-    function render(steps, activeIdx, failed) {
-      const list = document.getElementById('stepsList');
-      list.innerHTML = steps.map((s, i) => {
-        const state = i < activeIdx ? 'completed'
-                    : i === activeIdx ? (failed ? 'error' : 'active')
-                    : 'pending';
-        return `<div class="step ${state}">
-          <div class="step-icon">${ICON[state]}</div>
-          <div class="step-text">
-            <div class="step-label">${s.label}</div>
-            <div class="step-sub">${SUBS[s.id] || ''}</div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    function setProgress(idx, total) {
-      const pct = idx === total - 1 ? 100 : Math.round((idx / (total - 1)) * 94) + 2;
-      document.getElementById('progressBar').style.width = pct + '%';
-    }
-
-    // ── Polling ────────────────────────────────────────────────────────────
-    let timer = null, misses = 0;
+    // Poll silently in background — only show toast if done while still on page
+    let timer = null;
 
     async function poll() {
       if (!campaignId) return;
@@ -295,48 +217,23 @@
         const data = await res.json();
         if (!data.ok) return;
 
-        const { steps = [], currentIndex = 0, done, failed, error, currentStep } = data;
-        misses = 0;
-
-        render(steps, currentIndex, failed || false);
-        setProgress(currentIndex, steps.length);
-
-        if (ETA[currentStep]) {
-          document.getElementById('etaNote').textContent = ETA[currentStep];
-        }
-
-        if (done) {
+        if (data.done) {
           clearInterval(timer);
-          document.getElementById('pulseIcon').textContent = '✅';
-          document.getElementById('pulseIcon').className   = 'pulse done';
-          document.getElementById('mainTitle').textContent = 'You\'re live!';
-          document.getElementById('mainSub').textContent   = 'Your first TikTok draft is ready.';
-          document.getElementById('etaNote').style.display = 'none';
-          document.getElementById('doneBox').style.display = 'block';
-          return;
+          // Show subtle toast
+          const toast = document.getElementById('doneToast');
+          toast.style.display = 'block';
+          // Update dot to static green
+          document.querySelector('.dot').style.animation = 'none';
+          document.querySelector('.dot').style.background = 'var(--green)';
+          document.querySelector('.email-note span').innerHTML =
+            '<strong>Draft sent!</strong> Check your TikTok inbox now';
         }
-
-        if (failed) {
-          clearInterval(timer);
-          document.getElementById('pulseIcon').textContent = '❌';
-          document.getElementById('pulseIcon').className   = 'pulse error';
-          document.getElementById('mainTitle').textContent = 'Something went wrong';
-          document.getElementById('mainSub').textContent   = '';
-          document.getElementById('errorBox').style.display = 'block';
-          if (error) document.getElementById('errorMsg').textContent = error;
-        }
-      } catch {
-        if (++misses > 20) { // 60s with no connection
-          clearInterval(timer);
-          document.getElementById('mainSub').textContent =
-            'Connection lost — refresh to check progress.';
-        }
-      }
+      } catch { /* silent */ }
     }
 
     if (campaignId) {
       poll();
-      timer = setInterval(poll, 3000);
+      timer = setInterval(poll, 5000);
     }
   </script>
 </body>

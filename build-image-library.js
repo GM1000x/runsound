@@ -62,15 +62,22 @@ const config     = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const projectDir = path.dirname(configPath);
 const libraryDir = path.join(projectDir, 'image-library');
 
-const artist = config.artist?.name   || 'Unknown Artist';
-const song   = config.song?.title    || 'Unknown Song';
-const genre  = config.song?.genre    || 'indie pop';
-const mood   = config.song?.mood     || 'emotional, nostalgic';
-const model  = config.imageGen?.model  || process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21';
+const artist      = config.artist?.name        || 'Unknown Artist';
+const song        = config.song?.title         || 'Unknown Song';
+const genre       = config.song?.genre         || 'indie pop';
+const mood        = config.song?.mood          || 'emotional, nostalgic';
+const description = config.song?.description   || '';
+const lyrics      = config.song?.lyrics        || '';
+const model       = config.imageGen?.model     || process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21';
 // gpt-image-1 uses 'low'|'medium'|'high'; dall-e-3 uses 'standard'|'hd'
-const quality = (model === 'dall-e-3') ? 'hd' : 'high';
-const style  = config.imageGen?.style  || 'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light';
-const extra  = config.imageGen?.extraPrompt || '';
+const quality     = (model === 'dall-e-3') ? 'hd' : 'high';
+const style       = config.imageGen?.style     || 'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light';
+const extra       = config.imageGen?.extraPrompt || '';
+
+// Extract a short lyric snippet for image grounding (first 200 chars, no line breaks)
+const lyricSnippet = lyrics
+  ? 'Song lyric excerpt: "' + lyrics.replace(/\s+/g, ' ').trim().slice(0, 200) + '".'
+  : '';
 
 // ─── Arc roles — mirrors pick-slides.js (4-slide structure) ──────────────────
 // Pinterest/lifestyle style: real photography feel, intimate moments, natural light.
@@ -124,6 +131,8 @@ function buildPrompt(arcRole, variationIndex) {
     `Candid lifestyle photograph, Pinterest aesthetic, real photography.`,
     `${base}.`,
     `Mood: ${mood}.`,
+    description ? `Song context: ${description}.` : '',
+    lyricSnippet,
     `Inspired by ${genre} music.`,
     `Shot on iPhone or 35mm film, natural light, ultra-realistic photographic quality, not illustrated, not AI-looking.`,
     `No text, no words, no watermarks, no logos.`,

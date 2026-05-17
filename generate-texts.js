@@ -44,9 +44,10 @@ if (!configPath || !outputDir) {
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 fs.mkdirSync(outputDir, { recursive: true });
 
-const st = config.song?.title          || 'this song';
-const an = config.artist?.name         || '';
-const ta = config.song?.targetAudience || '';
+const st     = config.song?.title          || 'this song';
+const an     = config.artist?.name         || '';
+const ta     = config.song?.targetAudience || '';
+const lyrics = config.song?.lyrics         || '';  // Optional — used to enrich hooks if provided
 
 // ─── Archetypes ───────────────────────────────────────────────────────────────
 const ARCHETYPES = {
@@ -159,19 +160,20 @@ function buildTexts(variant) {
   const moment = deriveLifestyleMoment();
 
   // Genre-aware reaction words for archetype A
+  // Each 'follow' is a complete standalone line — no suffix appended
   const reaction = {
-    dance:   { hit: 'turned it up immediately',  follow: `${pov.pronoun} asked me what it was`,       close: 'this one hits different at night.' },
-    hiphop:  { hit: 'went silent for a second',  follow: `${pov.pronoun} replayed it four times`,     close: 'this is the one right now.' },
-    rnb:     { hit: 'closed her eyes',           follow: `${pov.pronoun} asked me to play it again`,  close: 'you\'ll understand when you hear it.' },
-    country: { hit: 'pulled over to listen',     follow: `${pov.pronoun} didn\'t say a word`,         close: 'this song just gets it.' },
-    pop:     { hit: 'cried',                     follow: `${pov.pronoun} asked me to play it again`,  close: 'this is the song for right now.' },
+    dance:   { hit: 'turned it up immediately',  follow: `${pov.pronoun} grabbed my phone\nto see what was playing`,  close: 'this one hits different at night.' },
+    hiphop:  { hit: 'went silent for a second',  follow: `${pov.pronoun} replayed it\nfour times`,                    close: 'this is the one right now.' },
+    rnb:     { hit: 'closed her eyes',           follow: `${pov.pronoun} asked me\nto play it again`,                 close: 'you\'ll understand when you hear it.' },
+    country: { hit: 'pulled over to listen',     follow: `${pov.pronoun} didn\'t say\na word`,                        close: 'this song just gets it.' },
+    pop:     { hit: 'cried',                     follow: `${pov.pronoun} sent it\nto three people instantly`,          close: 'this is the song for right now.' },
   }[genre];
 
   const texts = {
     // A — Social proof: genre-aware reaction (4 slides)
     A: [
       `showed ${pov.descriptor}\n${song} at 2am\n${pov.pronoun} ${reaction.hit}`,
-      `${reaction.follow}\nwithout saying a word`,
+      reaction.follow,
       reaction.close,
       cta,
     ],
