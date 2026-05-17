@@ -102,6 +102,17 @@ function selectVariant(weights) {
   return best;
 }
 
+// ─── Genre helper — detects broad genre family from config ───────────────────
+function deriveGenreFamily() {
+  const g = (config.song?.genre || config.artist?.genre || '').toLowerCase();
+  const m = (config.song?.mood  || '').toLowerCase();
+  if (/house|techno|edm|dance|electronic|trance|club|disco|drum|bass/.test(g + ' ' + m)) return 'dance';
+  if (/hip.hop|rap|trap|drill/.test(g + ' ' + m)) return 'hiphop';
+  if (/r.b|soul|neo.soul/.test(g + ' ' + m))      return 'rnb';
+  if (/country|folk|bluegrass/.test(g + ' ' + m)) return 'country';
+  return 'pop'; // default
+}
+
 // ─── Listener POV helper ──────────────────────────────────────────────────────
 function deriveListenerPOV() {
   const t = ta.toLowerCase();
@@ -141,24 +152,31 @@ function fmt(t) {
 
 // ─── Slide texts per archetype ────────────────────────────────────────────────
 function buildTexts(variant) {
-  const cta  = `${st}\nby ${an}\n🎵 link in bio`;
-  const song = st.toLowerCase();
-  const pov  = deriveListenerPOV();
-
+  const cta    = `${st}\nby ${an}\n🎵 link in bio`;
+  const song   = st.toLowerCase();
+  const pov    = deriveListenerPOV();
+  const genre  = deriveGenreFamily();
   const moment = deriveLifestyleMoment();
 
+  // Genre-aware reaction words for archetype A
+  const reaction = {
+    dance:   { hit: 'turned it up immediately',  follow: `${pov.pronoun} asked me what it was`,       close: 'this one hits different at night.' },
+    hiphop:  { hit: 'went silent for a second',  follow: `${pov.pronoun} replayed it four times`,     close: 'this is the one right now.' },
+    rnb:     { hit: 'closed her eyes',           follow: `${pov.pronoun} asked me to play it again`,  close: 'you\'ll understand when you hear it.' },
+    country: { hit: 'pulled over to listen',     follow: `${pov.pronoun} didn\'t say a word`,         close: 'this song just gets it.' },
+    pop:     { hit: 'cried',                     follow: `${pov.pronoun} asked me to play it again`,  close: 'this is the song for right now.' },
+  }[genre];
+
   const texts = {
-    // A — Social proof: "Showed someone + their reaction" (4 slides)
-    // Proven highest streaming-click driver. Human reaction = social validation.
+    // A — Social proof: genre-aware reaction (4 slides)
     A: [
-      `showed ${pov.descriptor}\n${song} at 2am\n${pov.pronoun} cried`,
-      `${pov.pronoun} asked me to\nplay it again\nwithout saying a word`,
-      `this is the song\nfor right now.\ntrust me.`,
+      `showed ${pov.descriptor}\n${song} at 2am\n${pov.pronoun} ${reaction.hit}`,
+      `${reaction.follow}\nwithout saying a word`,
+      reaction.close,
       cta,
     ],
 
     // B — Contrarian: "They doubted it → heard it → changed their mind" (4 slides)
-    // Conflict + resolution = curiosity + urge to click the link
     B: [
       `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.pronoun}`,
       `halfway through\n${pov.pronoun} went quiet`,
@@ -167,7 +185,6 @@ function buildTexts(variant) {
     ],
 
     // C — Mystery: Minimal, curiosity gap (4 slides)
-    // Brevity creates intrigue. Works for emotionally heavy songs.
     C: [
       `wait.\nlisten.`,
       `this song knows\nsomething about you\nyou haven't said out loud`,

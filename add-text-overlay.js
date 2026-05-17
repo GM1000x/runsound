@@ -74,29 +74,32 @@ const FONT_ANTON_PATH    = path.join(FONTS_DIR, 'Anton-Regular.ttf');
 const FONT_BEBAS_PATH    = path.join(FONTS_DIR, 'BebasNeue-Regular.ttf');
 
 const FONT_URLS = {
-  'Anton-Regular.ttf':   'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf',
-  'BebasNeue-Regular.ttf': 'https://github.com/google/fonts/raw/main/ofl/bebasneue/BebasNeue-Regular.ttf',
+  'Anton-Regular.ttf':    'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf',
+  'Inter-Regular.ttf':    'https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf',
+  'Inter-SemiBold.ttf':   'https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf',
 };
 
 // ─── Per-slide style definitions ──────────────────────────────────────────────
 //
-// All slides: white text + thick black stroke (outline). No background boxes.
-// Lowercase throughout — matches what viral TikTok carousels actually look like.
+// Clean white text, NO stroke — ReelFarm/lifestyle TikTok aesthetic.
+// Soft drop shadow only for legibility on varied backgrounds.
+// Lowercase throughout. Bottom-left aligned, smaller size.
 //
-// font:     'Anton' (heavy condensed, great for TikTok readability)
+// font:     'Inter' (clean sans-serif) downloaded below
 // size:     font size in px
 // position: 'center' | 'bottom' | 'top'
 // vignette: true | false
+// align:    'left' | 'center'
 
 const SLIDE_STYLES = [
-  // Slide 1 — Hook: biggest text, centered, strong vignette
-  { font: 'Anton', size: 88, position: 'center', vignette: true,  strokeWidth: 24, shadowBlur: 20 },
-  // Slide 2 — Story: slightly smaller, center
-  { font: 'Anton', size: 72, position: 'center', vignette: true,  strokeWidth: 20, shadowBlur: 16 },
-  // Slide 3 — Peak/punchline: bigger again for emphasis, bottom-third
-  { font: 'Anton', size: 82, position: 'bottom', vignette: true,  strokeWidth: 22, shadowBlur: 18 },
-  // Slide 4 — CTA: smaller, clean, no vignette
-  { font: 'Anton', size: 56, position: 'center', vignette: false, strokeWidth: 18, shadowBlur: 14 },
+  // Slide 1 — Hook: clean white, bottom-left, medium size
+  { font: 'Inter', size: 52, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 22 },
+  // Slide 2 — Story: slightly smaller
+  { font: 'Inter', size: 46, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 18 },
+  // Slide 3 — Peak/punchline: same as slide 1
+  { font: 'Inter', size: 52, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 22 },
+  // Slide 4 — CTA: smaller, centered
+  { font: 'Inter', size: 38, position: 'center', align: 'center', vignette: false, shadowBlur: 14 },
 ];
 
 // ─── Download a file (follows redirects) ─────────────────────────────────────
@@ -138,22 +141,23 @@ function drawVignette(ctx) {
   ctx.fillRect(0, 0, W, H);
 }
 
-// ─── Outline style: white fill + thick black stroke + drop shadow ─────────────
-function drawOutlineText(ctx, text, x, y, slideStyle) {
-  const strokeWidth = slideStyle.strokeWidth || 22;
-  const shadowBlur  = slideStyle.shadowBlur  || 18;
+// ─── Clean white text — soft shadow only, no stroke ──────────────────────────
+function drawCleanText(ctx, text, x, y, slideStyle) {
+  const shadowBlur = slideStyle.shadowBlur || 18;
 
-  ctx.shadowColor   = 'rgba(0,0,0,0.85)';
+  // Multi-layer shadow for legibility on any background
+  ctx.shadowColor   = 'rgba(0,0,0,0.75)';
   ctx.shadowBlur    = shadowBlur;
-  ctx.shadowOffsetX = 3;
-  ctx.shadowOffsetY = 3;
-
-  ctx.lineWidth   = strokeWidth;
-  ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-  ctx.lineJoin    = 'round';
-  ctx.strokeText(text, x, y);
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 2;
 
   ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, x, y);
+
+  // Second pass — heavier shadow for dark images
+  ctx.shadowBlur    = shadowBlur * 0.5;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
   ctx.fillText(text, x, y);
 
   ctx.shadowColor   = 'transparent';
@@ -232,25 +236,30 @@ async function renderSlide(slideIndex, rawPath, text, outPath, canvasModule) {
 
   // 4. Font setup
   const fontSize   = slideStyle.size;
-  const lineHeight = fontSize * 1.26;
-  ctx.font         = `${fontSize}px "${slideStyle.font}"`;
-  ctx.textAlign    = 'center';
+  const lineHeight = fontSize * 1.4;
+  const align      = slideStyle.align || 'left';
+  ctx.font         = `600 ${fontSize}px "${slideStyle.font}", "Anton", sans-serif`;
+  ctx.textAlign    = align;
   ctx.textBaseline = 'middle';
 
-  // 5. Calculate vertical position
+  // 5. Calculate position — left-aligned sits at 10% from left edge
+  const margin = W * 0.10;
+  const textX  = align === 'left' ? margin : W / 2;
+
   const totalTextH = lines.length * lineHeight;
-  let centerY;
+  let startY;
   if (slideStyle.position === 'top') {
-    centerY = H * 0.22 + totalTextH / 2;
+    startY = H * 0.12 + lineHeight / 2;
   } else if (slideStyle.position === 'bottom') {
-    centerY = H * 0.75 + totalTextH / 2;
+    // Bottom: text block ends ~15% from bottom
+    startY = H * 0.82 - totalTextH + lineHeight / 2;
   } else {
-    centerY = H / 2 - totalTextH / 2 + lineHeight / 2;
+    startY = H / 2 - totalTextH / 2 + lineHeight / 2;
   }
 
-  // 6. Draw: white text + black stroke on all slides
+  // 6. Draw: clean white text, no stroke
   lines.forEach((line, i) => {
-    drawOutlineText(ctx, line, W / 2, centerY + i * lineHeight, slideStyle);
+    drawCleanText(ctx, line, textX, startY + i * lineHeight, slideStyle);
   });
 
   // 7. Save

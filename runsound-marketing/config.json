@@ -1,16 +1,17 @@
 {
   "artist": {
-    "name": "MBN",
-    "genre": "pop",
+    "name": "Anotr",
+    "genre": "House",
     "tiktokHandle": "@mbn19902"
   },
 
   "song": {
-    "title": "Summer Love",
-    "genre": "pop",
-    "mood": "warm, nostalgic, golden hour, bittersweet summer romance, cinematic, emotional",
-    "description": "A song about summer love — that feeling of a perfect season with someone, the warmth, the memories, the bittersweetness when it ends.",
-    "spotifyUrl": "https://open.spotify.com/track/3UK2G7CRI6aYnJyI0Aedl7?si=1ed95fb618204c02",
+    "title": "Relax My Eyes",
+    "genre": "House",
+    "mood": "deep house, hypnotic, late night, minimal, sensual, club energy, dark and smooth, driving groove",
+    "description": "A deep house track with a hypnotic groove and late-night club energy. Smooth, dark, sensual — the kind of song that pulls you in on a dance floor.",
+    "lifestyleMoment": "on a late night\nwhen the right song\nhits different",
+    "spotifyUrl": "https://open.spotify.com/track/6VuDKqBnCH6mEf44vc0Qcs",
     "appleUrl": "",
     "youtubeUrl": "",
     "tidalUrl": "",
@@ -29,14 +30,19 @@
 
   "imageLibrary": {
     "dir": "runsound-marketing/image-library",
-    "count": 18,
-    "style": "cinematic, moody, aesthetic",
-    "themes": ["summer", "love", "nostalgia", "night", "golden hour", "urban"]
+    "count": 12,
+    "style": "dark, moody, late night, minimal, cinematic",
+    "themes": ["night", "club", "minimal apartment", "city lights", "dark aesthetic"]
+  },
+
+  "imageGen": {
+    "model": "gpt-image-2-2026-04-21",
+    "extraPrompt": "Dark, moody, late-night aesthetic. Consistent visual world: dim lighting, dark tones, minimal spaces, city at night. No bright daylight. Cohesive mood throughout."
   },
 
   "hooks": {
-    "count": 6,
-    "tone": "emotional, relatable, scroll-stopping"
+    "count": 4,
+    "tone": "cool, confident, understated, scroll-stopping"
   },
 
   "output": {
