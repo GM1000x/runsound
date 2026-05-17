@@ -217,13 +217,18 @@ function drawLightBgText(ctx, lines, blockX, blockY, lineHeight, slideStyle) {
 }
 
 // ─── Render one slide ─────────────────────────────────────────────────────────
-async function renderSlide(slideIndex, rawPath, text, outPath, canvasModule) {
+async function renderSlide(slideIndex, rawPath, text, outPath, canvasModule, safeZone) {
   const { createCanvas, loadImage } = canvasModule;
 
   const img        = await loadImage(rawPath);
   const canvas     = createCanvas(W, H);
   const ctx        = canvas.getContext('2d');
-  const slideStyle = SLIDE_STYLES[slideIndex] || SLIDE_STYLES[0];
+
+  // Merge slide style with face-detection safe zone (overrides default position)
+  const baseStyle  = SLIDE_STYLES[slideIndex] || SLIDE_STYLES[0];
+  const slideStyle = safeZone
+    ? { ...baseStyle, position: safeZone }
+    : baseStyle;
 
   // 1. Draw background image
   ctx.drawImage(img, 0, 0, W, H);
@@ -290,14 +295,32 @@ async function main() {
   if (fs.existsSync(FONT_ANTON_PATH))  GlobalFonts.registerFromPath(FONT_ANTON_PATH,  'Anton');
   if (fs.existsSync(FONT_BEBAS_PATH))  GlobalFonts.registerFromPath(FONT_BEBAS_PATH,  'Bebas Neue');
 
-  let success = 0;
+  // Load Inter font if available
+  const FONT_INTER_PATH = path.join(FONTS_DIR, 'Inter-Regular.ttf');
+  if (fs.existsSync(FONT_INTER_PATH))  GlobalFonts.registerFromPath(FONT_INTER_PATH,  'Inter');
 
-  for (let i = 0; i < 6; i++) {
+  // Load safe zones from picks.json (set by pick-slides.js via face detection)
+  const picksPath = path.join(inputDir, 'picks.json');
+  const safeZones = {};
+  if (fs.existsSync(picksPath)) {
+    try {
+      const picks = JSON.parse(fs.readFileSync(picksPath, 'utf8'));
+      for (const pick of (picks.picks || [])) {
+        if (pick.slot && pick.safeZone) safeZones[pick.slot] = pick.safeZone;
+      }
+    } catch {}
+  }
+
+  let success = 0;
+  const slideCount = texts.length; // 4 slides
+
+  for (let i = 0; i < slideCount; i++) {
     const slideNum = i + 1;
     const rawPath  = path.join(inputDir, `slide${slideNum}_raw.png`);
     const outPath  = path.join(inputDir, `slide${slideNum}.png`);
     const text     = texts[i] || '';
     const s        = SLIDE_STYLES[i] || SLIDE_STYLES[0];
+    const safeZone = safeZones[slideNum] || null;
 
     if (!fs.existsSync(rawPath)) {
       console.error(`   ❌ slide${slideNum}_raw.png not found — skipping`);
@@ -305,10 +328,10 @@ async function main() {
     }
 
     const preview = text.split('\n')[0].slice(0, 40);
-    process.stdout.write(`   Slide ${slideNum}/6 [${s.font} ${s.size}px] — "${preview}"... `);
+    process.stdout.write(`   Slide ${slideNum}/${slideCount} [${s.size}px${safeZone ? ` zone:${safeZone}` : ''}] — "${preview}"... `);
 
     try {
-      await renderSlide(i, rawPath, text, outPath, canvasModule);
+      await renderSlide(i, rawPath, text, outPath, canvasModule, safeZone);
       console.log('✅');
       success++;
     } catch (err) {
@@ -316,9 +339,9 @@ async function main() {
     }
   }
 
-  console.log(`\n✅ ${success}/6 slides rendered`);
-  console.log(`   Styles: Bebas outline on 1,3,5 — Anton lightBg on 2,4,6`);
-  console.log(`   Output: ${inputDir}/slide1.png ... slide6.png`);
+  console.log(`\n✅ ${success}/${slideCount} slides rendered`);
+  console.log(`   Style: clean white text, soft shadow, face-safe positioning`);
+  console.log(`   Output: ${inputDir}/slide1.png ... slide${slideCount}.png`);
   console.log(`\n   Next: npm run post\n`);
 }
 

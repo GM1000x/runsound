@@ -64,14 +64,23 @@ function loadLibrary() {
     process.exit(1);
   }
 
+  // Load safeZone metadata from library.json if available
+  const libraryMeta = (() => {
+    const p = path.join(libraryDir, 'library.json');
+    try { return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {}; } catch { return {}; }
+  })();
+  const safeZoneMap = {};
+  for (const img of (libraryMeta.images || [])) {
+    if (img.file && img.safeZone) safeZoneMap[img.file] = img.safeZone;
+  }
+
   const images = fs.readdirSync(libraryDir)
     .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
     .map(f => {
       const full   = path.join(libraryDir, f);
       const base   = path.basename(f, path.extname(f));
-      // Tag format: img-001_golden_moody_cinematic.png → tags from underscores
       const tags   = base.replace(/^img[-_]\d+[-_]?/, '').split(/[-_]/).filter(Boolean);
-      return { file: f, path: full, tags };
+      return { file: f, path: full, tags, safeZone: safeZoneMap[f] || 'bottom' };
     });
 
   if (images.length < 1) {

@@ -44,7 +44,7 @@ const args = process.argv.slice(2);
 function getArg(n) { const i = args.indexOf(`--${n}`); return i !== -1 ? args[i + 1] : null; }
 
 const configPath = getArg('config');
-const COUNT      = parseInt(getArg('count') || '12', 10);  // 3 per arc × 4 arcs
+const COUNT      = parseInt(getArg('count') || '4', 10);   // 1 per arc × 4 arcs (default)
 const FORCE      = args.includes('--force');
 const DRY_RUN    = args.includes('--dry-run');
 
@@ -147,6 +147,39 @@ function downloadFile(url, dest) {
   });
 }
 
+// ─── Face detection — find safe text zone using GPT-4o Vision ─────────────────
+// Returns 'top' | 'bottom' | 'center' — where text is safe to place.
+// Costs ~$0.001 per image. Falls back to 'bottom' on any error.
+async function detectSafeTextZone(openai, imagePath) {
+  try {
+    const b64 = fs.readFileSync(imagePath).toString('base64');
+    const res = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 60,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: { url: `data:image/png;base64,${b64}`, detail: 'low' },
+          },
+          {
+            type: 'text',
+            text: 'This is a portrait image for TikTok. Are there human faces in it? Where is the most empty/dark/blurred area safe for white text overlay — top third, middle third, or bottom third? Reply with only one word: top, middle, or bottom.',
+          },
+        ],
+      }],
+    });
+
+    const answer = res.choices[0]?.message?.content?.trim().toLowerCase() || 'bottom';
+    if (answer.includes('top'))    return 'top';
+    if (answer.includes('middle')) return 'center';
+    return 'bottom';
+  } catch {
+    return 'bottom'; // safe default
+  }
+}
+
 // ─── Generate one image (with retry on 429) ───────────────────────────────────
 async function generateImage(openai, prompt, arcRole, index) {
   const tags     = arcRole.tags.join('_');
@@ -179,8 +212,13 @@ async function generateImage(openai, prompt, arcRole, index) {
       const b64    = response.data[0].b64_json;
       const buffer = Buffer.from(b64, 'base64');
       fs.writeFileSync(destPath, buffer);
-      console.log(`   ✅ ${filename}`);
-      return filename;
+
+      // Detect safe text zone — avoids placing text on faces
+      process.stdout.write(`   ✅ ${filename} — detecting safe text zone...`);
+      const safeZone = await detectSafeTextZone(openai, destPath);
+      console.log(` ${safeZone}`);
+
+      return { filename, safeZone };
     } catch (err) {
       const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.toLowerCase().includes('rate limit');
       if (is429 && attempt < MAX_RETRIES) {
@@ -244,8 +282,9 @@ async function main() {
   const toGenerate = FORCE ? COUNT : Math.max(0, COUNT - existingCount);
   console.log(`   Estimated cost: ~$${(toGenerate * costPerImage).toFixed(2)} (${toGenerate} new images @ $${costPerImage}/img)\n`);
 
-  let generated = 0;
-  let skipped   = 0;
+  let generated  = 0;
+  let skipped    = 0;
+  const safeZones = {}; // filename → safeZone
 
   for (let i = 0; i < plan.length; i++) {
     const arcRole = plan[i];
@@ -254,11 +293,15 @@ async function main() {
     const prompt  = buildPrompt(arcRole, variationIndex);
 
     try {
-      const filename = await generateImage(openai, prompt, arcRole, i + 1);
-      if (filename) {
+      const result = await generateImage(openai, prompt, arcRole, i + 1);
+      if (result) {
+        const { filename, safeZone } = typeof result === 'string'
+          ? { filename: result, safeZone: 'bottom' }
+          : result;
         const existed = fs.existsSync(path.join(libraryDir, filename)) && !FORCE;
         if (existed) skipped++;
         else generated++;
+        if (safeZone) safeZones[filename] = safeZone;
       }
     } catch (err) {
       console.error(`   ❌ Failed to generate image ${i + 1}: ${err.message}`);
@@ -271,7 +314,7 @@ async function main() {
     }
   }
 
-  // Save library metadata
+  // Save library metadata — including safeZone per image for text placement
   const meta = {
     generatedAt: new Date().toISOString(),
     artist,
@@ -285,8 +328,9 @@ async function main() {
     images: fs.readdirSync(libraryDir)
       .filter(f => /\.(png|jpg|jpeg)$/i.test(f))
       .map(f => ({
-        file: f,
-        tags: path.basename(f, path.extname(f))
+        file:     f,
+        safeZone: safeZones[f] || 'bottom',
+        tags:     path.basename(f, path.extname(f))
           .replace(/^img[-_]\d+[-_]?/, '')
           .split(/[-_]/)
           .filter(Boolean),
