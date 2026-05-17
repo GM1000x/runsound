@@ -36,7 +36,7 @@
   },
 
   "imageGen": {
-    "model": "gpt-image-2-2026-04-21",
+    "model": "gpt-image-1",
     "extraPrompt": "Dark, moody, late-night aesthetic. Consistent visual world: dim lighting, dark tones, minimal spaces, city at night. No bright daylight. Cohesive mood throughout."
   },
 

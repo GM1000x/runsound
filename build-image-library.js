@@ -66,8 +66,8 @@ const artist = config.artist?.name   || 'Unknown Artist';
 const song   = config.song?.title    || 'Unknown Song';
 const genre  = config.song?.genre    || 'indie pop';
 const mood   = config.song?.mood     || 'emotional, nostalgic';
-const model  = config.imageGen?.model  || process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21';
-// gpt-image-2 / gpt-image-1 / gpt-image-1.5 use 'low'|'medium'|'high'; dall-e-3 uses 'standard'|'hd'
+const model  = config.imageGen?.model  || process.env.IMAGE_MODEL || 'gpt-image-1';
+// gpt-image-1 uses 'low'|'medium'|'high'; dall-e-3 uses 'standard'|'hd'
 const quality = (model === 'dall-e-3') ? 'hd' : 'high';
 const style  = config.imageGen?.style  || 'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light';
 const extra  = config.imageGen?.extraPrompt || '';
