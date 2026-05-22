@@ -24,6 +24,7 @@ const path         = require('path');
 const fs           = require('fs');
 const { spawn }    = require('child_process');
 const supabase     = require('../db');
+const { sendDraftReadyEmail } = require('../email');
 
 const ROOT         = path.join(__dirname, '..', '..');
 const CAMPAIGNS_DIR = process.env.CAMPAIGNS_DIR || path.join(ROOT, 'campaigns');
@@ -193,7 +194,7 @@ async function runOnboarding(campaignId) {
         id, slug, artist_id, artist_name, song_title, genre, mood,
         spotify_url, apple_url, youtube_url, tidal_url, deezer_url,
         amazon_url, soundcloud_url, smart_link_url, hook_lines,
-        config, tiktok_inbox_id
+        config, tiktok_inbox_id, dash_token
       `)
       .eq('id', campaignId)
       .single();
@@ -247,6 +248,31 @@ async function runOnboarding(campaignId) {
     // ── Done ───────────────────────────────────────────────────────────────
     await setStatus(campaignId, 'done');
     console.log(`\n[onboard] ✅ Onboarding complete for ${campaign.artist_name} — ${campaign.song_title}`);
+
+    // ── Send "draft ready" email ───────────────────────────────────────────
+    // Fetch artist email (stored in artists table, not campaigns)
+    try {
+      const { data: artist } = await supabase
+        .from('artists')
+        .select('email')
+        .eq('id', campaign.artist_id)
+        .single();
+
+      if (artist?.email && campaign.dash_token) {
+        const BASE         = process.env.BASE_URL || 'https://run-sound.com';
+        const dashboardUrl = `${BASE}/dashboard.html?campaign_id=${campaign.id}&token=${campaign.dash_token}`;
+        await sendDraftReadyEmail({
+          artistName:   campaign.artist_name,
+          email:        artist.email,
+          songTitle:    campaign.song_title,
+          dashboardUrl,
+        });
+      } else {
+        console.warn('[onboard] Skipped draft-ready email — missing artist email or dash_token');
+      }
+    } catch (emailErr) {
+      console.error('[onboard] Draft-ready email failed (non-fatal):', emailErr.message);
+    }
 
   } catch (err) {
     console.error(`[onboard] ❌ Failed: ${err.message}`);

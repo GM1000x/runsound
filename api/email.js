@@ -296,4 +296,128 @@ async function sendDailyReport({ artistName, email, weekViews, weekClicks, diagn
   return sendEmail({ to: email, subject, html });
 }
 
-module.exports = { sendEmail, sendWelcomeEmail, sendDailyReport };
+// ─── Draft ready email ────────────────────────────────────────────────────────
+// Sent when the onboarding pipeline completes and the TikTok draft is in inbox.
+async function sendDraftReadyEmail({ artistName, email, songTitle, dashboardUrl }) {
+  const subject = `🎵 Your TikTok draft for "${songTitle}" is ready — publish it now!`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    color: #f0f0f8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 40px 24px; }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 32px; }
+  .logo span { color: #a855f7; }
+  .card {
+    background: #13131a;
+    border: 1px solid #1e1e2e;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: #22c55e;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    letter-spacing: 0.3px;
+  }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 10px; line-height: 1.3; }
+  p { font-size: 15px; color: #c0c0d0; line-height: 1.6; margin-bottom: 16px; }
+  .btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: #fff !important;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 10px;
+    text-decoration: none;
+    margin-top: 8px;
+  }
+  .divider { border: none; border-top: 1px solid #1e1e2e; margin: 24px 0; }
+  .steps-title {
+    font-size: 11px; font-weight: 600; color: #888899;
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px;
+  }
+  .step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+  .step-num {
+    background: #7c3aed; color: #fff; font-size: 11px; font-weight: 700;
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step-text { font-size: 14px; color: #c0c0d0; line-height: 1.5; }
+  .step-text strong { color: #f0f0f8; }
+  .footer { font-size: 12px; color: #444455; text-align: center; line-height: 1.6; }
+  .footer a { color: #666677; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo">Run<span>Sound</span></div>
+
+  <div class="card">
+    <div class="badge">✓ Draft ready in your TikTok inbox</div>
+    <h1>Your post for "${songTitle}" is waiting, ${artistName}!</h1>
+    <p>
+      RunSound has generated your images, written your hooks, and sent a draft straight to your
+      <strong style="color:#f0f0f8">TikTok inbox</strong>.
+      Open TikTok now and publish it — takes about 30 seconds.
+    </p>
+    <a href="${dashboardUrl}" class="btn">Open my dashboard →</a>
+  </div>
+
+  <div class="card">
+    <p class="steps-title">Publish in 30 seconds</p>
+    <div class="step">
+      <span class="step-num">1</span>
+      <span class="step-text">Open TikTok → tap the <strong>notification in your inbox</strong></span>
+    </div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <span class="step-text">Tap <strong>"Add sound"</strong> and search for <strong>"${songTitle}"</strong></span>
+    </div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <span class="step-text">Tap <strong>Post ✓</strong></span>
+    </div>
+
+    <hr class="divider">
+
+    <p style="font-size: 13px; color: #888899; margin-bottom: 0;">
+      A new draft arrives automatically every night.
+      RunSound tracks views and stream clicks — and gets smarter each week.
+    </p>
+  </div>
+
+  <div class="footer">
+    <p>RunSound — automated TikTok marketing for music artists</p>
+    <p style="margin-top: 6px;"><a href="${BASE}">run-sound.com</a></p>
+  </div>
+
+</div>
+</body>
+</html>
+  `.trim();
+
+  return sendEmail({ to: email, subject, html });
+}
+
+module.exports = { sendEmail, sendWelcomeEmail, sendDraftReadyEmail, sendDailyReport };
