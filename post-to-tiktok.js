@@ -1,23 +1,25 @@
 #!/usr/bin/env node
 /**
- * RunSound — Post image carousel to TikTok via Postiz
+ * RunSound — Post image carousel to TikTok
+ *
+ * Strategy (tries in order):
+ *   1. Direct TikTok API  — if artist has connected their TikTok via OAuth
+ *      (token stored in Supabase artists.tiktok_access_token)
+ *   2. Postiz             — legacy fallback for older campaigns
  *
  * Uploads slide1.png → slide6.png as a swipeable TikTok carousel (not a video).
- * User receives a TikTok inbox notification, opens the draft, adds their song
- * from TikTok's music library, then publishes.
+ * Draft arrives in artist's TikTok inbox. They add their song and publish.
  *
  * Usage: node post-to-tiktok.js --input <dir> --config <config.json> [--variant A|B|C] [--caption "override"]
- *
- * CHANGE LOG:
- *   - UTM campaign is now a unique per-post ID (rs-<timestamp>-<variant>)
- *     instead of date+variant, so Supabase click data can be attributed
- *     to a specific post. This feeds learn.js → optimize-strategy.js.
  */
 
 require('dotenv').config();
 const fs       = require('fs');
 const path     = require('path');
 const FormData = require('form-data');
+
+// Direct TikTok API (used when artist has connected their account via OAuth)
+const tiktokApi = require('./api/tiktok-api');
 
 // Force node-fetch for form-data compatibility
 let fetchFn;
@@ -202,25 +204,29 @@ async function createPost(images, utmUrl) {
 }
 
 // ─── Step 5: Save meta to disk ───────────────────────────────────────────────
-function savePostMeta(postData, slideCount, utmUrl) {
+function savePostMeta(postData, slideCount, utmUrl, method = 'postiz') {
   let meta = {};
   if (fs.existsSync(metaPath)) {
     try { meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')); } catch {}
   }
 
-  meta.postizPostId  = postData.postId || postData.id;
+  // Support both Postiz response shape and direct TikTok shape
+  meta.postizPostId  = postData.postId  || postData.id  || null;
+  meta.tiktokPostId  = postData.postId  || postData.id  || null;
   meta.postedAt      = new Date().toISOString();
   meta.status        = 'pending_publish';
   meta.slideCount    = slideCount;
   meta.variant       = variantArg;
   meta.postUid       = POST_UID;
   meta.utmUrl        = utmUrl || null;
+  meta.postMethod    = method; // 'direct_tiktok' | 'postiz'
   meta.tiktokVideoId = null;
 
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
   console.log(`\n💾 Post metadata saved to ${metaPath}`);
-  console.log(`   Post UID: ${POST_UID}`);
-  if (utmUrl) console.log(`   UTM URL:  ${utmUrl}`);
+  console.log(`   Post UID:   ${POST_UID}`);
+  console.log(`   Method:     ${method}`);
+  if (utmUrl) console.log(`   UTM URL:    ${utmUrl}`);
 
   return meta;
 }
@@ -286,6 +292,34 @@ async function writeToSupabase(meta) {
   }
 }
 
+// ─── Direct TikTok API posting ────────────────────────────────────────────────
+// Used when the artist has connected their TikTok account via OAuth.
+async function postDirectToTikTok(slides, utmUrl) {
+  const artistId = config.artist?.id || null;
+  if (!artistId) return false; // no artist ID → can't look up token
+
+  const tokenInfo = await tiktokApi.getValidToken(artistId);
+  if (!tokenInfo) return false; // artist hasn't connected TikTok yet
+
+  const { accessToken } = tokenInfo;
+  const caption = buildCaption(utmUrl);
+
+  console.log(`\n🎵 RunSound — TikTok Direct Post (OAuth)`);
+  console.log(`   Artist:   ${config.artist.name}`);
+  console.log(`   Song:     ${config.song.title}`);
+  console.log(`   Slides:   ${slides.length} images`);
+  console.log(`   Variant:  ${variantArg}`);
+  console.log(`   Post UID: ${POST_UID}\n`);
+
+  const { publishId, status } = await tiktokApi.postPhotoCarousel(accessToken, slides, caption);
+
+  return {
+    postId: publishId,
+    status,
+    method: 'direct_tiktok',
+  };
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 (async () => {
   try {
@@ -297,35 +331,64 @@ async function writeToSupabase(meta) {
       process.exit(1);
     }
 
-    console.log(`\n🎵 RunSound — TikTok Carousel Post`);
-    console.log(`   Artist:  ${config.artist.name}`);
-    console.log(`   Song:    ${config.song.title}`);
-    console.log(`   Slides:  ${slides.length} images found`);
-    console.log(`   Variant: ${variantArg}`);
-    console.log(`   Post UID: ${POST_UID}`);
-    console.log(`   Mode:    UPLOAD → TikTok inbox notification\n`);
+    const utmUrl = buildUtmUrl();
 
-    const utmUrl         = buildUtmUrl();
-    const uploadedImages = await uploadAllSlides(slides);
-    const postData       = await createPost(uploadedImages, utmUrl);
-    const meta           = savePostMeta(postData, slides.length, utmUrl);
+    // ── Try direct TikTok API first ────────────────────────────────────────────
+    let postData = null;
+    let method   = 'postiz'; // will be overridden if direct succeeds
+
+    try {
+      const directResult = await postDirectToTikTok(slides, utmUrl);
+      if (directResult) {
+        postData = directResult;
+        method   = 'direct_tiktok';
+        console.log(`\n${'─'.repeat(60)}`);
+        console.log(`✅ CAROUSEL SENT TO TIKTOK INBOX (direct API)`);
+        console.log(`${'─'.repeat(60)}`);
+      }
+    } catch (directErr) {
+      console.warn(`[post-to-tiktok] Direct TikTok API failed: ${directErr.message}`);
+      console.warn(`   Falling back to Postiz...`);
+    }
+
+    // ── Fall back to Postiz if direct didn't work ──────────────────────────────
+    if (!postData) {
+      if (!apiKey || !integrationId) {
+        console.error('❌ No TikTok connection and no Postiz credentials configured.');
+        console.error('   → Connect your TikTok at: /connect.html');
+        console.error(`   apiKey: ${apiKey ? 'ok' : 'MISSING (POSTIZ_API_KEY)'}`);
+        console.error(`   integrationId: ${integrationId ? 'ok' : 'MISSING (POSTIZ_TIKTOK_ID)'}`);
+        process.exit(1);
+      }
+
+      console.log(`\n🎵 RunSound — TikTok Carousel Post (via Postiz)`);
+      console.log(`   Artist:  ${config.artist.name}`);
+      console.log(`   Song:    ${config.song.title}`);
+      console.log(`   Slides:  ${slides.length} images found`);
+      console.log(`   Variant: ${variantArg}`);
+      console.log(`   Post UID: ${POST_UID}\n`);
+
+      const uploadedImages = await uploadAllSlides(slides);
+      postData = await createPost(uploadedImages, utmUrl);
+
+      console.log(`\n${'─'.repeat(60)}`);
+      console.log(`✅ CAROUSEL IS IN YOUR TIKTOK INBOX (via Postiz)`);
+      console.log(`${'─'.repeat(60)}`);
+    }
+
+    const meta = savePostMeta(postData, slides.length, utmUrl, method);
     await writeToSupabase(meta);
 
-    console.log(`\n${'─'.repeat(60)}`);
-    console.log(`✅ CAROUSEL IS IN YOUR TIKTOK INBOX`);
-    console.log(`${'─'.repeat(60)}`);
     console.log(`\n📱 To publish (30 seconds):`);
     console.log(`   1. Open TikTok → tap the notification in your inbox`);
     console.log(`   2. Tap "Add sound"`);
     console.log(`   3. Search for: "${config.song?.title || 'your song'}" (or any trending sound)`);
     console.log(`   4. Tap Post!\n`);
-    console.log(`After posting, run:`);
-    console.log(`   npm run analytics  →  npm run learn  →  npm run optimize\n`);
 
   } catch (err) {
     console.error(`\n❌ Error: ${err.message}`);
     if (err.message.includes('401') || err.message.includes('403')) {
-      console.error(`   Check your POSTIZ_API_KEY`);
+      console.error(`   Check your API credentials (POSTIZ_API_KEY or TikTok OAuth token)`);
     }
     process.exit(1);
   }

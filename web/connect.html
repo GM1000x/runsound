@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RunSound — You're all set!</title>
+  <title>RunSound — Connect your TikTok</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
@@ -16,6 +16,7 @@
       --accent:  #7c3aed;
       --accent2: #a855f7;
       --green:   #22c55e;
+      --red:     #ef4444;
       --text:    #f0f0f8;
       --muted:   #888899;
     }
@@ -37,14 +38,14 @@
       top: -200px; left: 50%;
       transform: translateX(-50%);
       width: 600px; height: 400px;
-      background: radial-gradient(ellipse, rgba(124,58,237,.18) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(124,58,237,.15) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .logo {
       font-size: 20px; font-weight: 800;
       letter-spacing: -.5px; color: var(--text);
-      margin-bottom: 48px;
+      margin-bottom: 40px;
     }
     .logo span { color: var(--accent2); }
 
@@ -53,34 +54,32 @@
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 44px 36px;
-      max-width: 460px;
+      max-width: 480px;
       width: 100%;
       text-align: center;
     }
 
-    /* Icon */
-    .icon-wrap { margin-bottom: 28px; }
+    /* Icon circle */
+    .icon-wrap { margin-bottom: 24px; }
     .icon-circle {
       width: 64px; height: 64px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 28px;
     }
-
-    h1 {
-      font-size: 24px; font-weight: 800;
-      letter-spacing: -.4px;
-      margin-bottom: 12px;
+    .icon-circle.tiktok {
+      background: #000;
+      border: 2px solid #333;
+    }
+    .icon-circle.done {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
     }
 
-    .subtitle {
-      font-size: 15px; color: var(--muted);
-      line-height: 1.6; margin-bottom: 32px;
-    }
+    h1 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; margin-bottom: 10px; }
+    .subtitle { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
     .subtitle strong { color: var(--text); }
 
-    /* What happens next */
-    .next-box {
+    /* Steps list */
+    .steps {
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -88,47 +87,44 @@
       margin-bottom: 28px;
       text-align: left;
     }
-    .next-box h3 {
+    .steps h3 {
       font-size: 11px; font-weight: 600; color: var(--muted);
       text-transform: uppercase; letter-spacing: .6px;
       margin-bottom: 14px;
     }
-    .next-item {
+    .step-item {
       display: flex; gap: 12px; align-items: flex-start;
-      margin-bottom: 12px; font-size: 13px; line-height: 1.5;
+      margin-bottom: 10px; font-size: 13px; line-height: 1.5;
     }
-    .next-item:last-child { margin-bottom: 0; }
-    .next-num {
+    .step-item:last-child { margin-bottom: 0; }
+    .step-num {
       width: 20px; height: 20px; border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #fff; font-size: 10px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; margin-top: 1px;
     }
-    .next-item span { color: var(--muted); }
-    .next-item strong { color: var(--text); }
+    .step-item span { color: var(--muted); }
+    .step-item strong { color: var(--text); }
 
-    /* Email notice */
-    .email-note {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(124,58,237,.08);
-      border: 1px solid rgba(124,58,237,.2);
-      border-radius: 10px; padding: 12px 16px;
-      font-size: 13px; color: var(--muted);
-      margin-bottom: 28px; text-align: left;
+    /* TikTok connect button */
+    .btn-tiktok {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #fff;
+      color: #000;
+      font-size: 15px; font-weight: 700;
+      padding: 14px 28px; border-radius: 12px;
+      text-decoration: none; cursor: pointer;
+      transition: opacity .2s;
+      width: 100%;
+      margin-bottom: 16px;
     }
-    .email-note .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent2); flex-shrink: 0;
-      animation: blink 2s ease-in-out infinite;
+    .btn-tiktok:hover { opacity: .9; }
+    .tiktok-logo {
+      width: 22px; height: 22px;
     }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: .3; }
-    }
-    .email-note strong { color: var(--text); }
 
-    /* Buttons */
+    /* Primary button (dashboard) */
     .btn-primary {
       display: block;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -139,102 +135,334 @@
     }
     .btn-primary:hover { opacity: .85; }
 
-    /* Subtle done toast — appears when pipeline finishes */
-    .toast {
+    /* Privacy note */
+    .privacy-note {
+      font-size: 12px; color: var(--muted);
+      margin-top: 12px; line-height: 1.5;
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .status-badge.connected {
+      background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.25);
+      color: var(--green);
+    }
+    .status-badge.connecting {
+      background: rgba(124,58,237,.1);
+      border: 1px solid rgba(124,58,237,.2);
+      color: var(--accent2);
+    }
+    .status-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+    }
+    .status-badge.connecting .dot {
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* Pipeline progress */
+    .pipeline {
+      text-align: left;
+      margin-bottom: 28px;
+    }
+    .pipeline h3 {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .6px;
+      margin-bottom: 14px;
+    }
+    .pipe-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .pipe-step:last-child { border-bottom: none; }
+    .pipe-icon {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; flex-shrink: 0;
+    }
+    .pipe-icon.done    { background: rgba(34,197,94,.15); color: var(--green); }
+    .pipe-icon.active  { background: rgba(124,58,237,.15); color: var(--accent2); }
+    .pipe-icon.pending { background: var(--border); color: var(--muted); }
+    .pipe-label        { color: var(--text); flex: 1; }
+    .pipe-label.pending { color: var(--muted); }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Email dot */
+    .email-note {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(124,58,237,.08);
+      border: 1px solid rgba(124,58,237,.2);
+      border-radius: 10px; padding: 12px 16px;
+      font-size: 13px; color: var(--muted);
+      margin-bottom: 28px; text-align: left;
+    }
+    .email-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent2); flex-shrink: 0;
+      animation: blink 2s ease-in-out infinite;
+    }
+    .email-note strong { color: var(--text); }
+
+    /* Error state */
+    .error-box {
+      background: rgba(239,68,68,.08);
+      border: 1px solid rgba(239,68,68,.25);
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 13px; color: #fca5a5;
+      margin-bottom: 20px; text-align: left;
       display: none;
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%);
-      background: var(--green); color: #fff;
-      font-size: 14px; font-weight: 600;
-      padding: 12px 24px; border-radius: 40px;
-      box-shadow: 0 4px 24px rgba(34,197,94,.35);
-      animation: slide-up .4s ease;
-      white-space: nowrap;
     }
-    @keyframes slide-up {
-      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-      to   { transform: translateX(-50%) translateY(0); opacity: 1; }
-    }
+
+    /* Hidden until JS shows them */
+    [data-view] { display: none; }
   </style>
 </head>
 <body>
   <div class="glow"></div>
   <div class="logo">Run<span>Sound</span></div>
 
-  <div class="card">
+  <!-- ── VIEW: Connect TikTok ── -->
+  <div class="card" data-view="connect">
     <div class="icon-wrap">
-      <div class="icon-circle">🚀</div>
+      <div class="icon-circle tiktok">
+        <svg class="tiktok-logo" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.96a8.17 8.17 0 004.79 1.53V7.05a4.85 4.85 0 01-1.02-.36z"/>
+        </svg>
+      </div>
     </div>
 
-    <h1>You're all set up!</h1>
+    <h1>Connect your TikTok</h1>
     <p class="subtitle">
-      Your first TikTok draft is being created right now.<br>
-      <strong>We'll email you the moment it lands in your inbox</strong> — usually within 5 minutes.
+      RunSound posts directly to <strong>your</strong> TikTok account.<br>
+      Connect once — we handle everything else.
     </p>
 
-    <div class="next-box">
-      <h3>What happens next</h3>
-      <div class="next-item">
-        <span class="next-num">1</span>
-        <span>You get an <strong>email notification</strong> when your draft is ready in TikTok</span>
+    <div class="steps">
+      <h3>What happens</h3>
+      <div class="step-item">
+        <span class="step-num">1</span>
+        <span>Tap the button → approve RunSound in TikTok — <strong>takes 10 seconds</strong></span>
       </div>
-      <div class="next-item">
-        <span class="next-num">2</span>
-        <span>Open TikTok → tap the draft → <strong>add your song as sound</strong> → publish</span>
+      <div class="step-item">
+        <span class="step-num">2</span>
+        <span>We generate your <strong>AI images and hooks</strong> in the background (~5 min)</span>
       </div>
-      <div class="next-item">
-        <span class="next-num">3</span>
-        <span>A <strong>new draft arrives automatically every night</strong> — you just publish</span>
+      <div class="step-item">
+        <span class="step-num">3</span>
+        <span>A <strong>draft lands in your TikTok inbox</strong> — add your song and publish</span>
       </div>
     </div>
 
-    <div class="email-note">
-      <div class="dot"></div>
-      <span>Creating your images and copy now — <strong>sit back, we've got it</strong></span>
+    <div class="error-box" id="connectError"></div>
+
+    <a id="tiktokConnectBtn" class="btn-tiktok" href="#">
+      <svg class="tiktok-logo" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.96a8.17 8.17 0 004.79 1.53V7.05a4.85 4.85 0 01-1.02-.36z"/>
+      </svg>
+      Connect TikTok
+    </a>
+
+    <p class="privacy-note">
+      We only post to your TikTok — we never read your feed, messages or followers.
+    </p>
+  </div>
+
+  <!-- ── VIEW: Pipeline running (after TikTok connected) ── -->
+  <div class="card" data-view="pipeline">
+    <div class="icon-wrap">
+      <div class="icon-circle done">🎵</div>
+    </div>
+
+    <div class="status-badge connected">
+      <span class="dot"></span>
+      TikTok connected
+    </div>
+
+    <h1>Creating your first draft</h1>
+    <p class="subtitle">
+      Your AI images and hooks are being generated now.<br>
+      <strong>We'll email you when the draft is ready in your TikTok inbox.</strong>
+    </p>
+
+    <div class="pipeline" id="pipelineSteps">
+      <h3>Progress</h3>
+      <!-- Steps injected by JS -->
+    </div>
+
+    <div class="email-note" id="emailNote">
+      <div class="email-dot"></div>
+      <span>Working on it — <strong>sit back, we've got it</strong></span>
     </div>
 
     <a href="#" id="dashboardBtn" class="btn-primary">Go to my dashboard →</a>
   </div>
 
-  <!-- Toast when pipeline finishes while user is still on page -->
-  <div class="toast" id="doneToast">✅ Draft sent to your TikTok inbox!</div>
-
   <script>
+    // ── Parse URL params ──────────────────────────────────────────────────────
     const params     = new URLSearchParams(location.search);
     const campaignId = params.get('campaign_id');
-    const token      = params.get('token') || '';
+    const artistId   = params.get('artist_id');
+    const dashToken  = params.get('token') || '';
+    const tiktokDone = params.get('tiktok') === 'connected';
+    const errorParam = params.get('error');
+    const song       = params.get('song') || '';
 
-    document.getElementById('dashboardBtn').href =
-      `/dashboard.html?campaign_id=${campaignId}&token=${token}`;
+    // ── Pipeline step labels (must match onboard.js STEPS) ───────────────────
+    const STEP_LABELS = {
+      setup:   'Setting up your campaign',
+      library: 'Generating AI images for your song',
+      pick:    'Picking today\'s slides',
+      texts:   'Writing hooks and captions',
+      overlay: 'Applying text overlays',
+      post:    'Sending draft to your TikTok inbox',
+      done:    'Your first draft is ready!',
+    };
+    const STEP_ORDER = ['setup','library','pick','texts','overlay','post','done'];
 
-    // Poll silently in background — only show toast if done while still on page
-    let timer = null;
+    // ── Show a specific view ──────────────────────────────────────────────────
+    function showView(name) {
+      document.querySelectorAll('[data-view]').forEach(el => {
+        el.style.display = el.dataset.view === name ? 'block' : 'none';
+      });
+    }
 
-    async function poll() {
+    // ── Build pipeline steps HTML ─────────────────────────────────────────────
+    function renderPipeline(currentStep, isDone) {
+      const currentIdx = STEP_ORDER.indexOf(currentStep);
+      const container  = document.getElementById('pipelineSteps');
+      let html = '<h3>Progress</h3>';
+
+      STEP_ORDER.forEach((stepId, i) => {
+        const label = STEP_LABELS[stepId];
+        let iconClass = 'pending';
+        let icon      = '○';
+        let labelClass = 'pending';
+
+        if (isDone || i < currentIdx) {
+          iconClass  = 'done';
+          icon       = '✓';
+          labelClass = '';
+        } else if (i === currentIdx) {
+          iconClass  = 'active';
+          icon       = '<span class="spin">◌</span>';
+          labelClass = '';
+        }
+
+        html += `
+          <div class="pipe-step">
+            <div class="pipe-icon ${iconClass}">${icon}</div>
+            <span class="pipe-label ${labelClass}">${label}</span>
+          </div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // ── Mark pipeline done ────────────────────────────────────────────────────
+    function markDone() {
+      renderPipeline('done', true);
+      const emailNote = document.getElementById('emailNote');
+      emailNote.innerHTML = `
+        <div class="email-dot" style="background:var(--green);animation:none"></div>
+        <span><strong>Draft sent!</strong> Check your TikTok inbox now 📱</span>
+      `;
+    }
+
+    // ── Wire up dashboard button ──────────────────────────────────────────────
+    if (campaignId) {
+      document.getElementById('dashboardBtn').href =
+        `/dashboard.html?campaign_id=${campaignId}&token=${dashToken}`;
+    }
+
+    // ── Wire up TikTok connect button ─────────────────────────────────────────
+    if (artistId && campaignId) {
+      const connectBtn = document.getElementById('tiktokConnectBtn');
+      const connectUrl = `/auth/tiktok?artist_id=${encodeURIComponent(artistId)}&campaign_id=${encodeURIComponent(campaignId)}&token=${encodeURIComponent(dashToken)}`;
+      connectBtn.href = connectUrl;
+    } else {
+      // Fallback: no artist_id — hide connect button, go straight to pipeline
+      // (legacy campaigns or re-visits after connect)
+    }
+
+    // ── Handle error params ───────────────────────────────────────────────────
+    const ERROR_MESSAGES = {
+      cancelled:       'You cancelled the TikTok authorisation. Tap the button to try again.',
+      session_expired: 'The authorisation session expired. Please try connecting again.',
+      token_exchange:  'Something went wrong during TikTok authorisation. Please try again.',
+    };
+    if (errorParam) {
+      const box = document.getElementById('connectError');
+      box.textContent = ERROR_MESSAGES[errorParam] || `Error: ${errorParam}. Please try again.`;
+      box.style.display = 'block';
+    }
+
+    // ── Polling ───────────────────────────────────────────────────────────────
+    let pollTimer = null;
+
+    async function pollStatus() {
       if (!campaignId) return;
       try {
         const res  = await fetch(`/api/onboard/${campaignId}/status`);
         const data = await res.json();
         if (!data.ok) return;
 
+        renderPipeline(data.currentStep, data.done);
+
         if (data.done) {
-          clearInterval(timer);
-          // Show subtle toast
-          const toast = document.getElementById('doneToast');
-          toast.style.display = 'block';
-          // Update dot to static green
-          document.querySelector('.dot').style.animation = 'none';
-          document.querySelector('.dot').style.background = 'var(--green)';
-          document.querySelector('.email-note span').innerHTML =
-            '<strong>Draft sent!</strong> Check your TikTok inbox now';
+          clearInterval(pollTimer);
+          markDone();
         }
       } catch { /* silent */ }
     }
 
-    if (campaignId) {
-      poll();
-      timer = setInterval(poll, 5000);
+    function startPolling() {
+      pollStatus();
+      pollTimer = setInterval(pollStatus, 4000);
     }
+
+    // ── Main init logic ───────────────────────────────────────────────────────
+    async function init() {
+      // 1. Came back from TikTok OAuth with success?
+      if (tiktokDone) {
+        renderPipeline('setup', false);
+        showView('pipeline');
+        startPolling();
+        return;
+      }
+
+      // 2. Check if TikTok is already connected (returning visitor)
+      if (artistId) {
+        try {
+          const res  = await fetch(`/auth/tiktok/status/${encodeURIComponent(artistId)}`);
+          const data = await res.json();
+          if (data.connected) {
+            // Already connected — check if pipeline is running/done
+            renderPipeline('setup', false);
+            showView('pipeline');
+            startPolling();
+            return;
+          }
+        } catch { /* check failed — show connect view */ }
+      }
+
+      // 3. Not connected yet — show the connect button
+      showView('connect');
+      if (errorParam) {
+        // Error was already rendered above
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>

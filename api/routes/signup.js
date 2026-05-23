@@ -175,19 +175,10 @@ router.post('/', async (req, res) => {
     // Dashboard URL includes token — this is the artist's personal access link
     const dashboardUrl = `${BASE}/dashboard.html?campaign_id=${campaign.id}&token=${dashToken}`;
 
-    // Trigger onboarding + send welcome email — both non-blocking
+    // Send welcome email (non-blocking)
+    // Onboarding pipeline is NOT started here — it starts after the artist
+    // connects their TikTok account on /connect.html (triggered by /auth/tiktok/callback)
     setImmediate(async () => {
-      // 1. Fire onboarding pipeline
-      try {
-        const fetch = (...a) => import('node-fetch').then(({ default: f }) => f(...a));
-        await (await fetch)(`http://localhost:${process.env.PORT || 3000}/api/onboard/${campaign.id}`, {
-          method: 'POST',
-        });
-      } catch (e) {
-        console.error('[signup] Failed to trigger onboarding:', e.message);
-      }
-
-      // 2. Send welcome email with dashboard link
       await sendWelcomeEmail({
         artistName:   artist,
         email:        email.toLowerCase().trim(),

@@ -738,11 +738,10 @@
 
       const json = await res.json();
       if (res.ok && json.ok) {
-        // Redirect to connect.html with campaign ID, token and song name
-        // connect.html will show live onboarding progress and then link to dashboard
+        // Redirect to connect.html — artist connects TikTok here before pipeline starts
         const song = encodeURIComponent(data.song || '');
         window.location.href =
-          `/connect.html?campaign_id=${encodeURIComponent(json.campaignId)}&token=${encodeURIComponent(json.dashToken)}&song=${song}`;
+          `/connect.html?campaign_id=${encodeURIComponent(json.campaignId)}&artist_id=${encodeURIComponent(json.artistId)}&token=${encodeURIComponent(json.dashToken)}&song=${song}`;
       } else {
         throw new Error(json.error || 'Server error');
       }

@@ -46,7 +46,10 @@ const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_K
 // Returns { social_proof: 1.4, contrarian: 0.8, mystery: 1.0 } etc.
 // Archetypes with too few posts keep weight = 1.0 (neutral — keep exploring)
 function computeWeights(rows) {
-  const ARCHETYPES = ['social_proof', 'contrarian', 'mystery'];
+  // Must match ARCHETYPES in generate-texts.js exactly
+  const ARCHETYPES = ['social_proof', 'contrarian', 'mystery', 'lifestyle_placement'];
+  const archetypeToVariant = { social_proof: 'A', contrarian: 'B', mystery: 'C', lifestyle_placement: 'D' };
+  const NUM = ARCHETYPES.length; // 4
 
   // Group by archetype
   const groups = {};
@@ -59,7 +62,7 @@ function computeWeights(rows) {
   for (const arch of ARCHETYPES) {
     const posts = groups[arch];
     if (posts.length < MIN_POSTS) {
-      avgs[arch] = null; // not enough data
+      avgs[arch] = null; // not enough data — will be filled with mean
     } else {
       const totalCtr = posts.reduce((s, p) => s + (p.streaming_ctr || 0), 0);
       avgs[arch] = totalCtr / posts.length;
@@ -69,28 +72,25 @@ function computeWeights(rows) {
   // If no archetype has enough data, keep equal weights
   const withData = ARCHETYPES.filter(a => avgs[a] !== null);
   if (withData.length === 0) {
-    return { A: 1.0, B: 1.0, C: 1.0 };
+    return { A: 1.0, B: 1.0, C: 1.0, D: 1.0 };
   }
 
-  // Normalise: map archetype → variant letter
-  const archetypeToVariant = { social_proof: 'A', contrarian: 'B', mystery: 'C' };
-
   // Fill missing archetypes with the mean of known ones
-  const knownAvgs   = withData.map(a => avgs[a]);
-  const meanCtr     = knownAvgs.reduce((s, v) => s + v, 0) / knownAvgs.length;
+  const knownAvgs = withData.map(a => avgs[a]);
+  const meanCtr   = knownAvgs.reduce((s, v) => s + v, 0) / knownAvgs.length;
 
   for (const arch of ARCHETYPES) {
     if (avgs[arch] === null) avgs[arch] = meanCtr;
   }
 
-  // Normalise to sum = 3.0 (so average weight stays ~1.0)
-  const total  = ARCHETYPES.reduce((s, a) => s + avgs[a], 0);
+  // Normalise to sum = NUM (so average weight stays ~1.0 across all variants)
+  const total   = ARCHETYPES.reduce((s, a) => s + avgs[a], 0);
   const weights = {};
   for (const arch of ARCHETYPES) {
     const v = archetypeToVariant[arch];
     // Avoid division by zero; min weight 0.1 so we never fully stop exploring
     weights[v] = total > 0
-      ? Math.max(0.1, parseFloat(((avgs[arch] / total) * 3).toFixed(3)))
+      ? Math.max(0.1, parseFloat(((avgs[arch] / total) * NUM).toFixed(3)))
       : 1.0;
   }
 
@@ -125,17 +125,18 @@ async function processCampaign(campaign) {
   const newWeights  = computeWeights(withClicks);
 
   // Count per archetype for logging
-  const counts = { social_proof: 0, contrarian: 0, mystery: 0 };
+  const counts = { social_proof: 0, contrarian: 0, mystery: 0, lifestyle_placement: 0 };
   for (const p of posts) if (p.hook_archetype in counts) counts[p.hook_archetype]++;
 
   console.log(`\n  📊 ${name}`);
   console.log(`     Posts analysed: ${withClicks.length} (${posts.length} total tagged)`);
-  console.log(`     social_proof (A): ${counts.social_proof} posts → weight ${newWeights.A}`);
-  console.log(`     contrarian   (B): ${counts.contrarian}   posts → weight ${newWeights.B}`);
-  console.log(`     mystery      (C): ${counts.mystery}      posts → weight ${newWeights.C}`);
+  console.log(`     social_proof       (A): ${counts.social_proof}        posts → weight ${newWeights.A}`);
+  console.log(`     contrarian         (B): ${counts.contrarian}          posts → weight ${newWeights.B}`);
+  console.log(`     mystery            (C): ${counts.mystery}             posts → weight ${newWeights.C}`);
+  console.log(`     lifestyle_placement(D): ${counts.lifestyle_placement} posts → weight ${newWeights.D}`);
 
   const winner = Object.entries(newWeights).sort((a, b) => b[1] - a[1])[0];
-  const archetypeNames = { A: 'social_proof', B: 'contrarian', C: 'mystery' };
+  const archetypeNames = { A: 'social_proof', B: 'contrarian', C: 'mystery', D: 'lifestyle_placement' };
   console.log(`     🏆 Winner: Variant ${winner[0]} (${archetypeNames[winner[0]]}) — weight ${winner[1]}`);
 
   if (DRY_RUN) {
