@@ -54,6 +54,7 @@ app.use('/api/link',       require('./routes/link'));
 app.use('/api/dashboard',  require('./routes/dashboard'));
 app.use('/api/onboard',    require('./routes/onboard'));
 app.use('/auth/tiktok',    require('./routes/tiktok-auth'));
+app.use('/api/tiktok',    require('./routes/tiktok-demo'));
 
 // Health check
 app.get('/api/health', (req, res) => {
