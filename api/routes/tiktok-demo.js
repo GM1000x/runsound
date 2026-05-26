@@ -46,7 +46,7 @@ function tiktokRequest({ method = 'GET', path, token, body = null }) {
 }
 
 // ── GET /api/tiktok/sandbox-demo ─────────────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/sandbox-demo', async (req, res) => {
   const { artist_id } = req.query;
 
   if (!artist_id) {
