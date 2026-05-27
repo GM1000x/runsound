@@ -103,8 +103,10 @@ router.get('/sandbox-demo', async (req, res) => {
         token,
         body: {
           source_info: {
-            source: 'PULL_FROM_URL',
-            video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            source: 'FILE_UPLOAD',
+            video_size: 10485760,
+            chunk_size: 10485760,
+            total_chunk_count: 1,
           },
         },
       });
