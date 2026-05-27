@@ -69,7 +69,7 @@ async function setStatus(campaignId, stepId, error = null) {
 }
 
 // ─── Run a shell command as a Promise ────────────────────────────────────────
-function runCommand(cmd, args, label) {
+function runCommand(cmd, args, label, timeoutMs = 10 * 60 * 1000) {
   return new Promise((resolve, reject) => {
     console.log(`[onboard] ▶ ${label}`);
     const child = spawn(cmd, args, {
@@ -83,7 +83,14 @@ function runCommand(cmd, args, label) {
     child.stdout.on('data', d => { stdout += d; process.stdout.write(d); });
     child.stderr.on('data', d => { stderr += d; process.stderr.write(d); });
 
+    // Kill child if it takes longer than timeoutMs
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM');
+      reject(new Error(`${label} timed out after ${timeoutMs / 60000} minutes`));
+    }, timeoutMs);
+
     child.on('close', code => {
+      clearTimeout(timer);
       if (code === 0) {
         console.log(`[onboard] ✅ ${label}`);
         resolve(stdout);
@@ -208,7 +215,7 @@ async function runOnboarding(campaignId) {
 
     // ── 2. Build image library ─────────────────────────────────────────────
     await setStatus(campaignId, 'library');
-    await runCommand('node', ['build-image-library.js', '--config', cfgPath], 'build image library');
+    await runCommand('node', ['build-image-library.js', '--config', cfgPath, '--count', '2'], 'build image library', 8 * 60 * 1000);
 
     // Remove the default-library symlink now that we have real images
     const libDir = path.join(dir, 'image-library');

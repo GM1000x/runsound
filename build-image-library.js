@@ -319,7 +319,7 @@ async function main() {
 
     // Delay between requests — gpt-image-2 high quality: ~5 img/min, need ≥12s gap
     if (!DRY_RUN && i < plan.length - 1) {
-      await new Promise(r => setTimeout(r, 15000));
+      await new Promise(r => setTimeout(r, 8000));
     }
   }
 
