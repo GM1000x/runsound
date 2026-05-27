@@ -38,29 +38,32 @@ const REDIRECT_URI  = `${BASE_URL}/auth/tiktok/callback`;
 // user.info.basic → display name / avatar
 const SCOPES = 'user.info.basic,video.upload';
 
-// ── In-memory PKCE store (keyed by state, auto-expires in 10 min) ─────────────
-// Works fine for single-server Railway. For multi-instance: use Redis instead.
-const pkceStore = new Map();
-
 // ── State encoding helpers ────────────────────────────────────────────────────
-// State = base64url("artistId|campaignId|dashToken") — survives URL encoding
-function encodeState(artistId, campaignId, dashToken) {
-  const raw = [artistId || '', campaignId || '', dashToken || ''].join('|');
-  return Buffer.from(raw).toString('base64url');
+// State embeds the PKCE verifier so no server-side store is needed.
+// This survives Railway restarts. Format: base64url(JSON)
+function encodeState(artistId, campaignId, dashToken, codeVerifier) {
+  const payload = {
+    a: artistId   || '',
+    c: campaignId || '',
+    t: dashToken  || '',
+    v: codeVerifier || '',
+  };
+  return Buffer.from(JSON.stringify(payload)).toString('base64url');
 }
 
 function decodeState(stateStr) {
   try {
-    const raw  = Buffer.from(stateStr, 'base64url').toString('utf8');
-    const [artistId, campaignId, dashToken] = raw.split('|');
+    const raw = Buffer.from(stateStr, 'base64url').toString('utf8');
+    const payload = JSON.parse(raw);
     return {
-      artistId:   artistId   || null,
-      campaignId: campaignId || null,
-      dashToken:  dashToken  || null,
+      artistId:     payload.a || null,
+      campaignId:   payload.c || null,
+      dashToken:    payload.t || null,
+      codeVerifier: payload.v || null,
     };
   } catch {
-    // Fallback for old-style plain artist_id state
-    return { artistId: stateStr, campaignId: null, dashToken: null };
+    // Fallback for old-style plain artist_id state (no verifier)
+    return { artistId: stateStr, campaignId: null, dashToken: null, codeVerifier: null };
   }
 }
 
@@ -73,14 +76,10 @@ router.get('/', (req, res) => {
     return res.status(500).send('TikTok app not configured yet — check TIKTOK_CLIENT_KEY env var');
   }
 
-  // Generate PKCE
+  // Generate PKCE — verifier is embedded in state (no server-side store needed)
   const codeVerifier  = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
-  const state         = encodeState(artist_id, campaign_id, token);
-
-  // Store verifier by state — expires in 10 minutes
-  pkceStore.set(state, codeVerifier);
-  setTimeout(() => pkceStore.delete(state), 10 * 60 * 1000);
+  const state         = encodeState(artist_id, campaign_id, token, codeVerifier);
 
   const params = new URLSearchParams({
     client_key:            CLIENT_KEY,
@@ -106,9 +105,7 @@ router.get('/callback', async (req, res) => {
     return res.redirect('/connect.html?error=cancelled');
   }
 
-  const { artistId, campaignId, dashToken } = decodeState(stateStr);
-  const codeVerifier = pkceStore.get(stateStr);
-  pkceStore.delete(stateStr); // one-time use
+  const { artistId, campaignId, dashToken, codeVerifier } = decodeState(stateStr);
 
   // Build the connect.html redirect base URL
   const connectBase = buildConnectUrl(campaignId, artistId, dashToken);
