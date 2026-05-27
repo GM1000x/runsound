@@ -11,10 +11,18 @@
  *   D — lifestyle_placement  "This is the type of song i play when..."
  *
  * LEARNING LOOP (Supabase-first, works on Railway ephemeral filesystem):
- *   - hook_weights per archetype stored in campaigns.hook_weights
- *   - learn-hooks.js updates weights weekly based on streaming_ctr per archetype
+ *   - hook_weights per archetype stored in campaigns.hook_weights (campaign-specific)
+ *   - hook_bank in Supabase stores cross-artist archetype performance per genre family
+ *   - New artists inherit the cross-artist prior and blend it with their own data
+ *   - learn-hooks.js updates campaign weights weekly based on streaming_ctr
+ *   - check-analytics.js updates hook_bank after each analytics sync
  *   - This script reads weights → picks via ε-greedy (80% exploit / 20% explore)
  *   - Chosen archetype written to texts-meta.json for post-to-tiktok.js attribution
+ *
+ * WEIGHT PRIORITY:
+ *   If campaign has ≥7 posts worth of data → use campaign weights directly.
+ *   Otherwise → blend hook_bank cross-artist prior with campaign data.
+ *   This prevents random variance on early posts from over-fitting.
  *
  * RunSound optimises for STREAMING CLICKS not views.
  * The archetype that drives the most smart-link clicks wins.
@@ -59,30 +67,67 @@ const ARCHETYPES = {
 
 const DEFAULT_WEIGHTS = { A: 1.0, B: 1.0, C: 1.0, D: 1.0 };
 
-// ─── Load hook_weights from Supabase ─────────────────────────────────────────
+// ─── Bank utils (optional — gracefully skipped if not present) ────────────────
+let bank = null;
+try { bank = require('./bank-utils'); } catch { /* bank-utils not present */ }
+
+// ─── Load hook_weights — merges campaign-specific data with cross-artist bank ──
+// Priority:
+//   1. If campaign has ≥7 posts: use campaign weights (enough individual data)
+//   2. Otherwise: blend hook_bank cross-artist prior with campaign weights
+//      (protects early posts from random variance, inherits network flywheel data)
 async function loadWeightsFromSupabase() {
   const id = campaignId || config.campaign?.id;
-  if (!id) return DEFAULT_WEIGHTS;
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) return DEFAULT_WEIGHTS;
 
+  let sb = null;
   try {
     const { createClient } = require('@supabase/supabase-js');
-    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-
-    const { data, error } = await sb
-      .from('campaigns')
-      .select('hook_weights')
-      .eq('id', id)
-      .single();
-
-    if (error || !data?.hook_weights || !Object.keys(data.hook_weights).length) {
-      return DEFAULT_WEIGHTS;
-    }
-
-    return { ...DEFAULT_WEIGHTS, ...data.hook_weights };
+    sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   } catch {
     return DEFAULT_WEIGHTS;
   }
+
+  // ── Load campaign-specific weights ────────────────────────────────────────
+  let campaignWeights = { ...DEFAULT_WEIGHTS };
+  let postCount = 0;
+
+  if (id) {
+    try {
+      const { data } = await sb
+        .from('campaigns')
+        .select('hook_weights')
+        .eq('id', id)
+        .single();
+
+      if (data?.hook_weights && Object.keys(data.hook_weights).length) {
+        campaignWeights = { ...DEFAULT_WEIGHTS, ...data.hook_weights };
+      }
+
+      // Count posts to know how much to trust campaign weights
+      const { count } = await sb
+        .from('post_log')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', id);
+      postCount = count || 0;
+    } catch { /* use defaults */ }
+  }
+
+  // ── Load cross-artist hook bank weights ───────────────────────────────────
+  let bankWeights = { ...DEFAULT_WEIGHTS };
+  if (bank && sb) {
+    try {
+      const genreFamily = deriveGenreFamily();
+      bankWeights = await bank.getHookWeightsFromBank(sb, genreFamily);
+    } catch { /* use defaults */ }
+  }
+
+  // ── Merge: blend bank prior with campaign data based on post count ─────────
+  const merged = bank
+    ? bank.mergeHookWeights(campaignWeights, bankWeights, postCount)
+    : campaignWeights;
+
+  return merged;
 }
 
 // ─── ε-greedy variant selection ───────────────────────────────────────────────
@@ -214,8 +259,10 @@ function buildTexts(variant) {
   console.log('==============================');
   console.log(`   Artist:      ${an}`);
   console.log(`   Song:        ${st}`);
+  console.log(`   Genre:       ${deriveGenreFamily()} (${config.song?.genre || 'unset'})`);
   console.log(`   Campaign ID: ${campaignId || config.campaign?.id || 'none'}`);
   if (ta) console.log(`   Audience:    ${ta}`);
+  console.log(`   Bank:        ${bank ? 'enabled ✅' : 'disabled (bank-utils not found)'}`);
 
   const weights          = await loadWeightsFromSupabase();
   console.log(`\n   Hook weights: A=${weights.A?.toFixed(2)} B=${weights.B?.toFixed(2)} C=${weights.C?.toFixed(2)} D=${weights.D?.toFixed(2)}`);
@@ -240,6 +287,7 @@ function buildTexts(variant) {
     generatedAt:     new Date().toISOString(),
     variant:         selectedVariant,
     hook_archetype:  selectedArchetype,
+    genre_family:    deriveGenreFamily(),
     weights_used:    weights,
     song:            st,
     artist:          an,

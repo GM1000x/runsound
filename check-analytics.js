@@ -8,6 +8,13 @@
  *
  * Called as step 1 of the nightly pipeline — before learn.js and optimize.js.
  *
+ * BANK UPDATES:
+ *   After syncing streaming CTR for a post, this script also updates:
+ *   - image_bank: avg_ctr for all images used in the post (via post_log.image_bank_ids)
+ *   - hook_bank:  avg_ctr for the archetype+genre_family combo used in the post
+ *   This builds up the cross-artist performance data that lets new artists
+ *   inherit proven content from day one.
+ *
  * Usage:
  *   node check-analytics.js --config runsound-marketing/config.json
  *   node check-analytics.js --config runsound-marketing/config.json --days 7
@@ -15,6 +22,7 @@
  * Output:
  *   - Updates stats.views/likes/shares in each post's meta.json
  *   - Writes runsound-marketing/analytics/latest.json (summary for optimize-strategy.js)
+ *   - Updates image_bank + hook_bank performance in Supabase
  */
 
 require('dotenv').config();
@@ -37,6 +45,21 @@ try {
     });
   }
 } catch { /* supabase not installed — streaming_ctr won't be updated */ }
+
+// ─── Bank utils (optional — gracefully skipped if not present) ────────────────
+let bank = null;
+try { bank = require('./bank-utils'); } catch { /* bank-utils not present */ }
+
+// ─── Genre family helper (mirrors generate-texts.js) ─────────────────────────
+function deriveGenreFamily(cfg) {
+  const g = (cfg.song?.genre  || cfg.artist?.genre || '').toLowerCase();
+  const m = (cfg.song?.mood   || '').toLowerCase();
+  if (/house|techno|edm|dance|electronic|trance|club|disco|drum|bass/.test(g + ' ' + m)) return 'dance';
+  if (/hip.hop|rap|trap|drill/.test(g + ' ' + m))  return 'hiphop';
+  if (/r.b|soul|neo.soul/.test(g + ' ' + m))       return 'rnb';
+  if (/country|folk|bluegrass/.test(g + ' ' + m))  return 'country';
+  return 'pop';
+}
 
 // ─── CLI args ─────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -229,15 +252,17 @@ function extractStats(raw) {
       // We now have TikTok views → compute ctr = clicks / views and persist.
       if (supabase && meta.postUid) {
         try {
-          // Fetch current streaming_clicks for this post
+          // Fetch current streaming_clicks + image_bank_ids for this post
           const { data: row } = await supabase
             .from('post_log')
-            .select('streaming_clicks')
+            .select('streaming_clicks, image_bank_ids, hook_archetype')
             .eq('post_uid', meta.postUid)
             .single();
 
-          const clicks = row?.streaming_clicks || 0;
-          const ctr    = stats.views > 0 ? clicks / stats.views : null;
+          const clicks       = row?.streaming_clicks || 0;
+          const ctr          = stats.views > 0 ? clicks / stats.views : null;
+          const imageBankIds = row?.image_bank_ids || meta.imageBankIds || [];
+          const hookArch     = row?.hook_archetype || meta.hook_archetype || null;
 
           await supabase.from('post_log').update({
             views:          stats.views,
@@ -245,6 +270,21 @@ function extractStats(raw) {
           }).eq('post_uid', meta.postUid);
 
           log(`     Supabase: ${clicks} clicks / ${stats.views} views → ctr=${ctr !== null ? ctr.toFixed(4) : 'n/a'}`);
+
+          // ── Update image bank performance ──────────────────────────────────
+          if (bank && imageBankIds?.length && stats.views > 0) {
+            await bank.updateImagePerformance(supabase, imageBankIds, stats.views, clicks);
+            log(`     Image bank: updated ${imageBankIds.length} image(s)`);
+          }
+
+          // ── Update hook bank performance ───────────────────────────────────
+          if (bank && hookArch && stats.views > 0) {
+            const variant      = meta.variant || 'A';
+            const genreFamily  = deriveGenreFamily(config);
+            await bank.updateHookPerformance(supabase, genreFamily, variant, stats.views, clicks);
+            log(`     Hook bank: updated ${genreFamily}/${variant} (${hookArch})`);
+          }
+
         } catch (sbErr) {
           log(`     Supabase sync failed: ${sbErr.message}`);
         }

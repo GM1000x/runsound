@@ -265,6 +265,16 @@ async function writeToSupabase(meta) {
     } catch {}
   }
 
+  // Load image_bank_ids from library.json (written by build-image-library.js)
+  let imageBankIds = [];
+  const libraryJsonPath = path.join(path.dirname(configPath), 'image-library', 'library.json');
+  if (fs.existsSync(libraryJsonPath)) {
+    try {
+      const lib = JSON.parse(fs.readFileSync(libraryJsonPath, 'utf-8'));
+      imageBankIds = lib.imageBankIds || [];
+    } catch {}
+  }
+
   try {
     const { error } = await supabase.from('post_log').upsert({
       campaign_id:      campaignId,
@@ -275,6 +285,7 @@ async function writeToSupabase(meta) {
       hook_archetype:   hookArchetype,
       visual_direction: visualDirection,
       tiktok_post_id:   meta.postizPostId || null,
+      image_bank_ids:   imageBankIds,
       status:           'pending_publish',
       views:            0,
       likes:            0,

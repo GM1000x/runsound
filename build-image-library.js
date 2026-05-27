@@ -6,30 +6,41 @@
  * Images are generated ONCE per campaign (or when the artist swaps a song)
  * and then reused daily by pick-slides.js. This keeps the daily run cost at $0.
  *
+ * BANK-FIRST STRATEGY (network flywheel):
+ *   Before generating new images, checks the shared image_bank in Supabase.
+ *   If the bank already has proven images for a given arc role, those are
+ *   downloaded and reused — at zero API cost.
+ *   Only generates new images for arc roles not covered by the bank.
+ *   After generation, new images are uploaded to Supabase Storage and
+ *   registered in image_bank so future artists can benefit from them too.
+ *
  * Arc-aware generation: produces images for each narrative role
- * (hook, tension, peak, release, aftermath, cta) so pick-slides.js
- * can match images to the right slide position.
+ * (hook, story, peak, cta) so pick-slides.js can match images to the
+ * right slide position.
  *
  * Image naming convention:
- *   img-001_hook_dramatic_cinematic.png
- *   img-002_tension_moody_dark.png
+ *   img-001_hook_lifestyle_candid.png
+ *   img-002_story_intimate_warm.png
  *   ...
  * Tags in the filename are read by pick-slides.js for arc-matching.
  *
  * Usage:
- *   node scripts/build-image-library.js --config <config.json>
- *   node scripts/build-image-library.js --config <config.json> --count 18
- *   node scripts/build-image-library.js --config <config.json> --force
+ *   node build-image-library.js --config <config.json>
+ *   node build-image-library.js --config <config.json> --count 4
+ *   node build-image-library.js --config <config.json> --force
+ *   node build-image-library.js --config <config.json> --no-bank    (skip bank lookup)
  *
  * Options:
- *   --count N     Total images to generate (default: 18, 3 per arc role)
+ *   --count N     Total images to generate (default: 4, 1 per arc role)
  *   --force       Regenerate even if library already exists
  *   --dry-run     Show prompts without generating
+ *   --no-bank     Skip image bank lookup; always generate fresh
  *
- * Cost: ~$0.04/image with gpt-image-1.5 (standard quality, 1024x1792)
- *       6 images ≈ $0.24 per campaign swap (one per arc role)
+ * Cost (when bank is empty): ~$0.19/image with gpt-image-2 (high, 1024×1536)
+ *       4 images ≈ $0.76 per first campaign (zero cost once bank has images)
  *
  * Requires: OPENAI_API_KEY in .env
+ *           SUPABASE_URL + SUPABASE_SERVICE_KEY in .env (for bank)
  */
 
 require('dotenv').config();
@@ -47,9 +58,10 @@ const configPath = getArg('config');
 const COUNT      = parseInt(getArg('count') || '4', 10);   // 1 per arc × 4 arcs (default)
 const FORCE      = args.includes('--force');
 const DRY_RUN    = args.includes('--dry-run');
+const NO_BANK    = args.includes('--no-bank');
 
 if (!configPath) {
-  console.error('Usage: node scripts/build-image-library.js --config <config.json>');
+  console.error('Usage: node build-image-library.js --config <config.json>');
   process.exit(1);
 }
 
@@ -78,6 +90,23 @@ const extra       = config.imageGen?.extraPrompt || '';
 const lyricSnippet = lyrics
   ? 'Song lyric excerpt: "' + lyrics.replace(/\s+/g, ' ').trim().slice(0, 200) + '".'
   : '';
+
+// ─── Supabase client ──────────────────────────────────────────────────────────
+let supabase = null;
+try {
+  if (!NO_BANK && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    const { createClient } = require('@supabase/supabase-js');
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      auth: { persistSession: false },
+    });
+  }
+} catch { /* supabase not installed — bank disabled */ }
+
+// ─── Bank utils ───────────────────────────────────────────────────────────────
+let bank = null;
+try {
+  if (supabase) bank = require('./bank-utils');
+} catch { /* bank-utils not present — skip bank */ }
 
 // ─── Arc roles — mirrors pick-slides.js (4-slide structure) ──────────────────
 // Pinterest/lifestyle style: real photography feel, intimate moments, natural light.
@@ -123,7 +152,6 @@ const ARC_ROLES = [
 ];
 
 // ─── Build image prompt for a given arc role ───────────────────────────────────
-// arcRole.prompts is an array; index selects which variation to use.
 function buildPrompt(arcRole, variationIndex) {
   const basePrompts = arcRole.prompts || [arcRole.prompt || ''];
   const base = basePrompts[variationIndex % basePrompts.length];
@@ -146,6 +174,10 @@ function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
     https.get(url, res => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        file.close();
+        return downloadFile(res.headers.location, dest).then(resolve).catch(reject);
+      }
       if (res.statusCode !== 200) {
         reject(new Error(`HTTP ${res.statusCode} for ${url}`));
         return;
@@ -157,8 +189,6 @@ function downloadFile(url, dest) {
 }
 
 // ─── Face detection — find safe text zone using GPT-4o Vision ─────────────────
-// Returns 'top' | 'bottom' | 'center' — where text is safe to place.
-// Costs ~$0.001 per image. Falls back to 'bottom' on any error.
 async function detectSafeTextZone(openai, imagePath) {
   try {
     const b64 = fs.readFileSync(imagePath).toString('base64');
@@ -197,13 +227,13 @@ async function generateImage(openai, prompt, arcRole, index) {
 
   if (fs.existsSync(destPath) && !FORCE) {
     console.log(`   ⏭  ${filename} already exists — skipping (use --force to regenerate)`);
-    return filename;
+    return { filename, safeZone: 'bottom', alreadyExisted: true };
   }
 
   if (DRY_RUN) {
     console.log(`   [dry-run] ${filename}`);
     console.log(`            "${prompt.slice(0, 100)}..."`);
-    return filename;
+    return { filename, safeZone: 'bottom' };
   }
 
   const MAX_RETRIES = 4;
@@ -227,7 +257,7 @@ async function generateImage(openai, prompt, arcRole, index) {
       const safeZone = await detectSafeTextZone(openai, destPath);
       console.log(` ${safeZone}`);
 
-      return { filename, safeZone };
+      return { filename, safeZone, destPath };
     } catch (err) {
       const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.toLowerCase().includes('rate limit');
       if (is429 && attempt < MAX_RETRIES) {
@@ -250,10 +280,9 @@ async function main() {
   console.log(`   Genre:   ${genre}`);
   console.log(`   Mood:    ${mood}`);
   console.log(`   Model:   ${model}`);
-  console.log(`   Style:   ${style}`);
   console.log(`   Count:   ${COUNT} images`);
+  console.log(`   Bank:    ${bank && supabase ? 'enabled ✅' : 'disabled (no Supabase or --no-bank)'}`);
   console.log(`   Output:  ${libraryDir}`);
-  console.log(`   Force:   ${FORCE}`);
   console.log('');
 
   // Check for existing library
@@ -275,55 +304,130 @@ async function main() {
 
   const openai = DRY_RUN ? null : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  // Distribute COUNT images across arc roles (round-robin)
+  // ── Ensure Supabase Storage bucket exists ──────────────────────────────────
+  if (bank && supabase) {
+    await bank.initStorage(supabase);
+  }
+
+  // ── Distribute COUNT images across arc roles (round-robin) ─────────────────
   const plan = [];
   for (let i = 0; i < COUNT; i++) {
     plan.push(ARC_ROLES[i % ARC_ROLES.length]);
   }
 
-  console.log('🖼  Generating images...\n');
+  // ── Try to fill as many slots as possible from the image bank ──────────────
+  const bankImages = {};  // arcRole → bank image row
+  if (bank && supabase && !FORCE) {
+    const neededRoles = [...new Set(plan.map(r => r.role))];
+    console.log(`🏦 Checking image bank for ${neededRoles.join(', ')}...`);
 
-  // Estimate cost — gpt-image-2 high quality 1024×1792 ≈ $0.19/image (Batch API) or $0.37 (standard)
-  const costPerImage = 0.19;
-  const existingCount = fs.existsSync(libraryDir)
-    ? fs.readdirSync(libraryDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f)).length
-    : 0;
-  const toGenerate = FORCE ? COUNT : Math.max(0, COUNT - existingCount);
-  console.log(`   Estimated cost: ~$${(toGenerate * costPerImage).toFixed(2)} (${toGenerate} new images @ $${costPerImage}/img)\n`);
+    const bankResults = await bank.pickBankImages(supabase, neededRoles);
+    for (const role of neededRoles) {
+      if (bankResults[role]) {
+        bankImages[role] = bankResults[role];
+        console.log(`   ✅ ${role}: bank hit (id: ${bankResults[role].id.slice(0, 8)}..., ctr: ${(bankResults[role].avg_ctr || 0).toFixed(4)})`);
+      } else {
+        console.log(`   ➕ ${role}: not in bank — will generate`);
+      }
+    }
+    console.log('');
+  }
 
   let generated  = 0;
+  let bankHits   = 0;
   let skipped    = 0;
-  const safeZones = {}; // filename → safeZone
+  const safeZones  = {};   // filename → safeZone
+  const bankIds    = [];   // image_bank UUIDs used in this library (for post attribution)
 
   for (let i = 0; i < plan.length; i++) {
     const arcRole = plan[i];
-    // variationIndex cycles through the prompts array within each arc role
+    const tags    = arcRole.tags.join('_');
+    const filename = `img-${String(i + 1).padStart(3, '0')}_${tags}.png`;
+    const destPath = path.join(libraryDir, filename);
+
+    // ── Try bank first ──────────────────────────────────────────────────────
+    const bankImg = bankImages[arcRole.role];
+    if (bankImg && !FORCE) {
+      if (fs.existsSync(destPath)) {
+        console.log(`   ⏭  ${filename} already on disk — skipping download`);
+        safeZones[filename] = bankImg.safe_zone || 'bottom';
+        bankIds.push(bankImg.id);
+        bankHits++;
+        continue;
+      }
+
+      if (!DRY_RUN) {
+        try {
+          process.stdout.write(`   🏦 ${filename} — downloading from bank...`);
+          await bank.downloadFromUrl(bankImg.public_url, destPath);
+          safeZones[filename] = bankImg.safe_zone || 'bottom';
+          bankIds.push(bankImg.id);
+          bankHits++;
+          console.log(` ✅ ${bankImg.safe_zone || 'bottom'}`);
+          continue;  // Skip generation for this slot
+        } catch (dlErr) {
+          console.log(` ⚠️  download failed (${dlErr.message}) — generating fresh`);
+          // Fall through to generation
+        }
+      } else {
+        console.log(`   [dry-run] ${filename} → bank hit`);
+        bankHits++;
+        continue;
+      }
+    }
+
+    // ── Generate new image ──────────────────────────────────────────────────
     const variationIndex = Math.floor(i / ARC_ROLES.length);
-    const prompt  = buildPrompt(arcRole, variationIndex);
+    const prompt = buildPrompt(arcRole, variationIndex);
+
+    // Estimate cost before generating
+    const costPerImage = 0.19;
+    if (!DRY_RUN && generated === 0) {
+      const toGenerate = plan.length - bankHits;
+      console.log(`   Estimated generation cost: ~$${(toGenerate * costPerImage).toFixed(2)} (${toGenerate} new images @ $${costPerImage}/img)\n`);
+    }
 
     try {
       const result = await generateImage(openai, prompt, arcRole, i + 1);
       if (result) {
-        const { filename, safeZone } = typeof result === 'string'
-          ? { filename: result, safeZone: 'bottom' }
-          : result;
-        const existed = fs.existsSync(path.join(libraryDir, filename)) && !FORCE;
-        if (existed) skipped++;
-        else generated++;
-        if (safeZone) safeZones[filename] = safeZone;
+        const { safeZone, alreadyExisted } = result;
+        if (alreadyExisted) {
+          skipped++;
+        } else {
+          generated++;
+          safeZones[filename] = safeZone;
+
+          // ── Upload newly generated image to bank ───────────────────────────
+          if (bank && supabase && !DRY_RUN && fs.existsSync(destPath)) {
+            process.stdout.write(`   📤 ${filename} — uploading to bank...`);
+            const bankResult = await bank.uploadToBank(supabase, destPath, {
+              arcRole:  arcRole.role,
+              tags:     arcRole.tags,
+              safeZone: safeZone,
+              genre,
+              mood,
+            });
+            if (bankResult) {
+              bankIds.push(bankResult.id);
+              console.log(` ✅ registered (id: ${bankResult.id.slice(0, 8)}...)`);
+            } else {
+              console.log(` ⚠️  upload failed — image still usable locally`);
+            }
+          }
+        }
       }
     } catch (err) {
       console.error(`   ❌ Failed to generate image ${i + 1}: ${err.message}`);
-      // Continue with remaining images
     }
 
     // Delay between requests — gpt-image-2 high quality: ~5 img/min, need ≥12s gap
-    if (!DRY_RUN && i < plan.length - 1) {
+    if (!DRY_RUN && i < plan.length - 1 && !bankImages[plan[i + 1]?.role]) {
       await new Promise(r => setTimeout(r, 8000));
     }
   }
 
-  // Save library metadata — including safeZone per image for text placement
+  // ── Save library metadata ──────────────────────────────────────────────────
+  // Includes bank IDs for later attribution in check-analytics.js
   const meta = {
     generatedAt: new Date().toISOString(),
     artist,
@@ -333,7 +437,9 @@ async function main() {
     style,
     count: COUNT,
     generated,
+    bankHits,
     skipped,
+    imageBankIds: bankIds,  // UUIDs of bank images used — for post attribution
     images: fs.readdirSync(libraryDir)
       .filter(f => /\.(png|jpg|jpeg)$/i.test(f))
       .map(f => ({
@@ -348,11 +454,13 @@ async function main() {
   fs.writeFileSync(path.join(libraryDir, 'library.json'), JSON.stringify(meta, null, 2));
 
   console.log(`\n✅ Library complete`);
-  console.log(`   ${generated} generated, ${skipped} skipped`);
+  console.log(`   ${bankHits} from bank (free), ${generated} generated, ${skipped} skipped`);
   console.log(`   Total: ${meta.images.length} images in ${libraryDir}`);
+  if (bankIds.length) {
+    console.log(`   Bank IDs recorded: ${bankIds.length}`);
+  }
   console.log(`\n   Next: npm run pick\n`);
 
-  // Hard fail if nothing was generated — lets the pipeline know something went wrong
   if (meta.images.length === 0 && !DRY_RUN) {
     console.error('💥 Fatal: 0 images in library. All generation attempts failed. Check OPENAI_API_KEY and model name above.');
     process.exit(1);
