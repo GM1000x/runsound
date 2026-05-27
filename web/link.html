@@ -54,13 +54,14 @@
     }
     .logo span { color: var(--accent2); }
 
-    /* Ambient glow — matches hero on index.html */
+    /* Ambient glow — colour set dynamically from artwork via JS */
     .glow {
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%);
+      background: radial-gradient(ellipse 70% 50% at 50% 0%, var(--glow-color, rgba(124,58,237,0.15)) 0%, transparent 70%);
       pointer-events: none;
       z-index: 0;
+      transition: background 1.2s ease;
     }
 
     /* ── ARTWORK ── */
@@ -324,9 +325,42 @@
   if (cfg.song)   document.getElementById('songTitle').textContent  = cfg.song;
   if (cfg.artist) document.getElementById('songArtist').textContent = cfg.artist;
 
-  // Artwork
+  // Artwork + ambient colour extraction
   if (cfg.art) {
-    document.getElementById('artworkImg').src = cfg.art;
+    const img = document.getElementById('artworkImg');
+    img.crossOrigin = 'anonymous';
+    img.src = cfg.art;
+    img.addEventListener('load', () => {
+      try {
+        // Draw to off-screen canvas and sample pixels for dominant colour
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 32, 32);
+        const data = ctx.getImageData(0, 0, 32, 32).data;
+
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 16) { // sample every 4th pixel
+          r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+        }
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+
+        // Boost saturation a bit so muted covers still produce nice glow
+        const max = Math.max(r, g, b) || 1;
+        const boost = Math.min(255 / max, 1.6);
+        r = Math.min(255, Math.round(r * boost));
+        g = Math.min(255, Math.round(g * boost));
+        b = Math.min(255, Math.round(b * boost));
+
+        document.documentElement.style.setProperty(
+          '--glow-color', `rgba(${r},${g},${b},0.18)`
+        );
+      } catch (e) {
+        // CORS error or tainted canvas — keep default purple glow
+      }
+    });
   }
 
   // Set page title

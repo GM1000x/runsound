@@ -168,7 +168,30 @@ router.post('/', async (req, res) => {
 
     // Update config with campaign.id now that we have it (needed by post-to-tiktok.js)
     config.campaign = { id: campaign.id, slug, smartLinkUrl };
-    await supabase.from('campaigns').update({ config }).eq('id', campaign.id);
+
+    // ── Auto-fetch artwork from Spotify oEmbed ─────────────────────────────────
+    let artworkUrl = req.body.artwork_url || null;
+    if (!artworkUrl && req.body.spotify) {
+      try {
+        const { default: fetch } = await import('node-fetch');
+        const oembed = await fetch(
+          `https://open.spotify.com/oembed?url=${encodeURIComponent(req.body.spotify)}`,
+          { headers: { 'User-Agent': 'RunSound/1.0' } }
+        );
+        if (oembed.ok) {
+          const data = await oembed.json();
+          artworkUrl = data.thumbnail_url || null;
+          console.log(`[signup] Artwork fetched from Spotify: ${artworkUrl}`);
+        }
+      } catch (e) {
+        console.warn('[signup] Could not fetch Spotify artwork:', e.message);
+      }
+    }
+
+    await supabase.from('campaigns').update({
+      config,
+      ...(artworkUrl ? { artwork_url: artworkUrl } : {}),
+    }).eq('id', campaign.id);
 
     console.log(`[signup] New campaign: ${slug} (artist: ${email})`);
 
