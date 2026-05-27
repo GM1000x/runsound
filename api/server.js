@@ -103,9 +103,9 @@ app.get('/l/:slug', async (req, res) => {
         soundcloud: campaign.soundcloud_url || '',
       };
 
-      // Inject as window.RUNSOUND_CONFIG before the closing </body>
+      // Inject as window.RUNSOUND_CONFIG in <head> so it's available before body scripts run
       const configScript = `<script>window.RUNSOUND_CONFIG = ${JSON.stringify(config)};</script>`;
-      html = html.replace('</body>', `${configScript}\n</body>`);
+      html = html.replace('</head>', `${configScript}\n</head>`);
 
       // Update page title and meta description
       html = html
