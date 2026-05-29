@@ -377,10 +377,41 @@
       <div class="stat-delta flat" id="statClicksDelta">this week</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" id="statPosts">—</div>
-      <div class="stat-label">Posts live</div>
-      <div class="stat-delta flat" id="statPostsDelta">total</div>
+      <div class="stat-value" id="statCtr">—</div>
+      <div class="stat-label">CTR</div>
+      <div class="stat-delta flat" id="statCtrSub">clicks / views</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statCpc">—</div>
+      <div class="stat-label">Cost / click</div>
+      <div class="stat-delta flat" id="statCpcSub">vs Meta $0.50–2.00</div>
+    </div>
+  </div>
+
+  <!-- META BENCHMARK -->
+  <div id="benchmarkCard" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.25rem; margin-bottom:1rem;">
+    <div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:0.75rem;">Cost per Spotify click — vs Meta Ads</div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+          <span style="color:var(--muted)">Meta Ads (typical)</span>
+          <span style="font-weight:600;color:#6e6e73;">$0.50 – $2.00</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;">
+          <div style="background:#6e6e73;width:100%;height:100%;border-radius:4px;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+          <span style="color:var(--text)">RunSound (this campaign)</span>
+          <span style="font-weight:700;color:var(--green);" id="benchCpc">collecting data…</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;">
+          <div id="benchBar" style="background:var(--green);width:0%;height:100%;border-radius:4px;transition:width 1s ease;"></div>
+        </div>
+      </div>
+    </div>
+    <div id="benchLabel" style="font-size:0.7rem;color:var(--muted);margin-top:0.6rem;"></div>
   </div>
 
   <!-- AI LEARNING STATUS -->
@@ -537,10 +568,55 @@ function renderAction(data) {
 
 // ─── Render stats ─────────────────────────────────────────────────────────────
 function renderStats(data) {
-  document.getElementById('statViews').textContent     = fmt(data.weekViews);
-  document.getElementById('statClicks').textContent    = fmt(data.weekClicks);
-  document.getElementById('statPosts').textContent     = fmt(data.totalPosts);
+  document.getElementById('statViews').textContent      = fmt(data.weekViews);
+  document.getElementById('statClicks').textContent     = fmt(data.weekClicks);
+  document.getElementById('statPosts').textContent      = fmt(data.totalPosts);
   document.getElementById('statPostsDelta').textContent = 'all time';
+
+  // CTR
+  const ctrEl = document.getElementById('statCtr');
+  if (data.weekViews > 0 && data.weekClicks > 0) {
+    const ctr = (data.weekClicks / data.weekViews * 100).toFixed(2);
+    ctrEl.textContent = ctr + '%';
+    ctrEl.style.color = parseFloat(ctr) >= 1 ? 'var(--green)' : 'var(--text)';
+  } else {
+    ctrEl.textContent = '—';
+  }
+
+  // Cost per click (each post costs ~$0.19 to generate)
+  const COST_PER_POST = 0.19;
+  const totalPosts    = data.totalPosts || 0;
+  const totalClicks   = data.totalClicks || data.weekClicks || 0;
+  const cpcEl  = document.getElementById('statCpc');
+  const cpcSub = document.getElementById('statCpcSub');
+  if (totalClicks > 0 && totalPosts > 0) {
+    const totalCost = totalPosts * COST_PER_POST;
+    const cpc = totalCost / totalClicks;
+    cpcEl.textContent  = '$' + cpc.toFixed(3);
+    cpcEl.style.color  = cpc < 0.50 ? 'var(--green)' : cpc < 2.00 ? 'var(--yellow)' : 'var(--red)';
+    cpcSub.textContent = cpc < 0.50 ? `✓ beating Meta ($0.50–2.00)` : 'vs Meta $0.50–2.00';
+
+    // Benchmark bar
+    const benchCard = document.getElementById('benchmarkCard');
+    if (benchCard) {
+      benchCard.style.display = 'block';
+      document.getElementById('benchCpc').textContent = '$' + cpc.toFixed(3) + ' / click';
+      // Bar width: 100% = $2 (Meta worst), RunSound bar = how much cheaper we are
+      const metaWorst = 2.00;
+      const ourPct    = Math.min(100, (cpc / metaWorst) * 100);
+      setTimeout(() => {
+        document.getElementById('benchBar').style.width = ourPct + '%';
+      }, 300);
+      const saving = ((1 - cpc / 1.00) * 100).toFixed(0); // vs $1 midpoint
+      document.getElementById('benchLabel').textContent =
+        cpc < 1.00
+          ? `RunSound is ${saving}% cheaper than the average Meta Ads campaign for music.`
+          : `Still collecting data — cost per click will drop as AI optimises.`;
+    }
+  } else {
+    cpcEl.textContent  = '—';
+    cpcSub.textContent = 'vs Meta $0.50–2.00';
+  }
 
   // Week-over-week deltas
   function setDelta(elId, val) {
@@ -621,6 +697,9 @@ function renderPosts(posts) {
   list.innerHTML = posts.map(p => {
     const status = p.status === 'live' ? 'live' : p.status === 'pending' ? 'pending' : 'draft';
     const statusText = status === 'live' ? 'Live' : status === 'pending' ? 'In inbox' : 'Draft';
+    const ctr = (p.views > 0 && p.clicks > 0)
+      ? ((p.clicks / p.views) * 100).toFixed(2) + '%'
+      : null;
     return `
       <div class="post-card">
         <div class="post-thumb">
@@ -631,7 +710,8 @@ function renderPosts(posts) {
           <div class="post-meta">${timeAgo(p.createdAt)}</div>
           <div class="post-stats">
             <div class="post-stat">${fmt(p.views)} <span>views</span></div>
-            ${p.clicks > 0 ? `<div class="post-stat">${fmt(p.clicks)} <span>clicks</span></div>` : ''}
+            ${p.clicks > 0 ? `<div class="post-stat" style="color:var(--green)">${fmt(p.clicks)} <span>clicks</span></div>` : ''}
+            ${ctr ? `<div class="post-stat" style="color:var(--accent2)">${ctr} <span>CTR</span></div>` : ''}
           </div>
         </div>
         <div class="post-status">

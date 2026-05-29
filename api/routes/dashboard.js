@@ -262,6 +262,7 @@ async function getDashboardData(campaignId) {
     weekViews,
     weekClicks,
     totalPosts,
+    totalClicks: posts.reduce((sum, p) => sum + (p.streaming_clicks || 0), 0),
     viewsDelta:  weekDelta(weekViews, prevViews),
     clicksDelta: weekDelta(weekClicks, prevClicks),
     learning,
