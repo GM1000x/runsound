@@ -197,7 +197,7 @@ function buildCaption(utmUrl) {
   const hashtags = buildHashtags();
 
   return [
-    link ? `🎵 Stream it: ${link}` : '',
+    '🎵 link in bio',
     hashtags,
   ].filter(Boolean).join('\n');
 }
@@ -229,7 +229,7 @@ async function createPost(images, utmUrl) {
     posts: [
       {
         integration: { id: integrationId },
-        value: [{ content: fullContent, image: images }],
+        value: [{ content: fullContent, title, image: images }],
         settings: {
           privacy_level:          'SELF_ONLY',
           duet:                   false,
