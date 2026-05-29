@@ -177,9 +177,9 @@ function deriveGenreFamily() {
 function deriveListenerPOV() {
   const t = ta.toLowerCase();
   if (/\b(men|guys|boys|male|man|guy|boyfriend|brother)\b/.test(t)) {
-    return { pronoun: 'he', descriptor: 'my best friend', possessive: 'his' };
+    return { pronoun: 'he', object: 'him', descriptor: 'my best friend', possessive: 'his' };
   }
-  return { pronoun: 'she', descriptor: 'my best friend', possessive: 'her' };
+  return { pronoun: 'she', object: 'her', descriptor: 'my best friend', possessive: 'her' };
 }
 
 // ─── Lifestyle moment helper (for archetype D) ────────────────────────────────
@@ -284,12 +284,12 @@ function buildTexts(variant) {
     // B — Contrarian: "They doubted it → heard it → changed their mind"
     // With lyrics: adds lyric fragment on slide 2 to show what changed their mind.
     B: lyricFrag ? [
-      `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.pronoun}`,
+      `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.object}`,
       `then ${pov.pronoun} heard:\n"${fmt(lyricFrag)}"`,
       `some songs just\nchange people's minds`,
       cta,
     ] : [
-      `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.pronoun}`,
+      `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.object}`,
       `halfway through\n${pov.pronoun} went quiet`,
       `some songs just\nchange people's minds`,
       cta,
