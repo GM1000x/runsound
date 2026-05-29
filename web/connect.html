@@ -446,9 +446,16 @@
           const res  = await fetch(`/auth/tiktok/status/${encodeURIComponent(artistId)}`);
           const data = await res.json();
           if (data.connected) {
-            // Already connected — check if pipeline is running/done
+            // Already connected — show pipeline view and start polling
             renderPipeline('setup', false);
             showView('pipeline');
+            // If we have a campaign_id and it's a fresh signup, trigger the pipeline.
+            // This handles the case where the artist already had TikTok connected
+            // before signing up (e.g. returning artist or same-account test).
+            if (campaignId) {
+              fetch(`/api/onboard/${campaignId}`, { method: 'POST' })
+                .catch(() => { /* non-fatal — pipeline may already be running */ });
+            }
             startPolling();
             return;
           }
