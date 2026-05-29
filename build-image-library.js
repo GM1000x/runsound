@@ -386,31 +386,15 @@ async function generateImage(openai, prompt, arcRole, index, referenceImagePath 
     try {
       let b64;
 
-      if (referenceImagePath && fs.existsSync(referenceImagePath)) {
-        // Use edit endpoint with slide 1 as reference → visual consistency
-        // The prompt tells the model to keep the same character + world but change the scene.
-        const editPrompt = `Keep the same person, same visual style, same color grade, and same photographic look as the reference image. Change only the scene and pose as described: ${prompt}`;
-        const imageStream = fs.createReadStream(referenceImagePath);
-        const response = await openai.images.edit({
-          model,
-          image:   imageStream,
-          prompt:  editPrompt,
-          n:       1,
-          size:    '1024x1536',
-        });
-        b64 = response.data[0].b64_json;
-        console.log(`   🔗 ${filename} — generated from reference`);
-      } else {
-        // First slide: generate fresh
-        const response = await openai.images.generate({
-          model,
-          prompt,
-          n:       1,
-          size:    '1024x1536',
-          quality,
-        });
-        b64 = response.data[0].b64_json;
-      }
+      // Generate each slide independently — character seed in prompt ensures consistency
+      const response = await openai.images.generate({
+        model,
+        prompt,
+        n:       1,
+        size:    '1024x1536',
+        quality,
+      });
+      b64 = response.data[0].b64_json;
 
       const buffer = Buffer.from(b64, 'base64');
       fs.writeFileSync(destPath, buffer);
@@ -427,12 +411,6 @@ async function generateImage(openai, prompt, arcRole, index, referenceImagePath 
         console.log(`   ⏳ Rate limited — waiting ${wait / 1000}s before retry ${attempt}/${MAX_RETRIES - 1}...`);
         await new Promise(r => setTimeout(r, wait));
       } else {
-        // If edit fails (e.g. model doesn't support it), fall back to plain generate
-        if (referenceImagePath && attempt === 1) {
-          console.warn(`   ⚠️  Edit endpoint failed — falling back to generate: ${err.message}`);
-          referenceImagePath = null;
-          continue;
-        }
         throw err;
       }
     }
@@ -558,14 +536,8 @@ async function main() {
       console.log(`   Estimated generation cost: ~$${(toGenerate * costPerImage).toFixed(2)} (${toGenerate} new images @ $${costPerImage}/img)\n`);
     }
 
-    // Use slide 1 as reference for slides 2–6 to lock in the visual world
-    const referenceImagePath = i === 0 ? null : (() => {
-      const firstFile = fs.readdirSync(libraryDir).find(f => f.startsWith('img-001'));
-      return firstFile ? path.join(libraryDir, firstFile) : null;
-    })();
-
     try {
-      const result = await generateImage(openai, prompt, arcRole, i + 1, referenceImagePath);
+      const result = await generateImage(openai, prompt, arcRole, i + 1);
       if (result) {
         const { safeZone, alreadyExisted } = result;
         if (alreadyExisted) {
