@@ -52,20 +52,29 @@ if (!configPath || !outputDir) {
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 fs.mkdirSync(outputDir, { recursive: true });
 
-const st     = config.song?.title          || 'this song';
-const an     = config.artist?.name         || '';
-const ta     = config.song?.targetAudience || '';
-const lyrics = config.song?.lyrics         || '';  // Optional — used to enrich hooks if provided
+const st             = config.song?.title           || 'this song';
+const an             = config.artist?.name          || '';
+const ta             = config.song?.targetAudience  || '';
+const lyrics         = config.song?.lyrics          || '';
+const isInstrumental = config.song?.isInstrumental  || false;
 
 // ─── Archetypes ───────────────────────────────────────────────────────────────
+// 6 archetypes — A/B/C/D always available, E/F are lyric-specific (fall back to
+// mood-driven versions when instrumental or no lyrics provided).
+//
+// The expanded set is inspired by a LarryBrain-style approach: test radically
+// different hooks, not just tweaks of the same template. Once enough CTR data
+// accumulates, the best archetype for a given genre/mood naturally dominates.
 const ARCHETYPES = {
-  A: 'social_proof',
-  B: 'contrarian',
-  C: 'mystery',
-  D: 'lifestyle_placement',
+  A: 'social_proof',         // "showed someone → reaction"
+  B: 'contrarian',           // "they doubted it → heard it → changed their mind"
+  C: 'mystery',              // curiosity gap — opens with lyric when available
+  D: 'lifestyle_placement',  // "this is the type of song i play when..."
+  E: 'raw_lyric',            // single powerful lyric line, zero framing — let it speak
+  F: 'question_hook',        // opens with a question drawn from lyric theme
 };
 
-const DEFAULT_WEIGHTS = { A: 1.0, B: 1.0, C: 1.0, D: 1.0 };
+const DEFAULT_WEIGHTS = { A: 1.0, B: 1.0, C: 1.0, D: 1.0, E: 1.0, F: 1.0 };
 
 // ─── Bank utils (optional — gracefully skipped if not present) ────────────────
 let bank = null;
@@ -236,17 +245,19 @@ function fmt(t) {
 // ─── Slide texts per archetype ────────────────────────────────────────────────
 // lyricFrag (optional): a short punchy phrase extracted from the song's actual lyrics.
 // When present it's woven into archetypes C and D to make the hook song-specific
-// rather than generic. Without lyrics it falls back to the generic template.
+// When lyrics are available, archetypes E and F use them directly.
+// All archetypes are lyric-aware: A and B also use lyric fragments when present.
 function buildTexts(variant) {
   const cta       = `${st}\nby ${an}\nlink in bio`;
   const song      = st.toLowerCase();
   const pov       = deriveListenerPOV();
   const genre     = deriveGenreFamily();
   const moment    = deriveLifestyleMoment();
-  const lyricFrag = deriveLyricFragment();  // null if no lyrics provided
+  // Get multiple fragments for variety across archetypes
+  const lyricFrag  = deriveLyricFragment();
+  const lyricFrag2 = deriveLyricFragment(); // may be same or different line
 
   // Genre-aware reaction words for archetype A
-  // Each 'follow' is a complete standalone line — no suffix appended
   const reaction = {
     dance:   { hit: 'turned it up immediately',  follow: `${pov.pronoun} grabbed my phone\nto see what was playing`,  close: 'this one hits different at night.' },
     hiphop:  { hit: 'went silent for a second',  follow: `${pov.pronoun} replayed it\nfour times`,                    close: 'this is the one right now.' },
@@ -256,16 +267,28 @@ function buildTexts(variant) {
   }[genre];
 
   const texts = {
-    // A — Social proof: genre-aware reaction (4 slides)
-    A: [
+    // A — Social proof: genre-aware reaction.
+    // With lyrics: slide 1 quotes the lyric the friend reacted to — more specific.
+    A: lyricFrag ? [
+      `played ${pov.descriptor}\n"${fmt(lyricFrag)}"\n${pov.pronoun} ${reaction.hit}`,
+      reaction.follow,
+      reaction.close,
+      cta,
+    ] : [
       `showed ${pov.descriptor}\n${song} at 2am\n${pov.pronoun} ${reaction.hit}`,
       reaction.follow,
       reaction.close,
       cta,
     ],
 
-    // B — Contrarian: "They doubted it → heard it → changed their mind" (4 slides)
-    B: [
+    // B — Contrarian: "They doubted it → heard it → changed their mind"
+    // With lyrics: adds lyric fragment on slide 2 to show what changed their mind.
+    B: lyricFrag ? [
+      `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.pronoun}`,
+      `then ${pov.pronoun} heard:\n"${fmt(lyricFrag)}"`,
+      `some songs just\nchange people's minds`,
+      cta,
+    ] : [
       `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.pronoun}`,
       `halfway through\n${pov.pronoun} went quiet`,
       `some songs just\nchange people's minds`,
@@ -273,8 +296,7 @@ function buildTexts(variant) {
     ],
 
     // C — Mystery: curiosity gap.
-    // If lyrics available: open with an actual lyric line — more specific and intriguing.
-    // Fallback: generic mystery template.
+    // With lyrics: opens with actual lyric — far more intriguing than generic.
     C: lyricFrag ? [
       `"${fmt(lyricFrag)}"`,
       `this song knows\nsomething about you\nyou haven't said out loud`,
@@ -287,9 +309,8 @@ function buildTexts(variant) {
       cta,
     ],
 
-    // D — Lifestyle placement: places the song in a vivid life scenario (4 slides)
-    // If lyrics available: slide 2 quotes a lyric line to ground the moment.
-    // Inspired by viral "this is the type of music i play whilst..." TikTok format.
+    // D — Lifestyle placement.
+    // With lyrics: slide 2 quotes lyric to ground the specific moment.
     D: lyricFrag ? [
       `this is the type of song\ni play\n${moment}`,
       `"${fmt(lyricFrag)}"`,
@@ -301,6 +322,44 @@ function buildTexts(variant) {
       `this is one of them.`,
       cta,
     ],
+
+    // E — Raw lyric: single powerful line, zero framing.
+    // The lyric speaks for itself. No social proof, no setup — just the words.
+    // When instrumental: mood-driven version of mystery.
+    E: lyricFrag ? [
+      `this line:`,
+      `"${fmt(lyricFrag)}"`,
+      `that's the whole song.`,
+      cta,
+    ] : [
+      `some songs you feel\nbefore you understand them.`,
+      `this is one of them.`,
+      `${moment}`,
+      cta,
+    ],
+
+    // F — Question hook: opens with a question drawn from the lyric/mood theme.
+    // Gets the viewer asking "yes, actually — what DO I do?" before they've even heard it.
+    // With lyrics: question is rooted in the lyric. Without: rooted in the mood.
+    F: lyricFrag ? [
+      `what do you do when\n"${fmt(lyricFrag)}"?`,
+      `this song answers\nthat question.`,
+      `better than anything\ni've heard in a while.`,
+      cta,
+    ] : (() => {
+      const m  = (config.song?.mood || '').toLowerCase();
+      const q  = /heartbreak|loss|breakup|grief/.test(m) ? 'what do you do when\nyou have to let go?' :
+                 /nostalgia|memory|past/.test(m)         ? 'what do you do when\nyou miss how things were?' :
+                 /love|romantic|couple/.test(m)          ? 'what do you do when\nyou can\'t stop thinking about someone?' :
+                 /night|dark|late/.test(m)               ? 'what do you do at 3am\nwhen you can\'t sleep?' :
+                                                           'what do you do when\nno song is quite right?';
+      return [
+        q,
+        `this song is the answer.`,
+        `finally found it.`,
+        cta,
+      ];
+    })(),
   };
 
   return texts[variant] || texts.A;
@@ -315,6 +374,7 @@ function buildTexts(variant) {
   console.log(`   Genre:       ${deriveGenreFamily()} (${config.song?.genre || 'unset'})`);
   console.log(`   Campaign ID: ${campaignId || config.campaign?.id || 'none'}`);
   if (ta) console.log(`   Audience:    ${ta}`);
+  console.log(`   Mode:        ${isInstrumental ? 'instrumental (no lyrics)' : 'has lyrics'}`);
   console.log(`   Bank:        ${bank ? 'enabled ✅' : 'disabled (bank-utils not found)'}`);
   const previewFrag = deriveLyricFragment();
   if (previewFrag) console.log(`   Lyric frag:  "${previewFrag.slice(0, 50)}"`);

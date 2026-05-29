@@ -647,28 +647,53 @@
         </div>
       </div>
 
+      <!-- Lyrics or Instrumental -->
       <div class="form-row" style="margin-top:1.25rem">
-        <label>What is the song about?</label>
-        <textarea name="description" placeholder="e.g. A late-night drive after a breakup, trying to let go but still holding on. It's about that moment when you realise someone is gone for real." required></textarea>
-        <div class="form-hint">Story, theme, what the song deals with. This is used to generate the visuals.</div>
+        <label>Does your song have lyrics?</label>
+        <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:400">
+            <input type="radio" name="song_type" value="lyrics" id="songTypeHasLyrics" checked style="accent-color:var(--accent);width:16px;height:16px">
+            Yes — it has lyrics
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:400">
+            <input type="radio" name="song_type" value="instrumental" id="songTypeInstrumental" style="accent-color:var(--accent);width:16px;height:16px">
+            No — it's instrumental
+          </label>
+        </div>
       </div>
-      <div class="form-row">
-        <label>Mood &amp; feeling</label>
-        <textarea name="mood" placeholder="e.g. Melancholic but freeing. Nostalgic, cinematic, bittersweet. Like a 3am drive with the windows down." required></textarea>
-        <div class="form-hint">The vibe and emotion of the song. RunSound scans TikTok for trending hooks that match this mood and your genre — you don't need to write them yourself.</div>
+
+      <!-- Shown when has lyrics -->
+      <div id="lyricsSection">
+        <div class="form-row" style="margin-top:0.75rem">
+          <label>Lyrics</label>
+          <textarea name="lyrics" id="lyricsTextarea" rows="8" placeholder="Paste the full lyrics here…&#10;&#10;RunSound reads them to extract key phrases, emotion and story — so every hook we write is grounded in what the song actually says."></textarea>
+          <div class="form-hint">Kept private — never shown publicly. The AI uses these to write hooks that sound like they came from inside the song.</div>
+        </div>
       </div>
-      <!-- Lyrics — collapsible, optional -->
-      <div class="more-platforms" style="margin-top:0.5rem">
-        <button type="button" class="more-platforms-toggle" id="lyricsBtn">
-          <span>+ Paste your lyrics (optional but powerful)</span>
-          <span class="toggle-hint">helps AI write better hooks</span>
-        </button>
-        <div class="more-platforms-fields" id="lyricsFields">
-          <div class="form-row" style="margin-top:0.75rem">
-            <label>Lyrics</label>
-            <textarea name="lyrics" rows="7" placeholder="Paste the full lyrics here…&#10;&#10;RunSound reads them to extract the song's real emotion, key phrases and story — so hooks and images match what the song actually says, not a generic version of the genre."></textarea>
-            <div class="form-hint">Optional. Kept private — never shown publicly.</div>
-          </div>
+
+      <!-- Shown when instrumental — description + mood become the primary source -->
+      <div id="instrumentalSection" style="display:none">
+        <div class="form-row" style="margin-top:0.75rem">
+          <label>What is the song about?</label>
+          <textarea name="description" id="descriptionInstrumental" placeholder="e.g. The feeling of driving alone at 3am through an empty city. Acceptance. That moment when silence finally feels like peace." rows="3"></textarea>
+          <div class="form-hint">Since there are no lyrics, this is what RunSound uses to write hooks and generate visuals. Be specific — what does the song make you feel or picture?</div>
+        </div>
+        <div class="form-row">
+          <label>Mood &amp; feeling</label>
+          <textarea name="mood" id="moodInstrumental" placeholder="e.g. Dark and hypnotic. Melancholic but driving. Like a slow exhale." rows="2"></textarea>
+          <div class="form-hint">The emotional texture of the track.</div>
+        </div>
+      </div>
+
+      <!-- Always shown for lyric songs — lighter role when lyrics are pasted -->
+      <div id="lyricSongMeta">
+        <div class="form-row" style="margin-top:0.75rem">
+          <label>Mood &amp; feeling <span style="color:var(--muted);font-weight:400">(optional — AI reads it from your lyrics)</span></label>
+          <textarea name="mood" id="moodLyric" placeholder="e.g. Melancholic but freeing. Bittersweet and hopeful. Like a 3am drive with the windows down." rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <label>What is the song about? <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <textarea name="description" id="descriptionLyric" placeholder="e.g. A late-night drive after a breakup, trying to let go but still holding on." rows="2"></textarea>
         </div>
       </div>
 
@@ -715,16 +740,20 @@
       : '+ Add Apple Music, Tidal & more';
   });
 
-  // Lyrics toggle
-  const lyricsBtn = document.getElementById('lyricsBtn');
-  const lyricsFields = document.getElementById('lyricsFields');
-  lyricsBtn.addEventListener('click', () => {
-    const isOpen = lyricsFields.classList.toggle('open');
-    lyricsBtn.classList.toggle('open', isOpen);
-    lyricsBtn.querySelector('span').textContent = isOpen
-      ? '− Hide lyrics'
-      : '+ Paste your lyrics (optional but powerful)';
-  });
+  // Lyrics / Instrumental toggle
+  function updateSongTypeUI() {
+    const isInstrumental = document.getElementById('songTypeInstrumental').checked;
+    document.getElementById('lyricsSection').style.display    = isInstrumental ? 'none' : '';
+    document.getElementById('lyricSongMeta').style.display    = isInstrumental ? 'none' : '';
+    document.getElementById('instrumentalSection').style.display = isInstrumental ? '' : 'none';
+    // Required fields toggle
+    document.getElementById('lyricsTextarea').required = !isInstrumental;
+    document.getElementById('descriptionInstrumental').required = isInstrumental;
+    document.getElementById('moodInstrumental').required = isInstrumental;
+  }
+  document.getElementById('songTypeHasLyrics').addEventListener('change', updateSongTypeUI);
+  document.getElementById('songTypeInstrumental').addEventListener('change', updateSongTypeUI);
+  updateSongTypeUI(); // init
 
   document.getElementById('signupForm').addEventListener('submit', async (e) => {
     e.preventDefault();
