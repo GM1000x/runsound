@@ -280,19 +280,33 @@ const ARC_ROLES = [
 ];
 
 // ─── Build image prompt for a given arc role ───────────────────────────────────
+// Style anchors mimic what actually trends on TikTok music carousels:
+// raw iPhone photos, disposable camera grain, real unposed moments —
+// NOT polished lifestyle stock photography.
 function buildPrompt(arcRole, variationIndex) {
   const basePrompts = arcRole.prompts || [arcRole.prompt || ''];
   const base = basePrompts[variationIndex % basePrompts.length];
+
+  // Vary the photographic style per role so slides don't all feel identical
+  const styleByRole = {
+    hook:    `shot on iPhone, slightly underexposed, authentic and raw, real moment, vertical portrait`,
+    build:   `disposable camera aesthetic, soft grain, warm slightly washed-out colors, candid`,
+    story:   `shot on iPhone in low light, grainy, intimate, real — not posed or styled`,
+    peak:    `cinematic still, shallow depth of field, bokeh background, emotional close-up, film look`,
+    release: `disposable camera, overexposed highlights, warm grain, quiet and still, real moment`,
+    cta:     `minimal and clean, soft natural light, no people, calm and empty, iPhone photo`,
+  };
+  const style = styleByRole[arcRole.role] || `shot on iPhone, candid, authentic`;
+
   return [
-    `Candid lifestyle photograph, Pinterest aesthetic, real photography.`,
     `${base}.`,
     `Mood: ${mood}.`,
-    description ? `Song context: ${description}.` : '',
+    description ? `Context: ${description}.` : '',
     lyricSnippet,
-    `Inspired by ${genre} music.`,
-    `Shot on iPhone or 35mm film, natural light, ultra-realistic photographic quality, not illustrated, not AI-looking.`,
+    style,
+    `Ultra-realistic photograph. Not illustrated, not AI-looking, not stock photography.`,
     `No text, no words, no watermarks, no logos.`,
-    `Portrait orientation for TikTok/mobile.`,
+    `Portrait orientation (9:16) for TikTok.`,
     extra,
   ].filter(Boolean).join(' ');
 }
@@ -348,7 +362,10 @@ async function detectSafeTextZone(openai, imagePath) {
 }
 
 // ─── Generate one image (with retry on 429) ───────────────────────────────────
-async function generateImage(openai, prompt, arcRole, index) {
+// ─── Generate one image ───────────────────────────────────────────────────────
+// referenceImagePath: if provided, uses images.edit so the new slide inherits
+// the visual world (character, lighting, color grade) established in slide 1.
+async function generateImage(openai, prompt, arcRole, index, referenceImagePath = null) {
   const tags     = arcRole.tags.join('_');
   const filename = `img-${String(index).padStart(3, '0')}_${tags}.png`;
   const destPath = path.join(libraryDir, filename);
@@ -359,7 +376,7 @@ async function generateImage(openai, prompt, arcRole, index) {
   }
 
   if (DRY_RUN) {
-    console.log(`   [dry-run] ${filename}`);
+    console.log(`   [dry-run] ${filename} ${referenceImagePath ? '(edit from ref)' : '(generate)'}`);
     console.log(`            "${prompt.slice(0, 100)}..."`);
     return { filename, safeZone: 'bottom' };
   }
@@ -367,20 +384,37 @@ async function generateImage(openai, prompt, arcRole, index) {
   const MAX_RETRIES = 4;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await openai.images.generate({
-        model,
-        prompt,
-        n:       1,
-        size:    '1024x1536', // portrait for TikTok (gpt-image-1 max portrait)
-        quality,
-        // response_format not supported by gpt-image-1 — b64_json is returned by default
-      });
+      let b64;
 
-      const b64    = response.data[0].b64_json;
+      if (referenceImagePath && fs.existsSync(referenceImagePath)) {
+        // Use edit endpoint with slide 1 as reference → visual consistency
+        // The prompt tells the model to keep the same character + world but change the scene.
+        const editPrompt = `Keep the same person, same visual style, same color grade, and same photographic look as the reference image. Change only the scene and pose as described: ${prompt}`;
+        const imageStream = fs.createReadStream(referenceImagePath);
+        const response = await openai.images.edit({
+          model,
+          image:   imageStream,
+          prompt:  editPrompt,
+          n:       1,
+          size:    '1024x1536',
+        });
+        b64 = response.data[0].b64_json;
+        console.log(`   🔗 ${filename} — generated from reference`);
+      } else {
+        // First slide: generate fresh
+        const response = await openai.images.generate({
+          model,
+          prompt,
+          n:       1,
+          size:    '1024x1536',
+          quality,
+        });
+        b64 = response.data[0].b64_json;
+      }
+
       const buffer = Buffer.from(b64, 'base64');
       fs.writeFileSync(destPath, buffer);
 
-      // Detect safe text zone — avoids placing text on faces
       process.stdout.write(`   ✅ ${filename} — detecting safe text zone...`);
       const safeZone = await detectSafeTextZone(openai, destPath);
       console.log(` ${safeZone}`);
@@ -389,10 +423,16 @@ async function generateImage(openai, prompt, arcRole, index) {
     } catch (err) {
       const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.toLowerCase().includes('rate limit');
       if (is429 && attempt < MAX_RETRIES) {
-        const wait = attempt * 20000; // 20s, 40s, 60s
+        const wait = attempt * 20000;
         console.log(`   ⏳ Rate limited — waiting ${wait / 1000}s before retry ${attempt}/${MAX_RETRIES - 1}...`);
         await new Promise(r => setTimeout(r, wait));
       } else {
+        // If edit fails (e.g. model doesn't support it), fall back to plain generate
+        if (referenceImagePath && attempt === 1) {
+          console.warn(`   ⚠️  Edit endpoint failed — falling back to generate: ${err.message}`);
+          referenceImagePath = null;
+          continue;
+        }
         throw err;
       }
     }
@@ -518,8 +558,14 @@ async function main() {
       console.log(`   Estimated generation cost: ~$${(toGenerate * costPerImage).toFixed(2)} (${toGenerate} new images @ $${costPerImage}/img)\n`);
     }
 
+    // Use slide 1 as reference for slides 2–6 to lock in the visual world
+    const referenceImagePath = i === 0 ? null : (() => {
+      const firstFile = fs.readdirSync(libraryDir).find(f => f.startsWith('img-001'));
+      return firstFile ? path.join(libraryDir, firstFile) : null;
+    })();
+
     try {
-      const result = await generateImage(openai, prompt, arcRole, i + 1);
+      const result = await generateImage(openai, prompt, arcRole, i + 1, referenceImagePath);
       if (result) {
         const { safeZone, alreadyExisted } = result;
         if (alreadyExisted) {
