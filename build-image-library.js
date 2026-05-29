@@ -130,63 +130,121 @@ function pickCharacter() {
   return CHARACTERS[hash % CHARACTERS.length];
 }
 
+// VISUAL_FAMILIES: each family has 3 scene-variants per arc role.
+// Each daily run picks one variant per role randomly — so the slides
+// always feel cohesive (same character/world) but vary across runs.
+// The variant index chosen is written to meta.json for CTR tracking.
 const VISUAL_FAMILIES = [
-  // Family 1: City apartment at night — moody, warm tungsten, intimate
-  (ch) => [
-    { role: 'hook',  tags: ['hook', 'city', 'night'],     prompt: `${ch}, silhouette standing at a large window in a dark city apartment at night, warm tungsten light from a single lamp, city lights below, looking out, pensive and still, 35mm film photography` },
-    { role: 'story', tags: ['story', 'intimate', 'warm'],  prompt: `${ch}, sitting on the wooden floor against the wall in the same dimly lit city apartment, knees pulled to chest, soft lamp glow behind her, late night, emotional and quiet, 35mm film` },
-    { role: 'peak',  tags: ['peak', 'emotional', 'dark'],  prompt: `${ch}, close portrait, sitting on the floor of the same dark apartment, single warm lamp casting a soft shadow on her face, eyes downcast, raw emotion, intimate and cinematic, 35mm film, no props` },
-    { role: 'cta',   tags: ['cta', 'still', 'night'],      prompt: `empty wooden floor of a dark city apartment, single warm tungsten lamp glowing softly in the corner, city lights visible through the large window, no people, no objects, late night stillness, 35mm film` },
-  ],
-  // Family 2: Golden hour outdoors — warm, sun-soaked, bittersweet
-  (ch) => [
-    { role: 'hook',  tags: ['hook', 'golden', 'outdoor'],  prompt: `${ch}, walking alone down an empty sun-drenched street at golden hour, shot from behind, backlit by low sun, warm orange haze, long shadow, loose summer clothes, candid 35mm film` },
-    { role: 'story', tags: ['story', 'golden', 'warm'],     prompt: `${ch}, sitting on concrete steps bathed in golden afternoon light in the same quiet neighborhood, elbows on knees, looking into the distance, warm sun on her face, pensive, candid 35mm film` },
-    { role: 'peak',  tags: ['peak', 'sunset', 'golden'],   prompt: `${ch}, standing alone at the end of the same empty street at sunset, facing away, sky orange and pink behind her, figure small, emotional and cinematic, 35mm film` },
-    { role: 'cta',   tags: ['cta', 'golden', 'still'],     prompt: `an empty concrete step on the same sun-soaked street, long golden shadows, warm afternoon light, nobody there, just light and texture, nostalgic and still, 35mm film` },
-  ],
-  // Family 3: Late night drive — cinematic, dark, liberating
-  (ch) => [
-    { role: 'hook',  tags: ['hook', 'night', 'drive'],     prompt: `${ch}, in the passenger seat of a car at night, city lights streaming past the window, face half-lit by passing streetlights, looking forward, shot from the back seat, cinematic and moody, film grain` },
-    { role: 'story', tags: ['story', 'night', 'car'],      prompt: `${ch}, alone in the same parked car at night, head resting back on the seat, eyes closed, single streetlight through the windshield, quiet and emotional, intimate, shot on film` },
-    { role: 'peak',  tags: ['peak', 'night', 'road'],      prompt: `${ch}, driver's seat of the same car, hands on the steering wheel, face lit only by the dashboard glow and passing streetlights, emotional close shot, cinematic, film grain` },
-    { role: 'cta',   tags: ['cta', 'night', 'still'],      prompt: `the empty passenger seat of a car at night, faint city lights through the window, dark interior, quiet and still, no people, emotional atmosphere, 35mm film look` },
-  ],
+  // ── Family 1: City apartment at night ────────────────────────────────────
+  (ch) => ({
+    name: 'city_night',
+    hook: [
+      `${ch}, silhouette standing at a large window in a dark city apartment at night, warm tungsten lamp behind her, city lights below, pensive and still, 35mm film`,
+      `${ch}, sitting alone at a small kitchen table in a dark apartment, single overhead lamp, late night, hands wrapped around nothing, staring into the distance, candid 35mm film`,
+      `${ch}, lying on her back on the floor of a dark city apartment, one arm over her eyes, warm lamp glow from the side, late night stillness, shot on film from above`,
+    ],
+    story: [
+      `${ch}, sitting on the wooden floor against the wall of the same dimly lit apartment, knees pulled to chest, soft lamp glow, emotional and quiet, 35mm film`,
+      `${ch}, standing in the narrow hallway of the same apartment, one hand on the wall, looking down, late night, warm tungsten light from the room behind her, shot on film`,
+      `${ch}, leaning on the windowsill of the same city apartment, chin resting on her arms, looking out at the city lights below, soft lamp, 35mm film`,
+    ],
+    peak: [
+      `${ch}, close portrait in the same dark apartment, single warm lamp, soft shadow on her face, eyes slightly downcast, raw emotion, intimate, 35mm film, no props`,
+      `${ch}, close side profile in the dark apartment, face half-lit by the lamp, looking up at the ceiling, quiet and emotional, shot on film`,
+      `${ch}, close portrait from behind her shoulder in the dark apartment, looking toward the glowing city window, cinematic and still, 35mm film`,
+    ],
+    cta: [
+      `empty wooden floor of a dark city apartment, single warm tungsten lamp in the corner, city lights through the window, no people, no objects, late night stillness, 35mm film`,
+      `the glow of a city at night seen through a large dark apartment window, curtain slightly open, no people, quiet and still, 35mm film`,
+      `a single warm lamp on a wooden floor in a dark apartment, soft light spreading on the bare floor, no people, minimal and calm, 35mm film`,
+    ],
+  }),
+  // ── Family 2: Golden hour outdoors ───────────────────────────────────────
+  (ch) => ({
+    name: 'golden_hour',
+    hook: [
+      `${ch}, walking alone down an empty sun-drenched street at golden hour, shot from behind, backlit by low sun, warm orange haze, long shadow, loose summer clothes, candid 35mm film`,
+      `${ch}, sitting on a low wall in a quiet sun-drenched neighborhood at golden hour, face turned slightly away, bathed in warm orange light, loose clothes, candid 35mm film`,
+      `${ch}, standing at the end of a sun-soaked alley at golden hour, looking up at the light, backlit, hair catching the sun, loose summer dress, candid shot on film`,
+    ],
+    story: [
+      `${ch}, sitting on concrete steps in the same golden afternoon light, elbows on knees, looking into the distance, warm sun on her face, pensive, candid 35mm film`,
+      `${ch}, lying in dry summer grass in the same golden late afternoon, one arm behind her head, eyes closed, sun on her face, peaceful and still, candid 35mm film`,
+      `${ch}, sitting on a sun-warmed bench in the same neighborhood, legs stretched out, head tilted back to catch the last of the golden light, candid 35mm film`,
+    ],
+    peak: [
+      `${ch}, standing alone at the end of the same empty street at sunset, facing away, sky orange and pink behind her, figure small, emotional and cinematic, 35mm film`,
+      `${ch}, silhouette against a blazing orange sunset sky in the same open space, arms slightly out, still, emotional, 35mm film, wide shot`,
+      `${ch}, close shot from behind in the same golden field, golden light catching the edges of her hair, sky glowing, quiet and emotional, 35mm film`,
+    ],
+    cta: [
+      `an empty concrete step on a sun-soaked street, long golden shadows, warm afternoon light, nobody there, nostalgic and still, 35mm film`,
+      `dry summer grass catching the last golden hour light, no people, warm and hazy, soft focus, 35mm film`,
+      `an empty sun-warmed bench in a quiet neighborhood at golden hour, long shadow behind it, warm amber light, nobody there, candid 35mm film`,
+    ],
+  }),
+  // ── Family 3: Late night drive ────────────────────────────────────────────
+  (ch) => ({
+    name: 'night_drive',
+    hook: [
+      `${ch}, in the passenger seat of a car at night, city lights streaming past the window, face half-lit by street lights, looking forward, shot from the back seat, cinematic, film grain`,
+      `${ch}, looking out the side window of a moving car at night, blurred street lights outside, face soft and distant, candid shot from the passenger side, film grain`,
+      `${ch}, leaning her head against the car window at night, eyes half-open, street lights passing, reflections on the glass, intimate and quiet, shot on film`,
+    ],
+    story: [
+      `${ch}, alone in the same parked car at night, head resting back on the seat, eyes closed, single street light through the windshield, quiet and emotional, shot on film`,
+      `${ch}, in the driver's seat of the same parked car at night, hands in her lap, staring ahead through the windshield, distant city glow, emotional stillness, shot on film`,
+      `${ch}, sitting sideways in the passenger seat of the same parked car at night, knees up, looking out the side window at street lights, candid, shot on film`,
+    ],
+    peak: [
+      `${ch}, driver's seat of the same car, hands on the wheel, face lit only by dashboard glow and passing street lights, emotional close shot, cinematic, film grain`,
+      `${ch}, close portrait in the same car at night, face reflected faintly in the window, street lights passing behind her, raw and still, shot on film`,
+      `${ch}, looking straight into the camera from the driver's seat of the same car at night, dashboard glow, honest and emotional, 35mm film portrait`,
+    ],
+    cta: [
+      `the empty passenger seat of a car at night, faint city lights through the window, dark interior, quiet and still, no people, 35mm film`,
+      `a car windshield at night, city lights ahead on a wet road, no driver visible, open road, cinematic, 35mm film`,
+      `the steering wheel of a parked car at night, dashboard glow, street light through the windshield, no people, still and quiet, 35mm film`,
+    ],
+  }),
 ];
 
-// Pick visual family based on mood — ensures slides match the song's feeling.
-// Falls back to a random eligible family if no strong mood signal found.
+// ─── Family + variant selection ───────────────────────────────────────────────
+// Mood biases toward the right family (70% weight) but allows other families
+// 30% of the time so we explore across runs and gather comparative data.
 function chooseFamilyIndex() {
   const m = (mood + ' ' + genre).toLowerCase();
-  // Summer / sunny / warm / bright / uplifting → golden hour outdoors (family 2)
-  if (/summer|sun|sunny|golden|warm|bright|happy|joy|uplifting|energetic|day|beach|road/.test(m)) return 1;
-  // Night / dark / late / melancholic / sad / rain / city → late night drive (family 3)
-  if (/night|dark|late|melanchol|sad|heartbreak|loss|rain|city|drive|alone/.test(m)) return 2;
-  // Default: city apartment at night (family 1) — works for most moods
-  return 0;
+  const r = Math.random();
+  if (/summer|sun|sunny|golden|warm|bright|happy|joy|uplifting|energetic|day|beach/.test(m)) {
+    return r < 0.7 ? 1 : (r < 0.85 ? 0 : 2);  // 70% golden, 15% apartment, 15% drive
+  }
+  if (/night|dark|late|melanchol|sad|heartbreak|loss|rain|city|drive|alone/.test(m)) {
+    return r < 0.7 ? 2 : (r < 0.85 ? 0 : 1);  // 70% drive, 15% apartment, 15% golden
+  }
+  // No strong mood signal — explore all families equally
+  return Math.floor(r * 3);
 }
 
-// Pick visual family based on mood — ensures slides match the song's feeling.
-// Falls back to a random eligible family if no strong mood signal found.
-function chooseFamilyIndex() {
-  const m = (mood + ' ' + genre).toLowerCase();
-  // Summer / sunny / warm / bright / uplifting → golden hour outdoors (family 2)
-  if (/summer|sun|sunny|golden|warm|bright|happy|joy|uplifting|energetic|day|beach|road/.test(m)) return 1;
-  // Night / dark / late / melancholic / sad / rain / city → late night drive (family 3)
-  if (/night|dark|late|melanchol|sad|heartbreak|loss|rain|city|drive|alone/.test(m)) return 2;
-  // Default: city apartment at night (family 1) — works for most moods
-  return 0;
+// Pick a random variant index (0–2) for each arc role independently.
+// Written to meta.json so CTR data can be tied back to each visual choice.
+function pickVariants() {
+  return { hook: Math.floor(Math.random() * 3), story: Math.floor(Math.random() * 3), peak: Math.floor(Math.random() * 3), cta: Math.floor(Math.random() * 3) };
 }
+
 const FAMILY_INDEX  = chooseFamilyIndex();
 const CHARACTER     = pickCharacter();
-const CHOSEN_FAMILY = VISUAL_FAMILIES[FAMILY_INDEX](CHARACTER);
+const FAMILY_DATA   = VISUAL_FAMILIES[FAMILY_INDEX](CHARACTER);
+const VARIANTS      = pickVariants();
 
-// Build ARC_ROLES from the chosen family (compatible with rest of pipeline)
-const ARC_ROLES = CHOSEN_FAMILY.map(f => ({
-  role:    f.role,
-  tags:    f.tags,
-  prompts: [f.prompt],  // single prompt per role in a family
-}));
+console.log(`🎨 Visual family: ${FAMILY_DATA.name} | variants hook:${VARIANTS.hook} story:${VARIANTS.story} peak:${VARIANTS.peak} cta:${VARIANTS.cta}`);
+
+// Build ARC_ROLES from chosen family + variants
+const ARC_ROLES = [
+  { role: 'hook',  tags: ['hook'],  prompts: [FAMILY_DATA.hook[VARIANTS.hook]]  },
+  { role: 'story', tags: ['story'], prompts: [FAMILY_DATA.story[VARIANTS.story]] },
+  { role: 'peak',  tags: ['peak'],  prompts: [FAMILY_DATA.peak[VARIANTS.peak]]  },
+  { role: 'cta',   tags: ['cta'],   prompts: [FAMILY_DATA.cta[VARIANTS.cta]]    },
+];
 
 // ─── Build image prompt for a given arc role ───────────────────────────────────
 function buildPrompt(arcRole, variationIndex) {
@@ -480,6 +538,8 @@ async function main() {
     bankHits,
     skipped,
     imageBankIds: bankIds,  // UUIDs of bank images used — for post attribution
+    visualFamily: FAMILY_DATA.name,
+    visualVariants: VARIANTS,
     images: fs.readdirSync(libraryDir)
       .filter(f => /\.(png|jpg|jpeg)$/i.test(f))
       .map(f => ({
