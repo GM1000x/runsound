@@ -142,8 +142,18 @@ const VISUAL_FAMILIES = [
   ],
 ];
 
-// Pick one visual family randomly for this campaign — ensures all 4 slides match
-const FAMILY_INDEX = Math.floor(Math.random() * VISUAL_FAMILIES.length);
+// Pick visual family based on mood — ensures slides match the song's feeling.
+// Falls back to a random eligible family if no strong mood signal found.
+function chooseFamilyIndex() {
+  const m = (mood + ' ' + genre).toLowerCase();
+  // Summer / sunny / warm / bright / uplifting → golden hour outdoors (family 2)
+  if (/summer|sun|sunny|golden|warm|bright|happy|joy|uplifting|energetic|day|beach|road/.test(m)) return 1;
+  // Night / dark / late / melancholic / sad / rain / city → late night drive (family 3)
+  if (/night|dark|late|melanchol|sad|heartbreak|loss|rain|city|drive|alone/.test(m)) return 2;
+  // Default: city apartment at night (family 1) — works for most moods
+  return 0;
+}
+const FAMILY_INDEX = chooseFamilyIndex();
 const CHOSEN_FAMILY = VISUAL_FAMILIES[FAMILY_INDEX];
 
 // Build ARC_ROLES from the chosen family (compatible with rest of pipeline)
