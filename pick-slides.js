@@ -47,12 +47,14 @@ const projectDir = path.dirname(configPath);
 
 fs.mkdirSync(outputDir, { recursive: true });
 
-// ─── Arc roles — the 4-slide narrative structure ──────────────────────────────
+// ─── Arc roles — the 6-slide narrative structure ──────────────────────────────
 const ARC_ROLES = [
-  { slot: 1, role: 'hook',  tags: ['dramatic', 'striking', 'cinematic', 'lifestyle', 'candid'] },
-  { slot: 2, role: 'story', tags: ['intimate', 'warm', 'moody', 'romantic', 'real'] },
-  { slot: 3, role: 'peak',  tags: ['emotional', 'golden', 'soft', 'atmospheric', 'silhouette'] },
-  { slot: 4, role: 'cta',   tags: ['clean', 'minimal', 'cozy', 'still', 'aesthetic'] },
+  { slot: 1, role: 'hook',    tags: ['dramatic', 'striking', 'cinematic', 'lifestyle', 'candid'] },
+  { slot: 2, role: 'build',   tags: ['intimate', 'warm', 'moody', 'romantic', 'real'] },
+  { slot: 3, role: 'story',   tags: ['emotional', 'pensive', 'quiet', 'candid', 'real'] },
+  { slot: 4, role: 'peak',    tags: ['emotional', 'golden', 'soft', 'atmospheric', 'silhouette'] },
+  { slot: 5, role: 'release', tags: ['still', 'calm', 'open', 'light', 'space'] },
+  { slot: 6, role: 'cta',     tags: ['clean', 'minimal', 'cozy', 'still', 'aesthetic'] },
 ];
 
 // ─── Load image library ───────────────────────────────────────────────────────
@@ -231,5 +233,5 @@ history.picks.push({
 });
 savePickHistory(history);
 
-console.log(`\n✅ 4 slides copied to ${outputDir}`);
+console.log(`\n✅ ${picks.length} slides copied to ${outputDir}`);
 console.log(`   Next: npm run texts\n`);

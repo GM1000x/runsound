@@ -267,83 +267,97 @@ function buildTexts(variant) {
   }[genre];
 
   const texts = {
-    // A — Social proof: genre-aware reaction.
-    // With lyrics: slide 1 quotes the lyric the friend reacted to — more specific.
+    // A — Social proof (6 slides)
     A: lyricFrag ? [
-      `played ${pov.descriptor}\n"${fmt(lyricFrag)}"\n${pov.pronoun} ${reaction.hit}`,
+      `played ${pov.descriptor}\n"${fmt(lyricFrag)}"`,
+      `${pov.pronoun} ${reaction.hit}`,
       reaction.follow,
+      `${pov.pronoun} asked:\nwhat song is this?`,
       reaction.close,
       cta,
     ] : [
-      `showed ${pov.descriptor}\n${song} at 2am\n${pov.pronoun} ${reaction.hit}`,
+      `showed ${pov.descriptor}\n${song} at 2am`,
+      `${pov.pronoun} ${reaction.hit}`,
       reaction.follow,
+      `${pov.pronoun} asked:\nwhat song is this?`,
       reaction.close,
       cta,
     ],
 
-    // B — Contrarian: "They doubted it → heard it → changed their mind"
-    // With lyrics: adds lyric fragment on slide 2 to show what changed their mind.
+    // B — Contrarian (6 slides)
     B: lyricFrag ? [
       `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.object}`,
-      `then ${pov.pronoun} heard:\n"${fmt(lyricFrag)}"`,
+      `then ${pov.pronoun} heard it.`,
+      `"${fmt(lyricFrag)}"`,
+      `${pov.pronoun} went quiet.`,
       `some songs just\nchange people's minds`,
       cta,
     ] : [
       `${pov.descriptor} said\nthis type of song\nwasn't for ${pov.object}`,
+      `then ${pov.pronoun} heard it.`,
       `halfway through\n${pov.pronoun} went quiet`,
+      `${pov.pronoun} didn't say\na word after`,
       `some songs just\nchange people's minds`,
       cta,
     ],
 
-    // C — Mystery: curiosity gap.
-    // With lyrics: opens with actual lyric — far more intriguing than generic.
+    // C — Mystery (6 slides)
     C: lyricFrag ? [
       `"${fmt(lyricFrag)}"`,
+      `i heard this\nand had to stop\nwhat i was doing.`,
       `this song knows\nsomething about you\nyou haven't said out loud`,
+      `it knows.`,
       `you'll know exactly\nwhat i mean.`,
       cta,
     ] : [
       `wait.\nlisten.`,
+      `i heard this\nand had to stop\nwhat i was doing.`,
       `this song knows\nsomething about you\nyou haven't said out loud`,
+      `it knows.`,
       `you'll know exactly\nwhat i mean.`,
       cta,
     ],
 
-    // D — Lifestyle placement.
-    // With lyrics: slide 2 quotes lyric to ground the specific moment.
+    // D — Lifestyle (6 slides)
     D: lyricFrag ? [
       `this is the type of song\ni play\n${moment}`,
+      `when everything\nfeels like too much`,
       `"${fmt(lyricFrag)}"`,
+      `and suddenly\nit's okay.`,
       `you'll understand\nwhen you hear it.`,
       cta,
     ] : [
       `this is the type of song\ni play\n${moment}`,
+      `when everything\nfeels like too much`,
       `there are songs\nyou save\nfor certain moments.`,
       `this is one of them.`,
+      `you'll understand\nwhen you hear it.`,
       cta,
     ],
 
-    // E — Raw lyric: single powerful line, zero framing.
-    // The lyric speaks for itself. No social proof, no setup — just the words.
-    // When instrumental: mood-driven version of mystery.
+    // E — Raw lyric (6 slides)
     E: lyricFrag ? [
-      `this line:`,
+      `this line stopped me:`,
       `"${fmt(lyricFrag)}"`,
-      `that's the whole song.`,
+      `i had to look up\nwho made this.`,
+      lyricFrag2 && lyricFrag2 !== lyricFrag ? `and then:\n"${fmt(lyricFrag2)}"` : `that's the whole song.`,
+      `this is it.`,
       cta,
     ] : [
       `some songs you feel\nbefore you understand them.`,
       `this is one of them.`,
       `${moment}`,
+      `it just fits.`,
+      `you'll know when\nyou hear it.`,
       cta,
     ],
 
-    // F — Question hook: opens with a question drawn from the lyric/mood theme.
-    // Gets the viewer asking "yes, actually — what DO I do?" before they've even heard it.
-    // With lyrics: question is rooted in the lyric. Without: rooted in the mood.
+    // F — Question hook (6 slides)
     F: lyricFrag ? [
       `what do you do when\n"${fmt(lyricFrag)}"?`,
-      `this song answers\nthat question.`,
+      `most songs don't\nhave an answer.`,
+      `this one does.`,
+      `i've had it on repeat\nall week.`,
       `better than anything\ni've heard in a while.`,
       cta,
     ] : (() => {
@@ -355,13 +369,14 @@ function buildTexts(variant) {
                                                            'what do you do when\nno song is quite right?';
       return [
         q,
+        `most songs don't\nhave an answer.`,
+        `this one does.`,
+        `i've had it on repeat\nall week.`,
         `this song is the answer.`,
-        `finally found it.`,
         cta,
       ];
     })(),
   };
-
   return texts[variant] || texts.A;
 }
 

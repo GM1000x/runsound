@@ -55,7 +55,7 @@ const args = process.argv.slice(2);
 function getArg(n) { const i = args.indexOf(`--${n}`); return i !== -1 ? args[i + 1] : null; }
 
 const configPath = getArg('config');
-const COUNT      = parseInt(getArg('count') || '4', 10);   // 1 per arc × 4 arcs (default)
+const COUNT      = parseInt(getArg('count') || '6', 10);   // 1 per arc × 6 arcs (default)
 const FORCE      = args.includes('--force');
 const DRY_RUN    = args.includes('--dry-run');
 const NO_BANK    = args.includes('--no-bank');
@@ -140,18 +140,28 @@ const VISUAL_FAMILIES = [
     name: 'city_night',
     hook: [
       `${ch}, silhouette standing at a large window in a dark city apartment at night, warm tungsten lamp behind her, city lights below, pensive and still, 35mm film`,
-      `${ch}, sitting alone at a small kitchen table in a dark apartment, single overhead lamp, late night, hands wrapped around nothing, staring into the distance, candid 35mm film`,
+      `${ch}, sitting alone at a small kitchen table in a dark apartment, single overhead lamp, late night, hands resting on the table, staring into the distance, candid 35mm film`,
       `${ch}, lying on her back on the floor of a dark city apartment, one arm over her eyes, warm lamp glow from the side, late night stillness, shot on film from above`,
+    ],
+    build: [
+      `${ch}, slowly walking away from the window in the same dark city apartment, soft lamplight on her back, city reflected behind her, intimate and quiet, 35mm film`,
+      `${ch}, standing in the narrow hallway of the same apartment, one hand on the wall, looking down, late night, warm tungsten light from the room ahead, shot on film`,
+      `${ch}, reaching to turn off the lamp in the same apartment, face half-lit in the last warm glow, late night, emotional, 35mm film`,
     ],
     story: [
       `${ch}, sitting on the wooden floor against the wall of the same dimly lit apartment, knees pulled to chest, soft lamp glow, emotional and quiet, 35mm film`,
-      `${ch}, standing in the narrow hallway of the same apartment, one hand on the wall, looking down, late night, warm tungsten light from the room behind her, shot on film`,
       `${ch}, leaning on the windowsill of the same city apartment, chin resting on her arms, looking out at the city lights below, soft lamp, 35mm film`,
+      `${ch}, curled on the edge of the bed in the same dark apartment, fully clothed, soft lamp in the corner, late night, intimate, 35mm film`,
     ],
     peak: [
       `${ch}, close portrait in the same dark apartment, single warm lamp, soft shadow on her face, eyes slightly downcast, raw emotion, intimate, 35mm film, no props`,
       `${ch}, close side profile in the dark apartment, face half-lit by the lamp, looking up at the ceiling, quiet and emotional, shot on film`,
       `${ch}, close portrait from behind her shoulder in the dark apartment, looking toward the glowing city window, cinematic and still, 35mm film`,
+    ],
+    release: [
+      `${ch}, sitting at the window of the same apartment, first morning light just beginning outside, lamp still on, exhausted and still, 35mm film`,
+      `${ch}, standing in the same apartment doorway, backlit by soft hallway light, looking back into the dark room, 35mm film`,
+      `${ch}, sitting cross-legged on the floor of the same apartment, face tilted up, eyes closed, quiet relief, warm lamp, 35mm film`,
     ],
     cta: [
       `empty wooden floor of a dark city apartment, single warm tungsten lamp in the corner, city lights through the window, no people, no objects, late night stillness, 35mm film`,
@@ -167,6 +177,11 @@ const VISUAL_FAMILIES = [
       `${ch}, sitting on a low wall in a quiet sun-drenched neighborhood at golden hour, face turned slightly away, bathed in warm orange light, loose clothes, candid 35mm film`,
       `${ch}, standing at the end of a sun-soaked alley at golden hour, looking up at the light, backlit, hair catching the sun, loose summer dress, candid shot on film`,
     ],
+    build: [
+      `${ch}, walking slowly through the same golden-lit neighborhood, one hand trailing along a warm stone wall, looking ahead, contemplative, candid 35mm film`,
+      `${ch}, pausing on the same empty street at golden hour, turning to look back over her shoulder, warm backlight, candid and still, 35mm film`,
+      `${ch}, stepping off a curb onto the same sun-drenched street, loose summer clothes, golden light from the side, motion captured, candid 35mm film`,
+    ],
     story: [
       `${ch}, sitting on concrete steps in the same golden afternoon light, elbows on knees, looking into the distance, warm sun on her face, pensive, candid 35mm film`,
       `${ch}, lying in dry summer grass in the same golden late afternoon, one arm behind her head, eyes closed, sun on her face, peaceful and still, candid 35mm film`,
@@ -176,6 +191,11 @@ const VISUAL_FAMILIES = [
       `${ch}, standing alone at the end of the same empty street at sunset, facing away, sky orange and pink behind her, figure small, emotional and cinematic, 35mm film`,
       `${ch}, silhouette against a blazing orange sunset sky in the same open space, arms slightly out, still, emotional, 35mm film, wide shot`,
       `${ch}, close shot from behind in the same golden field, golden light catching the edges of her hair, sky glowing, quiet and emotional, 35mm film`,
+    ],
+    release: [
+      `${ch}, sitting on the same concrete steps after sunset, dusk light, the street quiet and blue-toned, looking up, peaceful, 35mm film`,
+      `${ch}, walking away down the same street in the last of the evening light, figure small, warm glow behind her fading, candid 35mm film`,
+      `${ch}, lying in the same dry summer grass as dusk comes, looking up at the sky, arm outstretched, calm and open, 35mm film`,
     ],
     cta: [
       `an empty concrete step on a sun-soaked street, long golden shadows, warm afternoon light, nobody there, nostalgic and still, 35mm film`,
@@ -191,6 +211,11 @@ const VISUAL_FAMILIES = [
       `${ch}, looking out the side window of a moving car at night, blurred street lights outside, face soft and distant, candid shot from the passenger side, film grain`,
       `${ch}, leaning her head against the car window at night, eyes half-open, street lights passing, reflections on the glass, intimate and quiet, shot on film`,
     ],
+    build: [
+      `${ch}, sitting up straighter in the same car at night, looking ahead through the windshield at the road, street lights ahead, alert and emotional, shot on film`,
+      `${ch}, turning to look out the back window of the same car at night, city lights receding, face quiet, 35mm film`,
+      `${ch}, one hand resting on the window of the same moving car at night, fingers spread on the cold glass, city lights outside, 35mm film`,
+    ],
     story: [
       `${ch}, alone in the same parked car at night, head resting back on the seat, eyes closed, single street light through the windshield, quiet and emotional, shot on film`,
       `${ch}, in the driver's seat of the same parked car at night, hands in her lap, staring ahead through the windshield, distant city glow, emotional stillness, shot on film`,
@@ -200,6 +225,11 @@ const VISUAL_FAMILIES = [
       `${ch}, driver's seat of the same car, hands on the wheel, face lit only by dashboard glow and passing street lights, emotional close shot, cinematic, film grain`,
       `${ch}, close portrait in the same car at night, face reflected faintly in the window, street lights passing behind her, raw and still, shot on film`,
       `${ch}, looking straight into the camera from the driver's seat of the same car at night, dashboard glow, honest and emotional, 35mm film portrait`,
+    ],
+    release: [
+      `${ch}, stepping out of the same car at night onto an empty street, door still open, city quiet around her, looking up, 35mm film`,
+      `${ch}, sitting on the hood of the same parked car at night, city lights in the distance, looking out, calm and open, shot on film`,
+      `${ch}, leaning against the outside of the same car at night, arms crossed loosely, looking up at the sky, street light above, 35mm film`,
     ],
     cta: [
       `the empty passenger seat of a car at night, faint city lights through the window, dark interior, quiet and still, no people, 35mm film`,
@@ -228,7 +258,8 @@ function chooseFamilyIndex() {
 // Pick a random variant index (0–2) for each arc role independently.
 // Written to meta.json so CTR data can be tied back to each visual choice.
 function pickVariants() {
-  return { hook: Math.floor(Math.random() * 3), story: Math.floor(Math.random() * 3), peak: Math.floor(Math.random() * 3), cta: Math.floor(Math.random() * 3) };
+  const r = () => Math.floor(Math.random() * 3);
+  return { hook: r(), build: r(), story: r(), peak: r(), release: r(), cta: r() };
 }
 
 const FAMILY_INDEX  = chooseFamilyIndex();
@@ -236,14 +267,16 @@ const CHARACTER     = pickCharacter();
 const FAMILY_DATA   = VISUAL_FAMILIES[FAMILY_INDEX](CHARACTER);
 const VARIANTS      = pickVariants();
 
-console.log(`🎨 Visual family: ${FAMILY_DATA.name} | variants hook:${VARIANTS.hook} story:${VARIANTS.story} peak:${VARIANTS.peak} cta:${VARIANTS.cta}`);
+console.log(`🎨 Visual family: ${FAMILY_DATA.name} | variants hook:${VARIANTS.hook} build:${VARIANTS.build} story:${VARIANTS.story} peak:${VARIANTS.peak} release:${VARIANTS.release} cta:${VARIANTS.cta}`);
 
-// Build ARC_ROLES from chosen family + variants
+// Build ARC_ROLES from chosen family + variants (6-slide structure)
 const ARC_ROLES = [
-  { role: 'hook',  tags: ['hook'],  prompts: [FAMILY_DATA.hook[VARIANTS.hook]]  },
-  { role: 'story', tags: ['story'], prompts: [FAMILY_DATA.story[VARIANTS.story]] },
-  { role: 'peak',  tags: ['peak'],  prompts: [FAMILY_DATA.peak[VARIANTS.peak]]  },
-  { role: 'cta',   tags: ['cta'],   prompts: [FAMILY_DATA.cta[VARIANTS.cta]]    },
+  { role: 'hook',    tags: ['hook'],    prompts: [FAMILY_DATA.hook[VARIANTS.hook]]       },
+  { role: 'build',   tags: ['build'],   prompts: [FAMILY_DATA.build[VARIANTS.build]]     },
+  { role: 'story',   tags: ['story'],   prompts: [FAMILY_DATA.story[VARIANTS.story]]     },
+  { role: 'peak',    tags: ['peak'],    prompts: [FAMILY_DATA.peak[VARIANTS.peak]]       },
+  { role: 'release', tags: ['release'], prompts: [FAMILY_DATA.release[VARIANTS.release]] },
+  { role: 'cta',     tags: ['cta'],     prompts: [FAMILY_DATA.cta[VARIANTS.cta]]         },
 ];
 
 // ─── Build image prompt for a given arc role ───────────────────────────────────
