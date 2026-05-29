@@ -214,6 +214,8 @@ async function createPost(images, utmUrl) {
 
   const caption      = buildCaption(utmUrl);
   const title        = buildTitle();
+  // Postiz uses 'content' as the full TikTok post text — combine title + caption
+  const fullContent  = [title, caption].filter(Boolean).join('\n');
   const scheduleDate = new Date(Date.now() + 2 * 60 * 1000).toISOString();
 
   console.log(`   Title:   ${title}`);
@@ -227,7 +229,7 @@ async function createPost(images, utmUrl) {
     posts: [
       {
         integration: { id: integrationId },
-        value: [{ content: caption, image: images, title }],
+        value: [{ content: fullContent, image: images }],
         settings: {
           privacy_level:          'SELF_ONLY',
           duet:                   false,

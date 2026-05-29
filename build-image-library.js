@@ -108,48 +108,50 @@ try {
   if (supabase) bank = require('./bank-utils');
 } catch { /* bank-utils not present — skip bank */ }
 
-// ─── Arc roles — mirrors pick-slides.js (4-slide structure) ──────────────────
-// Pinterest/lifestyle style: real photography feel, intimate moments, natural light.
-// Inspired by viral TikTok format: mirror selfies, silhouettes, candid life scenes.
-// Each role has 3 prompt variations so the library has visual diversity.
-const ARC_ROLES = [
-  {
-    role: 'hook',
-    tags: ['hook', 'lifestyle', 'candid'],
-    prompts: [
-      'young woman in minimal apartment standing in front of full-length mirror, warm tungsten evening light, simple black outfit, gold jewellery, candid getting-ready moment, iPhone lifestyle photo, aesthetic Pinterest',
-      'person sitting on bedroom floor against the bed, late night soft lamp light, cozy and intimate, looking thoughtful, candid unposed lifestyle moment',
-      'person standing at floor-to-ceiling window in a city apartment at dusk, lights of the city below, moody warm interior light from behind, cinematic silhouette lifestyle shot',
-    ],
-  },
-  {
-    role: 'story',
-    tags: ['story', 'intimate', 'warm'],
-    prompts: [
-      'two silhouettes slow dancing in a warmly lit kitchen at night, photographed from outside through a window, dark garden foreground, romantic warm glow inside, cinematic and intimate',
-      'couple driving at golden hour, shot from passenger seat, sun streaming through windshield, warm haze, candid, slightly overexposed like film photo',
-      'person sitting alone at a table in a dim restaurant or bar, single candle, warm bokeh lights in background, intimate atmosphere, candid lifestyle',
-    ],
-  },
-  {
-    role: 'peak',
-    tags: ['peak', 'golden', 'silhouette'],
-    prompts: [
-      'silhouette of two people on a rooftop at sunset, city skyline behind them, golden and orange sky, romantic and cinematic, backlit',
-      'person lying on bed staring at the ceiling, late afternoon golden light cutting across the room through blinds, emotional and still, candid intimate photography',
-      'two people sitting close on a beach at dusk, seen from behind, calm water, soft gradient sky, warm golden and purple tones, peaceful and emotional',
-    ],
-  },
-  {
-    role: 'cta',
-    tags: ['cta', 'minimal', 'aesthetic'],
-    prompts: [
-      'aesthetic nightstand flatlay — iPhone with white earbuds coiled, soft warm lamp glow, linen texture, minimal and clean, cozy evening atmosphere',
-      'close-up of hands holding a warm coffee cup, soft morning window light, minimal table surface, clean Pinterest lifestyle composition',
-      'open window with sheer curtain blowing in soft breeze, golden morning light flooding in, simple and cinematic, calm aesthetic',
-    ],
-  },
+// ─── Visual families — 3 cohesive worlds, each with 4 matching scenes ────────
+// All 4 slides in a family share the same protagonist, environment and light.
+// One family is chosen randomly per campaign run so the carousel feels like
+// a single story, not 4 unrelated photos.
+//
+// Rules for every prompt:
+//   - Same person throughout (silhouette or no face — no conflicting faces)
+//   - Same environment/lighting family
+//   - No props that break the world (no iPhones, coffee cups, earbuds)
+//   - CTA slide = quiet, still moment in the same world — NOT a flatlay
+const VISUAL_FAMILIES = [
+  // Family 1: City apartment at night — moody, warm tungsten, intimate
+  [
+    { role: 'hook',  tags: ['hook', 'city', 'night'],    prompt: 'young woman silhouette standing at a large window in a dark city apartment at night, warm tungsten light from a single lamp behind her, city lights below, she is looking out, pensive and still, candid lifestyle photography, shot on film' },
+    { role: 'story', tags: ['story', 'intimate', 'warm'], prompt: 'same young woman sitting on the floor against the wall in the same dimly lit apartment, knees pulled to chest, soft lamp glow, late night atmosphere, emotional and quiet, candid film photography' },
+    { role: 'peak',  tags: ['peak', 'emotional', 'dark'], prompt: 'close portrait of a young woman in a dark room, single warm lamp, soft shadow on her face, eyes slightly downcast, raw emotion, intimate and cinematic, shot on 35mm film, no phone or props' },
+    { role: 'cta',   tags: ['cta', 'still', 'night'],    prompt: 'empty spot on a bed in a dark apartment, single warm lamp glowing softly, rumpled linen, late night stillness, no people, no objects — just light and texture, cinematic and calm' },
+  ],
+  // Family 2: Golden hour outdoors — warm, sun-soaked, bittersweet
+  [
+    { role: 'hook',  tags: ['hook', 'golden', 'outdoor'], prompt: 'young woman walking alone down an empty street at golden hour, backlit by low sun, warm orange haze, long shadow, candid shot from behind, loose summer clothes, emotional and free' },
+    { role: 'story', tags: ['story', 'golden', 'warm'],   prompt: 'same young woman sitting on concrete steps in golden afternoon light, elbows on knees, looking into the distance, warm sun on her face, pensive, candid film photograph' },
+    { role: 'peak',  tags: ['peak', 'sunset', 'golden'],  prompt: 'silhouette of a young woman standing alone in an open field at sunset, sky orange and pink, figure small against the horizon, emotional and cinematic, shot on 35mm film' },
+    { role: 'cta',   tags: ['cta', 'golden', 'still'],    prompt: 'an empty park bench in golden late afternoon light, long shadows across concrete, nobody on it, warm and nostalgic atmosphere, no objects, just light and space' },
+  ],
+  // Family 3: Late night drive — cinematic, dark, liberating
+  [
+    { role: 'hook',  tags: ['hook', 'night', 'drive'],   prompt: 'young woman in the passenger seat of a car at night, city lights streaming past the window, face half-lit by street lights, looking forward, shot from the back seat, cinematic and moody, film grain' },
+    { role: 'story', tags: ['story', 'night', 'car'],    prompt: 'same young woman alone in a parked car at night, head resting back on the seat, eyes closed, street light through the windshield, quiet and emotional, intimate car interior, shot on film' },
+    { role: 'peak',  tags: ['peak', 'night', 'road'],    prompt: 'point of view from a car on an empty night road, headlights on wet tarmac, city lights far ahead, nobody visible, open road, cinematic and emotional, wide angle' },
+    { role: 'cta',   tags: ['cta', 'night', 'still'],    prompt: 'a car window at night, rain drops on the glass, blurred city lights outside, no people, quiet and still, emotional atmosphere, film photography look' },
+  ],
 ];
+
+// Pick one visual family randomly for this campaign — ensures all 4 slides match
+const FAMILY_INDEX = Math.floor(Math.random() * VISUAL_FAMILIES.length);
+const CHOSEN_FAMILY = VISUAL_FAMILIES[FAMILY_INDEX];
+
+// Build ARC_ROLES from the chosen family (compatible with rest of pipeline)
+const ARC_ROLES = CHOSEN_FAMILY.map(f => ({
+  role:    f.role,
+  tags:    f.tags,
+  prompts: [f.prompt],  // single prompt per role in a family
+}));
 
 // ─── Build image prompt for a given arc role ───────────────────────────────────
 function buildPrompt(arcRole, variationIndex) {
