@@ -182,6 +182,38 @@ function deriveLifestyleMoment() {
   return 'when you need\nthe right song';
 }
 
+// ─── Extract a punchy lyric fragment for use in hooks ────────────────────────
+// Finds the shortest meaningful line in the lyrics — preferably 3–7 words,
+// avoiding intros/outros ("ooh", "yeah", "mmm", verse/chorus headers etc).
+// Returns null if lyrics are empty or no good fragment found.
+// Used to make the mystery and lifestyle archetypes more song-specific.
+function deriveLyricFragment() {
+  if (!lyrics) return null;
+
+  const lines = lyrics
+    .split(/\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    // Remove section headers like [Verse], [Chorus], (x2), etc.
+    .filter(l => !/^\[|\(x\d|\bverse\b|\bchorus\b|\bbridge\b|\bpre-chorus\b|\bintro\b|\boutro\b/i.test(l))
+    // Remove filler lines (ooh, yeah, mmm, la la, na na)
+    .filter(l => !/^(ooh+|yeah+|mmm+|la\s+la|na\s+na|hey+|uh+|ah+)\b/i.test(l))
+    // Keep lines between 2 and 8 words — punchy, not full sentences
+    .filter(l => {
+      const wc = l.split(/\s+/).length;
+      return wc >= 2 && wc <= 8;
+    });
+
+  if (!lines.length) return null;
+
+  // Prefer lines from the first half of the song (usually the hook/opening image)
+  const preferred = lines.slice(0, Math.ceil(lines.length / 2));
+  const pool = preferred.length ? preferred : lines;
+
+  // Pick a random one for variety across posts
+  return pool[Math.floor(Math.random() * pool.length)].toLowerCase();
+}
+
 // ─── Word-wrap to ~4 words per line ──────────────────────────────────────────
 function fmt(t) {
   if (!t || t.includes('\n')) return t || '';
@@ -197,12 +229,16 @@ function fmt(t) {
 }
 
 // ─── Slide texts per archetype ────────────────────────────────────────────────
+// lyricFrag (optional): a short punchy phrase extracted from the song's actual lyrics.
+// When present it's woven into archetypes C and D to make the hook song-specific
+// rather than generic. Without lyrics it falls back to the generic template.
 function buildTexts(variant) {
-  const cta    = `${st}\nby ${an}\nlink in bio`;
-  const song   = st.toLowerCase();
-  const pov    = deriveListenerPOV();
-  const genre  = deriveGenreFamily();
-  const moment = deriveLifestyleMoment();
+  const cta       = `${st}\nby ${an}\nlink in bio`;
+  const song      = st.toLowerCase();
+  const pov       = deriveListenerPOV();
+  const genre     = deriveGenreFamily();
+  const moment    = deriveLifestyleMoment();
+  const lyricFrag = deriveLyricFragment();  // null if no lyrics provided
 
   // Genre-aware reaction words for archetype A
   // Each 'follow' is a complete standalone line — no suffix appended
@@ -231,8 +267,15 @@ function buildTexts(variant) {
       cta,
     ],
 
-    // C — Mystery: Minimal, curiosity gap (4 slides)
-    C: [
+    // C — Mystery: curiosity gap.
+    // If lyrics available: open with an actual lyric line — more specific and intriguing.
+    // Fallback: generic mystery template.
+    C: lyricFrag ? [
+      `"${fmt(lyricFrag)}"`,
+      `this song knows\nsomething about you\nyou haven't said out loud`,
+      `you'll know exactly\nwhat i mean.`,
+      cta,
+    ] : [
       `wait.\nlisten.`,
       `this song knows\nsomething about you\nyou haven't said out loud`,
       `you'll know exactly\nwhat i mean.`,
@@ -240,9 +283,14 @@ function buildTexts(variant) {
     ],
 
     // D — Lifestyle placement: places the song in a vivid life scenario (4 slides)
+    // If lyrics available: slide 2 quotes a lyric line to ground the moment.
     // Inspired by viral "this is the type of music i play whilst..." TikTok format.
-    // Gets swiped because the viewer recognises themselves in the moment.
-    D: [
+    D: lyricFrag ? [
+      `this is the type of song\ni play\n${moment}`,
+      `"${fmt(lyricFrag)}"`,
+      `you'll understand\nwhen you hear it.`,
+      cta,
+    ] : [
       `this is the type of song\ni play\n${moment}`,
       `there are songs\nyou save\nfor certain moments.`,
       `this is one of them.`,
@@ -263,6 +311,9 @@ function buildTexts(variant) {
   console.log(`   Campaign ID: ${campaignId || config.campaign?.id || 'none'}`);
   if (ta) console.log(`   Audience:    ${ta}`);
   console.log(`   Bank:        ${bank ? 'enabled ✅' : 'disabled (bank-utils not found)'}`);
+  const previewFrag = deriveLyricFragment();
+  if (previewFrag) console.log(`   Lyric frag:  "${previewFrag.slice(0, 50)}"`);
+  else             console.log(`   Lyric frag:  none (no lyrics provided — using generic templates)`);
 
   const weights          = await loadWeightsFromSupabase();
   console.log(`\n   Hook weights: A=${weights.A?.toFixed(2)} B=${weights.B?.toFixed(2)} C=${weights.C?.toFixed(2)} D=${weights.D?.toFixed(2)}`);

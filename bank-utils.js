@@ -5,15 +5,18 @@
  * Both banks live in Supabase for persistence across Railway redeploys.
  *
  * Image bank:  lifestyle photos stored in Supabase Storage, ranked by streaming CTR.
- *              New artists reuse proven images instead of spending OpenAI credits.
+ *              Only PROVEN images are reused (>= MIN_PROVEN_VIEWS views + avg_ctr > 0).
+ *              Unproven images are never reused — new artists always get fresh content
+ *              so the AI can explore and build up meaningful test data.
  *
  * Hook bank:   cross-artist archetype performance per genre family.
- *              New artists inherit pooled priors from all previous artists.
+ *              Only used as prior once the bank has real data (times_used > 0).
+ *              Early on, equal weights ensure all archetypes get tested.
  *
  * Matching strategy for images:
- *   1. Same arc_role, ordered by avg_ctr DESC (best performers first)
- *   2. Only pick from images with <MAX_REUSE uses recently (ensures variety)
- *   3. Random selection among top-N candidates (avoids always the same image)
+ *   1. Same arc_role + total_views >= MIN_PROVEN_VIEWS + avg_ctr > 0 (proven only)
+ *   2. Ordered by avg_ctr DESC, random pick among top-N candidates for visual variety
+ *   3. If no proven images exist → returns null → pipeline generates fresh
  *
  * Exports:
  *   initStorage(supabase)
@@ -28,9 +31,11 @@
 const fs   = require('fs');
 const path = require('path');
 
-const BUCKET          = 'image-bank';
-const TOP_N_CANDIDATES = 5;    // Pick randomly from top-N by CTR to ensure visual variety
-const MIN_BANK_CTR    = 0;     // Min avg_ctr to prefer bank image (0 = any image counts)
+const BUCKET            = 'image-bank';
+const TOP_N_CANDIDATES  = 5;     // Pick randomly from top-N by CTR to ensure visual variety
+const MIN_PROVEN_VIEWS  = 500;   // Image must have seen ≥500 TikTok views before reuse
+                                 // Below this threshold we don't have reliable CTR signal —
+                                 // always generate fresh so the AI can explore properly.
 
 // ─── Ensure Supabase Storage bucket exists ────────────────────────────────────
 async function initStorage(supabase) {
@@ -61,19 +66,24 @@ async function pickBankImages(supabase, arcRoles) {
 
   for (const role of arcRoles) {
     try {
+      // Only fetch PROVEN images: enough views to trust the CTR signal
+      // avg_ctr filter via gte(0) is intentionally loose — even ctr=0 is data,
+      // but total_views must be >= MIN_PROVEN_VIEWS to be meaningful.
       const { data, error } = await supabase
         .from('image_bank')
-        .select('id, public_url, safe_zone, tags, avg_ctr, times_used')
+        .select('id, public_url, safe_zone, tags, avg_ctr, times_used, total_views')
         .eq('arc_role', role)
+        .gte('total_views', MIN_PROVEN_VIEWS)  // must have real exposure data
         .order('avg_ctr', { ascending: false })
-        .limit(20);  // fetch top 20, pick randomly from top-N
+        .limit(20);
 
       if (error || !data?.length) {
+        // No proven images for this role → generate fresh
         result[role] = null;
         continue;
       }
 
-      // Pick randomly from top-N candidates for visual variety
+      // Pick randomly from top-N proven candidates for visual variety
       const candidates = data.slice(0, TOP_N_CANDIDATES);
       const picked     = candidates[Math.floor(Math.random() * candidates.length)];
       result[role] = picked;

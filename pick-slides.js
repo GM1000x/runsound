@@ -134,7 +134,9 @@ function scoreImage(image, arcRole, recentlyUsed) {
   return score;
 }
 
-// ─── Pick 6 images using arc-position logic ───────────────────────────────────
+// ─── Pick 4 images using arc-position logic ───────────────────────────────────
+// ALWAYS uses each image only once when the library has enough unique images.
+// Falls back to duplicates only if library has fewer images than arc slots.
 function pickSlides(library, history) {
   // Build recently-used map: filename → days ago
   const recentlyUsed = {};
@@ -150,15 +152,25 @@ function pickSlides(library, history) {
 
   const chosen  = [];
   const usedIdx = new Set();
-  const allowReuse = library.length < ARC_ROLES.length;
+  const hasEnoughUnique = library.length >= ARC_ROLES.length;
 
   for (const arcRole of ARC_ROLES) {
-    // Score all images; penalise already-used ones unless library is small
     const scored = library
-      .map((img, idx) => ({ img, idx, score: (!allowReuse && usedIdx.has(idx)) ? -999 : scoreImage(img, arcRole, recentlyUsed) }))
+      .map((img, idx) => {
+        let score = scoreImage(img, arcRole, recentlyUsed);
+        if (usedIdx.has(idx)) {
+          // Enough unique images → hard block reuse (-9999 = effectively impossible)
+          // Too few images → soft penalty only (-60), allow reuse as last resort
+          score += hasEnoughUnique ? -9999 : -60;
+        }
+        return { img, idx, score };
+      })
       .sort((a, b) => b.score - a.score);
 
     const best = scored[0];
+    if (hasEnoughUnique && usedIdx.has(best.idx)) {
+      console.warn(`   ⚠️  Slide ${arcRole.slot} [${arcRole.role}]: forced to reuse image — library may have fewer than ${ARC_ROLES.length} unique images`);
+    }
     chosen.push({ slot: arcRole.slot, role: arcRole.role, ...best.img, score: best.score });
     usedIdx.add(best.idx);
   }

@@ -215,7 +215,7 @@ async function runOnboarding(campaignId) {
 
     // ── 2. Build image library ─────────────────────────────────────────────
     await setStatus(campaignId, 'library');
-    await runCommand('node', ['build-image-library.js', '--config', cfgPath, '--count', '2'], 'build image library', 8 * 60 * 1000);
+    await runCommand('node', ['build-image-library.js', '--config', cfgPath, '--count', '4'], 'build image library', 12 * 60 * 1000);
 
     // Remove the default-library symlink now that we have real images
     const libDir = path.join(dir, 'image-library');
@@ -268,17 +268,19 @@ async function runOnboarding(campaignId) {
       if (artist?.email && campaign.dash_token) {
         const BASE         = process.env.BASE_URL || 'https://run-sound.com';
         const dashboardUrl = `${BASE}/dashboard.html?campaign_id=${campaign.id}&token=${campaign.dash_token}`;
-        await sendDraftReadyEmail({
+        console.log(`[onboard] Sending draft-ready email to ${artist.email}...`);
+        const emailResult = await sendDraftReadyEmail({
           artistName:   campaign.artist_name,
           email:        artist.email,
           songTitle:    campaign.song_title,
           dashboardUrl,
         });
+        console.log(`[onboard] Draft-ready email sent ✅`, emailResult?.id || '');
       } else {
-        console.warn('[onboard] Skipped draft-ready email — missing artist email or dash_token');
+        console.warn(`[onboard] Skipped draft-ready email — artist.email=${artist?.email} dash_token=${!!campaign.dash_token}`);
       }
     } catch (emailErr) {
-      console.error('[onboard] Draft-ready email failed (non-fatal):', emailErr.message);
+      console.error('[onboard] Draft-ready email failed:', emailErr.message, emailErr.stack?.slice(0, 300));
     }
 
   } catch (err) {
