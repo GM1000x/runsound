@@ -143,7 +143,12 @@ function selectVariant(weights) {
     return picked;
   }
 
-  const best = keys.reduce((a, b) => weights[a] >= weights[b] ? a : b);
+  // Find the max weight value
+  const maxWeight = Math.max(...keys.map(k => weights[k]));
+  // Collect all keys tied for the top weight (avoids always picking A when equal)
+  const topKeys   = keys.filter(k => weights[k] === maxWeight);
+  // Random tiebreak so all archetypes get tested early when weights are equal
+  const best      = topKeys[Math.floor(Math.random() * topKeys.length)];
   console.log(`   Strategy: EXPLOIT (best) → Variant ${best} (${ARCHETYPES[best]}, weight: ${weights[best].toFixed(2)})`);
   return best;
 }

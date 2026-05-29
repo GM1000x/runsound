@@ -377,7 +377,10 @@ async function main() {
     }
 
     // ── Generate new image ──────────────────────────────────────────────────
-    const variationIndex = Math.floor(i / ARC_ROLES.length);
+    // Pick a random variation within this arc role's prompt array so each
+    // campaign gets visually different images (not always the same iPhone/earphones).
+    const numVariations = arcRole.prompts?.length || 1;
+    const variationIndex = Math.floor(Math.random() * numVariations);
     const prompt = buildPrompt(arcRole, variationIndex);
 
     // Estimate cost before generating
