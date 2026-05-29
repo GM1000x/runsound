@@ -127,17 +127,24 @@ function refreshAccessToken(refreshToken) {
  * @param {string}   caption      Post caption (max 2200 chars)
  * @returns {Promise<{ publishId: string, status: string }>}
  */
-async function postPhotoCarousel(accessToken, imagePaths, caption) {
+async function postPhotoCarousel(accessToken, imagePaths, caption, title = '') {
   const photoCount = imagePaths.length;
   if (photoCount === 0) throw new Error('No images provided');
   if (photoCount > 35)  throw new Error('TikTok supports max 35 images per carousel');
 
+  // TikTok photo carousel API uses post_info.title as the caption/description field.
+  // We combine the human-readable title with the hashtags+link caption.
+  // Format: "Song by Artist\n🎵 Stream it: https://...\n#deephouse #newmusic"
+  const fullCaption = [title, caption].filter(Boolean).join('\n');
+
   console.log(`\n[tiktok-api] 📸 Posting ${photoCount}-image carousel as draft...`);
+  console.log(`[tiktok-api] Title:   ${title || '(none)'}`);
+  console.log(`[tiktok-api] Caption: ${caption.slice(0, 80).replace(/\n/g, ' / ')}`);
 
   // ── Step 1: Initialise the post ──────────────────────────────────────────────
   const initBody = {
     post_info: {
-      title:            caption.slice(0, 2200),
+      title:            fullCaption.slice(0, 2200),
       privacy_level:    'SELF_ONLY',   // → sends to artist's inbox as a draft
       disable_duet:     true,
       disable_stitch:   true,

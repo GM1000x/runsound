@@ -132,28 +132,80 @@ async function uploadAllSlides(slides) {
 // ─── UTM URL builder ──────────────────────────────────────────────────────────
 // Uses POST_UID as campaign so each post is individually attributable in Supabase.
 function buildUtmUrl() {
-  const { song } = config;
-  const base = song.smartLinkSlug
-    ? `https://runsound.fm/${song.smartLinkSlug}`
-    : (song.spotifyUrl || '');
+  // Priority: campaign smart link → spotify URL → empty
+  const base = config.campaign?.smartLinkUrl
+    || config.song?.smartLinkSlug && `https://run-sound.com/l/${config.song.smartLinkSlug}`
+    || config.streaming?.spotify
+    || '';
+
   if (!base) return '';
 
   const sep = base.includes('?') ? '&' : '?';
   return `${base}${sep}utm_source=tiktok&utm_medium=carousel&utm_campaign=${POST_UID}`;
 }
 
-// ─── Step 3: Build caption ────────────────────────────────────────────────────
+// ─── Genre → hashtag mapping ──────────────────────────────────────────────────
+function buildHashtags() {
+  const genre  = (config.song?.genre  || config.artist?.genre || '').toLowerCase();
+  const mood   = (config.song?.mood   || '').toLowerCase();
+  const artist = config.artist?.name  || '';
+  const song   = config.song?.title   || '';
+
+  // Base tags always included
+  const tags = ['newmusic'];
+
+  // Artist name as hashtag (no spaces, lowercase)
+  const artistTag = artist.replace(/\s+/g, '').toLowerCase();
+  if (artistTag) tags.push(artistTag);
+
+  // Song title as hashtag (first word or full if short)
+  const songWords = song.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+  if (songWords.length > 0 && songWords.join('').length <= 20) {
+    tags.push(songWords.join(''));
+  }
+
+  // Genre-specific hashtags — driven by what the artist actually chose
+  const g = genre + ' ' + mood;
+  if (/house|techno|edm|electronic|trance|club/.test(g))  { tags.push('electronicmusic', 'dancemusic', 'edm'); }
+  else if (/deep.?house/.test(g))                          { tags.push('deephouse', 'housemusic'); }
+  else if (/hip.?hop|rap|trap|drill/.test(g))              { tags.push('hiphop', 'rap'); }
+  else if (/r.?b|soul|neo.?soul/.test(g))                  { tags.push('rnb', 'soulmusic'); }
+  else if (/country|folk|bluegrass/.test(g))               { tags.push('countrymusic', 'folk'); }
+  else if (/indie/.test(g))                                { tags.push('indiemusic', 'indiepop'); }
+  else if (/pop/.test(g))                                  { tags.push('pop', 'popmusic'); }
+  else if (/rock|metal|punk/.test(g))                      { tags.push('rock', 'rockmusic'); }
+  else if (/jazz/.test(g))                                 { tags.push('jazz', 'jazzmusic'); }
+  else {
+    // Fallback: use the raw genre string (first word)
+    const genreTag = genre.split(/\s+/)[0].replace(/[^a-z0-9]/g, '');
+    if (genreTag) tags.push(genreTag, 'music');
+    else          tags.push('music');
+  }
+
+  // Deduplicate and format
+  return [...new Set(tags)].map(t => `#${t}`).join(' ');
+}
+
+// ─── Step 3: Build caption + title ───────────────────────────────────────────
+// TikTok photo carousels support both a caption (with hashtags + link) and a
+// separate title field shown prominently above the carousel.
 function buildCaption(utmUrl) {
   if (captionArg) return captionArg;
 
   const { artist, song } = config;
-  const link = utmUrl || '';
+  const link     = utmUrl || '';
+  const hashtags = buildHashtags();
 
   return [
-    `${song.title} by ${artist.name}`,
     link ? `🎵 Stream it: ${link}` : '',
-    `#${artist.genre?.replace(/\s+/g, '') || 'music'} #newmusic #${artist.name?.replace(/\s+/g, '').toLowerCase() || 'artist'} #indiefolk`,
+    hashtags,
   ].filter(Boolean).join('\n');
+}
+
+// The title shown at the top of the TikTok photo carousel
+function buildTitle() {
+  const { artist, song } = config;
+  return `${song?.title || 'New Song'} by ${artist?.name || 'Artist'}`;
 }
 
 // ─── Step 4: Create carousel post ────────────────────────────────────────────
@@ -161,7 +213,11 @@ async function createPost(images, utmUrl) {
   console.log('\n📱 Creating TikTok carousel post...');
 
   const caption      = buildCaption(utmUrl);
+  const title        = buildTitle();
   const scheduleDate = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+
+  console.log(`   Title:   ${title}`);
+  console.log(`   Caption: ${caption.slice(0, 80).replace(/\n/g, ' / ')}`);
 
   const body = {
     type:      'now',
@@ -171,7 +227,7 @@ async function createPost(images, utmUrl) {
     posts: [
       {
         integration: { id: integrationId },
-        value: [{ content: caption, image: images }],
+        value: [{ content: caption, image: images, title }],
         settings: {
           privacy_level:          'SELF_ONLY',
           duet:                   false,
@@ -314,15 +370,17 @@ async function postDirectToTikTok(slides, utmUrl) {
 
   const { accessToken } = tokenInfo;
   const caption = buildCaption(utmUrl);
+  const title   = buildTitle();
 
   console.log(`\n🎵 RunSound — TikTok Direct Post (OAuth)`);
   console.log(`   Artist:   ${config.artist.name}`);
   console.log(`   Song:     ${config.song.title}`);
   console.log(`   Slides:   ${slides.length} images`);
   console.log(`   Variant:  ${variantArg}`);
+  console.log(`   Title:    ${title}`);
   console.log(`   Post UID: ${POST_UID}\n`);
 
-  const { publishId, status } = await tiktokApi.postPhotoCarousel(accessToken, slides, caption);
+  const { publishId, status } = await tiktokApi.postPhotoCarousel(accessToken, slides, caption, title);
 
   return {
     postId: publishId,
