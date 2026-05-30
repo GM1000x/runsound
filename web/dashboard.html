@@ -570,8 +570,10 @@ function renderAction(data) {
 function renderStats(data) {
   document.getElementById('statViews').textContent      = fmt(data.weekViews);
   document.getElementById('statClicks').textContent     = fmt(data.weekClicks);
-  document.getElementById('statPosts').textContent      = fmt(data.totalPosts);
-  document.getElementById('statPostsDelta').textContent = 'all time';
+  if (document.getElementById('statPosts')) {
+    document.getElementById('statPosts').textContent      = fmt(data.totalPosts);
+    document.getElementById('statPostsDelta').textContent = 'all time';
+  }
 
   // CTR
   const ctrEl = document.getElementById('statCtr');
