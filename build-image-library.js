@@ -485,23 +485,23 @@ async function main() {
   const safeZones  = {};   // filename → safeZone
   const bankIds    = [];   // image_bank UUIDs used in this library (for post attribution)
 
+  // ── Separate bank hits from images that need generation ──────────────────
+  const toGenerate = [];
   for (let i = 0; i < plan.length; i++) {
-    const arcRole = plan[i];
-    const tags    = arcRole.tags.join('_');
+    const arcRole  = plan[i];
+    const tags     = arcRole.tags.join('_');
     const filename = `img-${String(i + 1).padStart(3, '0')}_${tags}.png`;
     const destPath = path.join(libraryDir, filename);
+    const bankImg  = bankImages[arcRole.role];
 
-    // ── Try bank first ──────────────────────────────────────────────────────
-    const bankImg = bankImages[arcRole.role];
     if (bankImg && !FORCE) {
       if (fs.existsSync(destPath)) {
-        console.log(`   ⏭  ${filename} already on disk — skipping download`);
+        console.log(`   ⏭  ${filename} already on disk`);
         safeZones[filename] = bankImg.safe_zone || 'bottom';
         bankIds.push(bankImg.id);
         bankHits++;
         continue;
       }
-
       if (!DRY_RUN) {
         try {
           process.stdout.write(`   🏦 ${filename} — downloading from bank...`);
@@ -509,69 +509,53 @@ async function main() {
           safeZones[filename] = bankImg.safe_zone || 'bottom';
           bankIds.push(bankImg.id);
           bankHits++;
-          console.log(` ✅ ${bankImg.safe_zone || 'bottom'}`);
-          continue;  // Skip generation for this slot
-        } catch (dlErr) {
-          console.log(` ⚠️  download failed (${dlErr.message}) — generating fresh`);
-          // Fall through to generation
-        }
+          console.log(` ✅`);
+          continue;
+        } catch { /* fall through to generation */ }
       } else {
-        console.log(`   [dry-run] ${filename} → bank hit`);
-        bankHits++;
-        continue;
+        bankHits++; continue;
       }
     }
 
-    // ── Generate new image ──────────────────────────────────────────────────
-    // Pick a random variation within this arc role's prompt array so each
-    // campaign gets visually different images (not always the same iPhone/earphones).
-    const numVariations = arcRole.prompts?.length || 1;
+    const numVariations  = arcRole.prompts?.length || 1;
     const variationIndex = Math.floor(Math.random() * numVariations);
-    const prompt = buildPrompt(arcRole, variationIndex);
+    toGenerate.push({ i, arcRole, filename, destPath, prompt: buildPrompt(arcRole, variationIndex) });
+  }
 
-    // Estimate cost before generating
-    const costPerImage = 0.19;
-    if (!DRY_RUN && generated === 0) {
-      const toGenerate = plan.length - bankHits;
-      console.log(`   Estimated generation cost: ~$${(toGenerate * costPerImage).toFixed(2)} (${toGenerate} new images @ $${costPerImage}/img)\n`);
-    }
+  if (toGenerate.length > 0) {
+    console.log(`\n   Generating ${toGenerate.length} images in parallel batches of 3`);
+    console.log(`   Estimated cost: ~$${(toGenerate.length * 0.19).toFixed(2)}\n`);
+  }
 
-    try {
-      const result = await generateImage(openai, prompt, arcRole, i + 1);
-      if (result) {
-        const { safeZone, alreadyExisted } = result;
-        if (alreadyExisted) {
-          skipped++;
-        } else {
-          generated++;
-          safeZones[filename] = safeZone;
+  // ── Generate in parallel batches of 3 ────────────────────────────────────
+  const BATCH = 3;
+  for (let b = 0; b < toGenerate.length; b += BATCH) {
+    const batch = toGenerate.slice(b, b + BATCH);
+    const results = await Promise.all(batch.map(({ i, arcRole, prompt }) =>
+      generateImage(openai, prompt, arcRole, i + 1).catch(err => {
+        console.error(`   ❌ Failed image ${i + 1}: ${err.message}`);
+        return null;
+      })
+    ));
 
-          // ── Upload newly generated image to bank ───────────────────────────
-          if (bank && supabase && !DRY_RUN && fs.existsSync(destPath)) {
-            process.stdout.write(`   📤 ${filename} — uploading to bank...`);
-            const bankResult = await bank.uploadToBank(supabase, destPath, {
-              arcRole:  arcRole.role,
-              tags:     arcRole.tags,
-              safeZone: safeZone,
-              genre,
-              mood,
-            });
-            if (bankResult) {
-              bankIds.push(bankResult.id);
-              console.log(` ✅ registered (id: ${bankResult.id.slice(0, 8)}...)`);
-            } else {
-              console.log(` ⚠️  upload failed — image still usable locally`);
-            }
-          }
-        }
+    for (let j = 0; j < batch.length; j++) {
+      const result = results[j];
+      const { filename, destPath, arcRole } = batch[j];
+      if (!result) continue;
+      const { safeZone, alreadyExisted } = result;
+      if (alreadyExisted) { skipped++; continue; }
+      generated++;
+      safeZones[filename] = safeZone;
+
+      // Upload to bank
+      if (bank && supabase && !DRY_RUN && fs.existsSync(destPath)) {
+        process.stdout.write(`   📤 ${filename} — uploading to bank...`);
+        const bankResult = await bank.uploadToBank(supabase, destPath, {
+          arcRole: arcRole.role, tags: arcRole.tags, safeZone, genre, mood,
+        });
+        if (bankResult) { bankIds.push(bankResult.id); console.log(` ✅`); }
+        else console.log(` ⚠️  upload failed`);
       }
-    } catch (err) {
-      console.error(`   ❌ Failed to generate image ${i + 1}: ${err.message}`);
-    }
-
-    // Delay between requests — gpt-image-2 high quality: ~5 img/min, need ≥12s gap
-    if (!DRY_RUN && i < plan.length - 1 && !bankImages[plan[i + 1]?.role]) {
-      await new Promise(r => setTimeout(r, 8000));
     }
   }
 
