@@ -164,9 +164,8 @@ async function materializeConfig(campaign) {
     },
     imageGen: {
       ...(dbConfig.imageGen || {}),
-      // Always override model + count — db config may have stale dall-e-3 / 18
       model:  process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21',
-      count:  2,
+      count:  (campaign.artists?.posts_per_day || 1) * 12,
     },
     output: {
       postsDir: path.join(dir, 'posts'),
@@ -201,7 +200,8 @@ async function runOnboarding(campaignId) {
         id, slug, artist_id, artist_name, song_title, genre, mood,
         spotify_url, apple_url, youtube_url, tidal_url, deezer_url,
         amazon_url, soundcloud_url, smart_link_url, hook_lines,
-        config, tiktok_inbox_id, dash_token
+        config, tiktok_inbox_id, dash_token,
+        artists ( plan, posts_per_day )
       `)
       .eq('id', campaignId)
       .single();
@@ -214,8 +214,17 @@ async function runOnboarding(campaignId) {
     fs.mkdirSync(outputDir, { recursive: true });
 
     // ── 2. Build image library ─────────────────────────────────────────────
+    // Image count scales with plan:
+    //   starter  (1 post/day)  → 12 images
+    //   growth   (2 posts/day) → 24 images
+    //   pro      (3 posts/day) → 36 images
+    const plan         = campaign.artists?.plan || 'starter';
+    const postsPerDay  = campaign.artists?.posts_per_day || 1;
+    const imageCount   = postsPerDay * 12;
+    console.log(`[onboard] Plan: ${plan}, posts/day: ${postsPerDay}, images: ${imageCount}`);
+
     await setStatus(campaignId, 'library');
-    await runCommand('node', ['build-image-library.js', '--config', cfgPath, '--count', '4'], 'build image library', 12 * 60 * 1000);
+    await runCommand('node', ['build-image-library.js', '--config', cfgPath, '--count', String(imageCount)], 'build image library', 20 * 60 * 1000);
 
     // Remove the default-library symlink now that we have real images
     const libDir = path.join(dir, 'image-library');
