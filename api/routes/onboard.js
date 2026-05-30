@@ -137,10 +137,12 @@ async function materializeConfig(campaign) {
       soundcloud: campaign.soundcloud_url || null,
     },
     campaign: {
-      id:           campaign.id,
+      id:            campaign.id,
       slug,
-      smartLinkUrl: campaign.smart_link_url ||
+      smartLinkUrl:  campaign.smart_link_url ||
         `${process.env.BASE_URL || 'https://runsound.fm'}/l/${slug}`,
+      followerCount: campaign.follower_count || 0,
+      phase:         (campaign.follower_count || 0) >= 1000 ? 2 : 1,
     },
     tracking: {
       supabaseUrl: process.env.SUPABASE_URL,
@@ -200,7 +202,7 @@ async function runOnboarding(campaignId) {
         id, slug, artist_id, artist_name, song_title, genre, mood,
         spotify_url, apple_url, youtube_url, tidal_url, deezer_url,
         amazon_url, soundcloud_url, smart_link_url, hook_lines,
-        config, tiktok_inbox_id, dash_token,
+        config, tiktok_inbox_id, dash_token, follower_count,
         artists ( plan, posts_per_day )
       `)
       .eq('id', campaignId)

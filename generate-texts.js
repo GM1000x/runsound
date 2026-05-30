@@ -65,7 +65,22 @@ const isInstrumental = config.song?.isInstrumental  || false;
 // The expanded set is inspired by a LarryBrain-style approach: test radically
 // different hooks, not just tweaks of the same template. Once enough CTR data
 // accumulates, the best archetype for a given genre/mood naturally dominates.
-const ARCHETYPES = {
+// ─── Phase detection ──────────────────────────────────────────────────────────
+// Phase 1 (<1000 followers): optimise for follows — build identity + curiosity
+// Phase 2 (≥1000 followers): optimise for Spotify clicks — drive bio link CTR
+const followerCount = config.campaign?.followerCount || 0;
+const PHASE         = followerCount >= 1000 ? 2 : 1;
+
+// Phase 1 archetypes: make people want to follow the artist
+// Phase 2 archetypes: make people click through to Spotify
+const ARCHETYPES_PHASE1 = {
+  G: 'artist_identity',   // who is this artist? builds curiosity about the person
+  H: 'series_hook',       // "follow for more songs like this" — drives follows
+  C: 'mystery',           // curiosity gap still works for follows too
+  D: 'lifestyle_placement', // relatable moment — good for follows
+};
+
+const ARCHETYPES_PHASE2 = {
   A: 'social_proof',         // "showed someone → reaction"
   B: 'contrarian',           // "they doubted it → heard it → changed their mind"
   C: 'mystery',              // curiosity gap — opens with lyric when available
@@ -74,7 +89,8 @@ const ARCHETYPES = {
   F: 'question_hook',        // opens with a question drawn from lyric theme
 };
 
-const DEFAULT_WEIGHTS = { A: 1.0, B: 1.0, C: 1.0, D: 1.0, E: 1.0, F: 1.0 };
+const ARCHETYPES    = PHASE === 1 ? ARCHETYPES_PHASE1 : ARCHETYPES_PHASE2;
+const DEFAULT_WEIGHTS = Object.fromEntries(Object.keys(ARCHETYPES).map(k => [k, 1.0]));
 
 // ─── Bank utils (optional — gracefully skipped if not present) ────────────────
 let bank = null;
@@ -376,8 +392,43 @@ function buildTexts(variant) {
         cta,
       ];
     })(),
+    // G — Artist identity (Phase 1): builds curiosity about who the artist is
+    // Goal: make people follow to hear more
+    G: lyricFrag ? [
+      `i've been sitting on\nthis song for a while.`,
+      `"${fmt(lyricFrag)}"`,
+      `this is the one\ni'm most proud of.`,
+      `more coming.\nfollow so you don't miss it.`,
+      `${st}\nby ${an}`,
+      `🎵 link in bio`,
+    ] : [
+      `i've been working on\nsomething for a while.`,
+      `this is it.`,
+      `${st} — a song\nabout ${description ? description.slice(0, 40).toLowerCase() : 'a feeling you know'}.`,
+      `more coming.\nfollow so you don't miss it.`,
+      `${st}\nby ${an}`,
+      `🎵 link in bio`,
+    ],
+
+    // H — Series hook (Phase 1): positions artist as someone worth following
+    // Goal: "follow for more like this"
+    H: lyricFrag ? [
+      `i make songs\nfor moments like this.`,
+      `"${fmt(lyricFrag)}"`,
+      `the kind of song\nyou need at the right time.`,
+      `this is what i do.`,
+      `follow for more.`,
+      `${st} by ${an}\n🎵 link in bio`,
+    ] : [
+      `i make songs\nfor specific feelings.`,
+      `this one is for\n${deriveLifestyleMoment()}.`,
+      `the kind of music\nyou can't always explain.`,
+      `this is what i do.`,
+      `follow for more.`,
+      `${st} by ${an}\n🎵 link in bio`,
+    ],
   };
-  return texts[variant] || texts.A;
+  return texts[variant] || texts[Object.keys(texts)[0]];
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────

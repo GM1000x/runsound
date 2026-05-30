@@ -102,7 +102,7 @@ async function getDashboardData(campaignId) {
     .from('campaigns')
     .select(`
       id, slug, artist_name, song_title, smart_link_url, active,
-      artist_id, genre, mood, created_at,
+      artist_id, genre, mood, created_at, follower_count,
       artists ( name, email, plan, status )
     `)
     .eq('id', campaignId)
@@ -262,7 +262,9 @@ async function getDashboardData(campaignId) {
     weekViews,
     weekClicks,
     totalPosts,
-    totalClicks: posts.reduce((sum, p) => sum + (p.streaming_clicks || 0), 0),
+    totalClicks:   posts.reduce((sum, p) => sum + (p.streaming_clicks || 0), 0),
+    followerCount: campaign.follower_count || 0,
+    phase:         (campaign.follower_count || 0) >= 1000 ? 2 : 1,
     viewsDelta:  weekDelta(weekViews, prevViews),
     clicksDelta: weekDelta(weekClicks, prevClicks),
     learning,

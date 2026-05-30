@@ -333,7 +333,21 @@ function extractStats(raw) {
 
   fs.writeFileSync(analyticsPath, JSON.stringify(output, null, 2));
 
-  // ── 5. Summary ─────────────────────────────────────────────────────────────
+  // ── 5. Sync follower count ──────────────────────────────────────────────────
+  // Reads from config.campaign.followerCount (manually updated until TikTok API approved)
+  const campaignId      = config.campaign?.id;
+  const manualFollowers = config.campaign?.followerCount;
+  if (supabase && campaignId && manualFollowers !== undefined) {
+    const phase = manualFollowers >= 1000 ? 2 : 1;
+    await supabase.from('campaigns').update({
+      follower_count: manualFollowers,
+      follower_phase: phase,
+    }).eq('id', campaignId);
+    await supabase.from('follower_log').insert({ campaign_id: campaignId, follower_count: manualFollowers });
+    console.log(`   👥 Followers: ${manualFollowers} → Phase ${phase}`);
+  }
+
+  // ── 6. Summary ─────────────────────────────────────────────────────────────
   console.log(`\n✅ Stats synced: ${updated}/${entries.length} posts updated`);
   if (pending) console.log(`   ${pending} post(s) still pending TikTok stats`);
   console.log(`   Total views (${days}d): ${output.totals.views.toLocaleString()}`);
