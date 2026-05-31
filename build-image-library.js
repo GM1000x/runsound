@@ -92,6 +92,7 @@ const extra       = config.imageGen?.extraPrompt || '';
 const IMAGE_MODE      = config.imageGen?.mode || 'generate';
 const UPLOADED_IMAGES = config.imageGen?.uploadedImages || []; // public URLs from Supabase Storage
 let   referenceStylePrompt = null; // set in main() after Vision analysis, used in generateImage()
+let   referenceScenes     = [];   // per-image scene descriptions extracted by Vision
 
 // Extract a short lyric snippet for image grounding (first 200 chars, no line breaks)
 const lyricSnippet = lyrics
@@ -394,9 +395,11 @@ async function generateImage(openai, prompt, arcRole, index, referenceImagePath 
       let b64;
 
       if (IMAGE_MODE === 'reference' && referenceStylePrompt) {
-        // Reference mode: use Vision-extracted style description as sole prompt
-        // No mood, genre, or lyrics — only the artist's visual style matters
-        const stylePrompt = `${referenceStylePrompt}. Portrait orientation, vertical format for TikTok. No text, no watermarks.`;
+        // Reference mode: style from Vision + unique scene per image
+        const scene = referenceScenes[index - 1] || referenceScenes[index % referenceScenes.length] || '';
+        const stylePrompt = scene
+          ? `${scene}. Visual style: ${referenceStylePrompt}. Portrait orientation for TikTok. No text, no watermarks.`
+          : `${referenceStylePrompt}. Portrait orientation for TikTok. No text, no watermarks.`;
         const response = await openai.images.generate({ model, prompt: stylePrompt, n: 1, size: '1024x1536', quality });
         b64 = response.data[0].b64_json;
       } else {
@@ -500,24 +503,41 @@ async function main() {
     try {
       const visionRes = await openai.chat.completions.create({
         model: 'gpt-4o',
-        max_tokens: 300,
+        max_tokens: 800,
         messages: [{
           role: 'user',
           content: [
             ...imageContent,
             {
               type: 'text',
-              text: 'Analyse these reference images and describe their shared visual style in detail. Focus ONLY on: photographic style, color palette, lighting quality, grain/texture, composition style, mood and aesthetic feel. Ignore what the images depict — describe only the visual language. Write a dense, comma-separated style description (max 80 words) suitable as an image generation prompt.',
+              text: `You are an image generation expert. Analyse these reference images carefully.
+
+Step 1 — Extract the shared visual style (color palette, photographic style, grain/texture, lighting, composition, mood). Write a dense style descriptor of max 40 words.
+
+Step 2 — Using that exact same visual style, write ${COUNT} unique scene descriptions. Each scene should depict a different real-world moment or subject that fits naturally in this aesthetic — different angles, subjects, times of day, compositions. Keep each scene under 25 words.
+
+Respond ONLY with valid JSON in this format, no other text:
+{
+  "style": "<40 word style descriptor>",
+  "scenes": ["<scene 1>", "<scene 2>", ...]
+}`,
             },
           ],
         }],
       });
-      referenceStylePrompt = visionRes.choices[0].message.content.trim();
-      console.log(`   Style extracted: "${referenceStylePrompt.slice(0, 100)}..."`);
-      // Save for debugging
-      fs.writeFileSync(path.join(refDir, 'style_description.txt'), referenceStylePrompt);
+
+      const raw = visionRes.choices[0].message.content.trim();
+      const jsonStr = raw.replace(/```json\n?|\n?```/g, '').trim();
+      const parsed = JSON.parse(jsonStr);
+      referenceStylePrompt = parsed.style;
+      referenceScenes = parsed.scenes || [];
+
+      console.log(`   Style: "${referenceStylePrompt}"`);
+      console.log(`   Scenes: ${referenceScenes.length} generated`);
+      fs.writeFileSync(path.join(refDir, 'style_description.txt'),
+        `STYLE:\n${referenceStylePrompt}\n\nSCENES:\n${referenceScenes.join('\n')}`);
     } catch (err) {
-      console.warn(`   ⚠️  Vision analysis failed: ${err.message} — falling back to first image only`);
+      console.warn(`   ⚠️  Vision analysis failed: ${err.message}`);
     }
   }
 
