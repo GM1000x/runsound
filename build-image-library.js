@@ -91,6 +91,7 @@ const extra       = config.imageGen?.extraPrompt || '';
 // own       — artist uploaded their own photos; use them directly, no generation
 const IMAGE_MODE      = config.imageGen?.mode || 'generate';
 const UPLOADED_IMAGES = config.imageGen?.uploadedImages || []; // public URLs from Supabase Storage
+let   referenceStylePrompt = null; // set in main() after Vision analysis, used in generateImage()
 
 // Extract a short lyric snippet for image grounding (first 200 chars, no line breaks)
 const lyricSnippet = lyrics
@@ -392,20 +393,14 @@ async function generateImage(openai, prompt, arcRole, index, referenceImagePath 
     try {
       let b64;
 
-      if (IMAGE_MODE === 'reference' && referenceImagePath && fs.existsSync(referenceImagePath)) {
-        // Reference mode: use artist's uploaded image as style reference
-        const editPrompt = `Generate a new lifestyle photograph in the exact same visual style, color grading, lighting, and mood as the reference image. The scene: ${prompt}. Keep the same aesthetic but create an entirely new image.`;
-        const imageStream = fs.createReadStream(referenceImagePath);
-        try {
-          const response = await openai.images.edit({ model, image: imageStream, prompt: editPrompt, n: 1, size: '1024x1536' });
-          b64 = response.data[0].b64_json;
-        } catch {
-          // Fallback to generate if edit fails
-          const response = await openai.images.generate({ model, prompt, n: 1, size: '1024x1536', quality });
-          b64 = response.data[0].b64_json;
-        }
+      if (IMAGE_MODE === 'reference' && referenceStylePrompt) {
+        // Reference mode: use Vision-extracted style description as sole prompt
+        // No mood, genre, or lyrics — only the artist's visual style matters
+        const stylePrompt = `${referenceStylePrompt}. Portrait orientation, vertical format for TikTok. No text, no watermarks.`;
+        const response = await openai.images.generate({ model, prompt: stylePrompt, n: 1, size: '1024x1536', quality });
+        b64 = response.data[0].b64_json;
       } else {
-        // Generate mode: AI creates from prompt
+        // Generate mode (or reference fallback): AI creates from prompt
         const response = await openai.images.generate({ model, prompt, n: 1, size: '1024x1536', quality });
         b64 = response.data[0].b64_json;
       }
@@ -480,20 +475,50 @@ async function main() {
   }
 
   // ── MODE: reference — download references, use as style input for generation ─
-  let referenceImagePath = null;
-  if (IMAGE_MODE === 'reference' && UPLOADED_IMAGES.length > 0) {
-    console.log(`🎨 Reference mode — downloading ${UPLOADED_IMAGES.length} reference image(s)`);
+  // ── Reference mode: analyze all uploaded images with GPT-4 Vision ────────────
+  // Extract a shared visual style description from all reference images,
+  // then use ONLY that description as the image prompt — no mood/genre/lyrics.
+  if (IMAGE_MODE === 'reference' && UPLOADED_IMAGES.length > 0 && !DRY_RUN) {
+    console.log(`🎨 Reference mode — analysing ${UPLOADED_IMAGES.length} image(s) with GPT-4 Vision`);
     const refDir = path.join(libraryDir, '_references');
     fs.mkdirSync(refDir, { recursive: true });
+
+    // Download all reference images
+    const refPaths = [];
     for (let i = 0; i < UPLOADED_IMAGES.length; i++) {
       const refPath = path.join(refDir, `ref_${String(i + 1).padStart(2, '0')}.jpg`);
-      if (!DRY_RUN && !fs.existsSync(refPath)) {
-        await downloadUrl(UPLOADED_IMAGES[i], refPath);
-      }
+      if (!fs.existsSync(refPath)) await downloadUrl(UPLOADED_IMAGES[i], refPath);
+      refPaths.push(refPath);
     }
-    // Use first reference image for style consistency
-    referenceImagePath = path.join(refDir, 'ref_01.jpg');
-    console.log(`   Reference image ready for style transfer\n`);
+
+    // Build GPT-4 Vision message with all reference images
+    const imageContent = refPaths.map(p => ({
+      type: 'image_url',
+      image_url: { url: `data:image/jpeg;base64,${fs.readFileSync(p).toString('base64')}`, detail: 'low' },
+    }));
+
+    try {
+      const visionRes = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            ...imageContent,
+            {
+              type: 'text',
+              text: 'Analyse these reference images and describe their shared visual style in detail. Focus ONLY on: photographic style, color palette, lighting quality, grain/texture, composition style, mood and aesthetic feel. Ignore what the images depict — describe only the visual language. Write a dense, comma-separated style description (max 80 words) suitable as an image generation prompt.',
+            },
+          ],
+        }],
+      });
+      referenceStylePrompt = visionRes.choices[0].message.content.trim();
+      console.log(`   Style extracted: "${referenceStylePrompt.slice(0, 100)}..."`);
+      // Save for debugging
+      fs.writeFileSync(path.join(refDir, 'style_description.txt'), referenceStylePrompt);
+    } catch (err) {
+      console.warn(`   ⚠️  Vision analysis failed: ${err.message} — falling back to first image only`);
+    }
   }
 
   // Check for existing library (generate + reference modes)
