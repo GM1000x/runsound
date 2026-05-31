@@ -78,7 +78,7 @@ function buildConfig(data) {
       model:  'gpt-image-2-2026-04-21',
       style:  'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light',
       count:  2,
-      mode:   imageMode, // generate | reference | own
+      mode:   data.image_mode || 'generate', // generate | reference | own
     },
     posting: {
       schedule: '0 3 * * *',
