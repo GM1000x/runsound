@@ -622,7 +622,7 @@ async function main() {
   for (let b = 0; b < toGenerate.length; b += BATCH) {
     const batch = toGenerate.slice(b, b + BATCH);
     const results = await Promise.all(batch.map(({ i, arcRole, prompt }) =>
-      generateImage(openai, prompt, arcRole, i + 1, referenceImagePath).catch(err => {
+      generateImage(openai, prompt, arcRole, i + 1).catch(err => {
         console.error(`   ❌ Failed image ${i + 1}: ${err.message}`);
         return null;
       })
