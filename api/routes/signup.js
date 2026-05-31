@@ -21,7 +21,15 @@
  *   { ok: false, error }
  */
 const express  = require('express');
+const multer   = require('multer');
 const router   = express.Router();
+
+// Multer: memory storage for uploaded reference/own images (max 5MB each, 12 files)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 12 },
+  fileFilter: (req, file, cb) => cb(null, file.mimetype.startsWith('image/')),
+});
 const crypto   = require('crypto');
 const supabase = require('../db');
 const { sendWelcomeEmail } = require('../email');
@@ -70,6 +78,7 @@ function buildConfig(data) {
       model:  'gpt-image-2-2026-04-21',
       style:  'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light',
       count:  2,
+      mode:   imageMode, // generate | reference | own
     },
     posting: {
       schedule: '0 3 * * *',
@@ -78,9 +87,11 @@ function buildConfig(data) {
   };
 }
 
-router.post('/', async (req, res) => {
+router.post('/', upload.any(), async (req, res) => {
   try {
     const { artist, song, genre, spotify, description, mood, lyrics, target_audience, email } = req.body;
+    const imageMode  = req.body.image_mode || 'generate'; // generate | reference | own
+    const imageFiles = req.files || [];
 
     if (!artist || !song || !email) {
       return res.status(400).json({ ok: false, error: 'artist, song and email are required' });
@@ -189,12 +200,34 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // ── Upload artist images to Supabase Storage ──────────────────────────────
+    const uploadedImageUrls = [];
+    if (imageFiles.length > 0 && imageMode !== 'generate') {
+      console.log(`[signup] Uploading ${imageFiles.length} ${imageMode} images for campaign ${campaign.id}`);
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const ext  = file.originalname?.split('.').pop() || 'jpg';
+        const path = `${campaign.id}/${imageMode}_${String(i + 1).padStart(2, '0')}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('artist-images')
+          .upload(path, file.buffer, { contentType: file.mimetype, upsert: true });
+        if (upErr) {
+          console.warn(`[signup] Image upload failed (${path}):`, upErr.message);
+        } else {
+          const { data: { publicUrl } } = supabase.storage.from('artist-images').getPublicUrl(path);
+          uploadedImageUrls.push(publicUrl);
+        }
+      }
+      config.imageGen.uploadedImages = uploadedImageUrls;
+      console.log(`[signup] Uploaded ${uploadedImageUrls.length} images`);
+    }
+
     await supabase.from('campaigns').update({
       config,
       ...(artworkUrl ? { artwork_url: artworkUrl } : {}),
     }).eq('id', campaign.id);
 
-    console.log(`[signup] New campaign: ${slug} (artist: ${email})`);
+    console.log(`[signup] New campaign: ${slug} (artist: ${email}, image_mode: ${imageMode})`);
 
     // Dashboard URL includes token — this is the artist's personal access link
     const dashboardUrl = `${BASE}/dashboard.html?campaign_id=${campaign.id}&token=${dashToken}`;

@@ -293,6 +293,10 @@
     .form-row textarea { resize: vertical; min-height: 90px; }
     .form-row select option { background: var(--surface); }
     .form-hint { font-size: 0.77rem; color: var(--muted); margin-top: 0.3rem; }
+    #imageDropzone:hover, #imageDropzone.drag-over { border-color: var(--accent); }
+    .img-preview { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--surface2); }
+    .img-preview img { width:100%; height:100%; object-fit:cover; }
+    .img-preview .remove-img { position:absolute; top:3px; right:3px; background:rgba(0,0,0,0.7); border:none; color:#fff; border-radius:50%; width:20px; height:20px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
 
     /* More platforms toggle */
     .more-platforms { margin-bottom: 1.25rem; }
@@ -702,6 +706,47 @@
         <input type="text" name="target_audience" placeholder="e.g. Young women going through a breakup, 18–25, fans of Olivia Rodrigo" />
         <div class="form-hint">Describe your target listener. The AI uses this to write hooks that speak directly to them.</div>
       </div>
+
+      <!-- IMAGE MODE -->
+      <div class="form-row" style="margin-top:1.5rem">
+        <label>Visuals for your campaign</label>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.5rem">
+          <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeGenerateLabel">
+            <input type="radio" name="image_mode" value="generate" id="imgModeGenerate" checked style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
+            <div>
+              <div style="font-weight:600;font-size:0.9rem">Let AI generate images</div>
+              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">RunSound creates cinematic lifestyle photos based on your song's mood and genre.</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeReferenceLabel">
+            <input type="radio" name="image_mode" value="reference" id="imgModeReference" style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
+            <div>
+              <div style="font-weight:600;font-size:0.9rem">Upload reference images</div>
+              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 3–5 photos or Pinterest screenshots. AI generates new images in the same style.</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeOwnLabel">
+            <input type="radio" name="image_mode" value="own" id="imgModeOwn" style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
+            <div>
+              <div style="font-weight:600;font-size:0.9rem">Use my own photos</div>
+              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 6–12 photos and RunSound uses them directly as slides. No AI generation.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Upload area (shown for reference + own) -->
+      <div id="imageUploadSection" style="display:none;margin-top:0.75rem">
+        <div id="imageDropzone" style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--surface)">
+          <div style="font-size:1.5rem;margin-bottom:0.5rem">📸</div>
+          <div style="font-weight:600;font-size:0.9rem" id="dropzoneTitle">Drop images here or click to browse</div>
+          <div style="color:var(--muted);font-size:0.78rem;margin-top:0.3rem" id="dropzoneHint">3–5 images recommended · JPG, PNG · Max 5MB each</div>
+          <input type="file" id="imageFileInput" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
+        </div>
+        <div id="imagePreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:0.75rem"></div>
+        <div id="imageUploadCount" style="font-size:0.78rem;color:var(--muted);margin-top:0.4rem"></div>
+      </div>
+
       <div class="form-row">
         <label>Your email</label>
         <input type="email" name="email" placeholder="you@example.com" required />
@@ -755,6 +800,74 @@
   document.getElementById('songTypeInstrumental').addEventListener('change', updateSongTypeUI);
   updateSongTypeUI(); // init
 
+  // ── Image mode toggle ──────────────────────────────────────────────────────
+  const uploadedFiles = [];
+  const MAX_FILES = { reference: 5, own: 12 };
+
+  function updateImageModeUI() {
+    const mode = document.querySelector('input[name="image_mode"]:checked').value;
+    const uploadSection = document.getElementById('imageUploadSection');
+    uploadSection.style.display = (mode === 'generate') ? 'none' : '';
+    if (mode === 'reference') {
+      document.getElementById('dropzoneTitle').textContent = 'Drop reference images here or click to browse';
+      document.getElementById('dropzoneHint').textContent = '3–5 images · Pinterest screenshots work great · JPG, PNG · Max 5MB each';
+    } else if (mode === 'own') {
+      document.getElementById('dropzoneTitle').textContent = 'Drop your photos here or click to browse';
+      document.getElementById('dropzoneHint').textContent = '6–12 photos · These will be used directly as your TikTok slides · JPG, PNG · Max 5MB each';
+    }
+    // Highlight selected card
+    ['Generate','Reference','Own'].forEach(m => {
+      const label = document.getElementById(`imgMode${m}Label`);
+      const radio = document.getElementById(`imgMode${m}`);
+      label.style.borderColor = radio.checked ? 'var(--accent)' : 'var(--border)';
+    });
+  }
+  document.querySelectorAll('input[name="image_mode"]').forEach(r => r.addEventListener('change', updateImageModeUI));
+  updateImageModeUI();
+
+  // ── Dropzone ────────────────────────────────────────────────────────────────
+  const dropzone = document.getElementById('imageDropzone');
+  const fileInput = document.getElementById('imageFileInput');
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
+  fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+  function addFiles(files) {
+    const mode = document.querySelector('input[name="image_mode"]:checked').value;
+    const max = MAX_FILES[mode] || 5;
+    Array.from(files).forEach(f => {
+      if (uploadedFiles.length >= max) return;
+      if (!f.type.startsWith('image/')) return;
+      if (f.size > 5 * 1024 * 1024) return;
+      uploadedFiles.push(f);
+    });
+    renderPreviews();
+  }
+
+  function renderPreviews() {
+    const grid = document.getElementById('imagePreviewGrid');
+    const count = document.getElementById('imageUploadCount');
+    grid.innerHTML = '';
+    uploadedFiles.forEach((f, i) => {
+      const url = URL.createObjectURL(f);
+      const div = document.createElement('div');
+      div.className = 'img-preview';
+      div.innerHTML = `<img src="${url}"><button class="remove-img" data-i="${i}">×</button>`;
+      grid.appendChild(div);
+    });
+    grid.querySelectorAll('.remove-img').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      uploadedFiles.splice(+btn.dataset.i, 1);
+      renderPreviews();
+    }));
+    const mode = document.querySelector('input[name="image_mode"]:checked').value;
+    const max = MAX_FILES[mode] || 5;
+    count.textContent = uploadedFiles.length > 0 ? `${uploadedFiles.length}/${max} images added` : '';
+  }
+
   document.getElementById('signupForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('.form-submit');
@@ -764,11 +877,21 @@
     const data = Object.fromEntries(new FormData(e.target));
 
     try {
-      const res = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      // Use FormData if images were uploaded, otherwise JSON
+      let res;
+      const imageMode = data.image_mode || 'generate';
+      if (uploadedFiles.length > 0 && imageMode !== 'generate') {
+        const fd = new FormData();
+        Object.entries(data).forEach(([k, v]) => fd.append(k, v));
+        uploadedFiles.forEach((f, i) => fd.append(`image_${i}`, f));
+        res = await fetch('/api/signup', { method: 'POST', body: fd });
+      } else {
+        res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+      }
 
       const json = await res.json();
       if (res.ok && json.ok) {

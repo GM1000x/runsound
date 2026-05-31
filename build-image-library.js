@@ -81,10 +81,16 @@ const mood        = config.song?.mood          || 'emotional, nostalgic';
 const description = config.song?.description   || '';
 const lyrics      = config.song?.lyrics        || '';
 const model       = config.imageGen?.model     || process.env.IMAGE_MODEL || 'gpt-image-2-2026-04-21';
-// gpt-image-1 uses 'low'|'medium'|'high'; dall-e-3 uses 'standard'|'hd'
 const quality     = (model === 'dall-e-3') ? 'hd' : 'high';
 const style       = config.imageGen?.style     || 'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light';
 const extra       = config.imageGen?.extraPrompt || '';
+
+// ─── Image mode ────────────────────────────────────────────────────────────────
+// generate  — AI generates from prompts (default)
+// reference — artist uploaded reference images; AI generates new ones in same style
+// own       — artist uploaded their own photos; use them directly, no generation
+const IMAGE_MODE      = config.imageGen?.mode || 'generate';
+const UPLOADED_IMAGES = config.imageGen?.uploadedImages || []; // public URLs from Supabase Storage
 
 // Extract a short lyric snippet for image grounding (first 200 chars, no line breaks)
 const lyricSnippet = lyrics
@@ -386,15 +392,23 @@ async function generateImage(openai, prompt, arcRole, index, referenceImagePath 
     try {
       let b64;
 
-      // Generate each slide independently — character seed in prompt ensures consistency
-      const response = await openai.images.generate({
-        model,
-        prompt,
-        n:       1,
-        size:    '1024x1536',
-        quality,
-      });
-      b64 = response.data[0].b64_json;
+      if (IMAGE_MODE === 'reference' && referenceImagePath && fs.existsSync(referenceImagePath)) {
+        // Reference mode: use artist's uploaded image as style reference
+        const editPrompt = `Generate a new lifestyle photograph in the exact same visual style, color grading, lighting, and mood as the reference image. The scene: ${prompt}. Keep the same aesthetic but create an entirely new image.`;
+        const imageStream = fs.createReadStream(referenceImagePath);
+        try {
+          const response = await openai.images.edit({ model, image: imageStream, prompt: editPrompt, n: 1, size: '1024x1536' });
+          b64 = response.data[0].b64_json;
+        } catch {
+          // Fallback to generate if edit fails
+          const response = await openai.images.generate({ model, prompt, n: 1, size: '1024x1536', quality });
+          b64 = response.data[0].b64_json;
+        }
+      } else {
+        // Generate mode: AI creates from prompt
+        const response = await openai.images.generate({ model, prompt, n: 1, size: '1024x1536', quality });
+        b64 = response.data[0].b64_json;
+      }
 
       const buffer = Buffer.from(b64, 'base64');
       fs.writeFileSync(destPath, buffer);
@@ -417,23 +431,74 @@ async function generateImage(openai, prompt, arcRole, index, referenceImagePath 
   }
 }
 
+// ─── Download a URL to a file (used for own/reference images) ─────────────────
+async function downloadUrl(url, dest) {
+  const { default: fetch } = await import('node-fetch');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download ${url}: ${res.status}`);
+  const buffer = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(dest, buffer);
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('\n🎨 RunSound — Build Image Library');
   console.log('===================================');
   console.log(`   Artist:  ${artist}`);
   console.log(`   Song:    ${song}`);
-  console.log(`   Genre:   ${genre}`);
-  console.log(`   Mood:    ${mood}`);
-  console.log(`   Model:   ${model}`);
+  console.log(`   Mode:    ${IMAGE_MODE}`);
   console.log(`   Count:   ${COUNT} images`);
-  console.log(`   Bank:    ${bank && supabase ? 'enabled ✅' : 'disabled (no Supabase or --no-bank)'}`);
   console.log(`   Output:  ${libraryDir}`);
   console.log('');
 
-  // Check for existing library
+  fs.mkdirSync(libraryDir, { recursive: true });
+
+  // ── MODE: own — use artist's uploaded photos directly ─────────────────────
+  if (IMAGE_MODE === 'own' && UPLOADED_IMAGES.length > 0) {
+    console.log(`📸 Using ${UPLOADED_IMAGES.length} artist-uploaded images directly`);
+    for (let i = 0; i < Math.min(UPLOADED_IMAGES.length, COUNT); i++) {
+      const filename = `img-${String(i + 1).padStart(3, '0')}_own.png`;
+      const destPath = path.join(libraryDir, filename);
+      if (fs.existsSync(destPath) && !FORCE) { console.log(`   ⏭  ${filename} already exists`); continue; }
+      if (!DRY_RUN) {
+        process.stdout.write(`   ⬇️  ${filename}...`);
+        await downloadUrl(UPLOADED_IMAGES[i], destPath);
+        console.log(' ✅');
+      } else {
+        console.log(`   [dry-run] ${filename} ← ${UPLOADED_IMAGES[i].slice(-40)}`);
+      }
+    }
+    // Write minimal library.json
+    const meta = {
+      generatedAt: new Date().toISOString(), mode: 'own',
+      images: fs.readdirSync(libraryDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f))
+        .map(f => ({ file: f, safeZone: 'bottom', tags: ['own'] })),
+    };
+    fs.writeFileSync(path.join(libraryDir, 'library.json'), JSON.stringify(meta, null, 2));
+    console.log(`\n✅ Library complete — ${meta.images.length} artist photos ready`);
+    return;
+  }
+
+  // ── MODE: reference — download references, use as style input for generation ─
+  let referenceImagePath = null;
+  if (IMAGE_MODE === 'reference' && UPLOADED_IMAGES.length > 0) {
+    console.log(`🎨 Reference mode — downloading ${UPLOADED_IMAGES.length} reference image(s)`);
+    const refDir = path.join(libraryDir, '_references');
+    fs.mkdirSync(refDir, { recursive: true });
+    for (let i = 0; i < UPLOADED_IMAGES.length; i++) {
+      const refPath = path.join(refDir, `ref_${String(i + 1).padStart(2, '0')}.jpg`);
+      if (!DRY_RUN && !fs.existsSync(refPath)) {
+        await downloadUrl(UPLOADED_IMAGES[i], refPath);
+      }
+    }
+    // Use first reference image for style consistency
+    referenceImagePath = path.join(refDir, 'ref_01.jpg');
+    console.log(`   Reference image ready for style transfer\n`);
+  }
+
+  // Check for existing library (generate + reference modes)
   if (fs.existsSync(libraryDir) && !FORCE) {
-    const existing = fs.readdirSync(libraryDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f));
+    const existing = fs.readdirSync(libraryDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f) && !f.includes('_references'));
     if (existing.length >= COUNT) {
       console.log(`✅ Library already has ${existing.length} images. Use --force to regenerate.\n`);
       return;
@@ -532,7 +597,7 @@ async function main() {
   for (let b = 0; b < toGenerate.length; b += BATCH) {
     const batch = toGenerate.slice(b, b + BATCH);
     const results = await Promise.all(batch.map(({ i, arcRole, prompt }) =>
-      generateImage(openai, prompt, arcRole, i + 1).catch(err => {
+      generateImage(openai, prompt, arcRole, i + 1, referenceImagePath).catch(err => {
         console.error(`   ❌ Failed image ${i + 1}: ${err.message}`);
         return null;
       })
