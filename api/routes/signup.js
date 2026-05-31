@@ -87,11 +87,22 @@ function buildConfig(data) {
   };
 }
 
-router.post('/', upload.any(), async (req, res) => {
+// Middleware: apply multer only for multipart requests, pass through JSON
+function smartUpload(req, res, next) {
+  const ct = req.headers['content-type'] || '';
+  if (ct.includes('multipart/form-data')) {
+    return upload.any()(req, res, next);
+  }
+  next();
+}
+
+router.post('/', smartUpload, async (req, res) => {
   try {
     const { artist, song, genre, spotify, description, mood, lyrics, target_audience, email } = req.body;
     const imageMode  = req.body.image_mode || 'generate'; // generate | reference | own
     const imageFiles = req.files || [];
+
+    console.log(`[signup] image_mode=${imageMode}, files=${imageFiles.length}`);
 
     if (!artist || !song || !email) {
       return res.status(400).json({ ok: false, error: 'artist, song and email are required' });
