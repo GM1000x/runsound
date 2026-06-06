@@ -274,6 +274,42 @@
       border-radius: 100px; padding: 0.15rem 0.45rem;
     }
 
+    /* ── TIER BADGES ── */
+    .tier-badge {
+      font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em;
+      padding: 0.18rem 0.5rem; border-radius: 100px;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .tier-badge.winner    { background: rgba(34,197,94,0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+    .tier-badge.promising { background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.25); }
+    .tier-badge.testing   { background: rgba(234,179,8,0.1);   color: #eab308; border: 1px solid rgba(234,179,8,0.2); }
+    .tier-badge.dead      { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* ── LEARNING PROGRESS BAR ── */
+    .learn-progress {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .learn-progress-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .learn-progress-label { font-size: 0.78rem; font-weight: 600; }
+    .learn-progress-count { font-size: 0.75rem; color: var(--muted); }
+    .learn-progress-bar-bg {
+      background: var(--surface2); border-radius: 6px; height: 6px; overflow: hidden;
+    }
+    .learn-progress-bar {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      height: 100%; border-radius: 6px; transition: width 1s ease;
+    }
+    .learn-progress-hint {
+      font-size: 0.72rem; color: var(--muted); margin-top: 0.45rem;
+    }
+
     /* ── EMPTY STATE ── */
     .empty-state {
       text-align: center; padding: 2.5rem 1rem;
@@ -452,8 +488,28 @@
     <button class="copy-btn" id="copyBtn">Copy</button>
   </div>
 
+  <!-- AI LEARNING PROGRESS -->
+  <div class="learn-progress" id="learnProgress">
+    <div class="learn-progress-header">
+      <div class="learn-progress-label">🧠 AI learning progress</div>
+      <div class="learn-progress-count" id="learnCount">0 / 10 posts</div>
+    </div>
+    <div class="learn-progress-bar-bg">
+      <div class="learn-progress-bar" id="learnBar" style="width:0%"></div>
+    </div>
+    <div class="learn-progress-hint" id="learnHint">The AI starts recognising patterns after post 10 — keep publishing daily.</div>
+  </div>
+
   <!-- RECENT POSTS -->
-  <div class="section-head">Recent posts</div>
+  <div class="section-head" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>Recent posts</span>
+    <span style="font-size:0.68rem;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;" id="tierLegend">
+      <span class="tier-badge winner" style="margin-right:4px">Winner</span>
+      <span class="tier-badge promising" style="margin-right:4px">Promising</span>
+      <span class="tier-badge testing" style="margin-right:4px">Testing</span>
+      <span class="tier-badge dead">Dead</span>
+    </span>
+  </div>
   <div class="post-list" id="postList">
     <!-- skeleton -->
     <div class="post-card">
@@ -722,17 +778,57 @@ function renderSmartLink(url) {
   document.getElementById('smartLinkNavBtn').href = url;
 }
 
+// ─── Compute tier for a post ──────────────────────────────────────────────────
+function computeTier(p) {
+  const views  = p.views  || 0;
+  const clicks = p.clicks || 0;
+  const ctr    = views > 0 ? clicks / views : 0;
+
+  // Winner: strong reach + converting to clicks
+  if (views >= 5000 && ctr >= 0.01)  return { tier: 'winner',    label: 'Winner 🏆' };
+  // Promising: decent reach or growing CTR
+  if (views >= 1000 || (views >= 500 && ctr >= 0.005)) return { tier: 'promising', label: 'Promising' };
+  // Dead: enough views to judge, zero clicks
+  if (views >= 500  && clicks === 0) return { tier: 'dead',      label: 'Dead' };
+  // Testing: not enough data yet
+  return { tier: 'testing', label: 'Testing' };
+}
+
 // ─── Render posts list ────────────────────────────────────────────────────────
 function renderPosts(posts) {
-  const list = document.getElementById('postList');
+  const list  = document.getElementById('postList');
+  const count = posts ? posts.length : 0;
+
+  // Update AI learning progress bar
+  const learnPct   = Math.min(100, (count / 10) * 100);
+  const learnCount = document.getElementById('learnCount');
+  const learnBar   = document.getElementById('learnBar');
+  const learnHint  = document.getElementById('learnHint');
+  if (learnCount) learnCount.textContent = `${count} / 10 posts`;
+  if (learnBar)   setTimeout(() => { learnBar.style.width = learnPct + '%'; }, 300);
+  if (learnHint) {
+    if (count >= 10) {
+      learnHint.textContent = '✓ The AI is actively learning — patterns are being extracted every Sunday.';
+      learnHint.style.color = 'var(--green)';
+    } else {
+      learnHint.textContent = `The AI starts recognising patterns after post 10 — keep publishing daily.`;
+    }
+  }
+
   if (!posts || posts.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><p>Your first posts will appear here once RunSound starts your campaign.</p></div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎵</div>
+        <p>Your first post will appear here once RunSound sends it to your TikTok inbox.</p>
+        <p style="margin-top:0.5rem;font-size:0.78rem;">Each post gets a tier — Dead, Testing, Promising, or Winner — based on views and Spotify clicks.</p>
+      </div>`;
     return;
   }
 
   list.innerHTML = posts.map(p => {
-    const status = p.status === 'live' ? 'live' : p.status === 'pending' ? 'pending' : 'draft';
+    const status     = p.status === 'live' ? 'live' : p.status === 'pending' ? 'pending' : 'draft';
     const statusText = status === 'live' ? 'Live' : status === 'pending' ? 'In inbox' : 'Draft';
+    const { tier, label } = computeTier(p);
     const ctr = (p.views > 0 && p.clicks > 0)
       ? ((p.clicks / p.views) * 100).toFixed(2) + '%'
       : null;
@@ -751,8 +847,8 @@ function renderPosts(posts) {
           </div>
         </div>
         <div class="post-status">
+          <span class="tier-badge ${tier}">${label}</span>
           <span class="status-pill ${status}">${statusText}</span>
-          ${p.variant ? `<span class="variant-tag">${p.variant}</span>` : ''}
         </div>
       </div>
     `;
