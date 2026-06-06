@@ -22,8 +22,21 @@
  *   <output>/picks.json (which images were chosen and why)
  */
 
+require('dotenv').config();
+
 const fs   = require('fs');
 const path = require('path');
+
+// ─── Supabase client — used to restore image library after Railway redeploys ───
+let supabase = null;
+try {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    const { createClient } = require('@supabase/supabase-js');
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      auth: { persistSession: false },
+    });
+  }
+} catch { /* Supabase not available — will fail gracefully below */ }
 
 // ─── CLI args ─────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -57,13 +70,61 @@ const ARC_ROLES = [
   { slot: 6, role: 'cta',     tags: ['clean', 'minimal', 'cozy', 'still', 'aesthetic'] },
 ];
 
+// ─── Restore image library from Supabase Storage ─────────────────────────────
+// Called when local image-library directory is missing (e.g. after Railway redeploy).
+// Downloads manifest + all images from artist-images/{campaignId}/library/.
+async function restoreLibraryFromStorage(libraryDir) {
+  const campaignId = config.campaign?.id;
+  if (!supabase || !campaignId) return false;
+
+  console.log(`☁️  Local library missing — restoring from Supabase Storage...`);
+
+  // Download manifest
+  const { data: manifestBlob, error: manifestErr } = await supabase.storage
+    .from('artist-images')
+    .download(`${campaignId}/library/manifest.json`);
+
+  if (manifestErr || !manifestBlob) {
+    console.warn(`   ⚠️  No manifest found in Storage: ${manifestErr?.message || 'not found'}`);
+    return false;
+  }
+
+  const manifest = JSON.parse(await manifestBlob.text());
+  if (!manifest.images?.length) return false;
+
+  fs.mkdirSync(libraryDir, { recursive: true });
+
+  let downloaded = 0;
+  for (const img of manifest.images) {
+    const storagePath = `${campaignId}/library/${img.file}`;
+    const { data, error } = await supabase.storage.from('artist-images').download(storagePath);
+    if (error || !data) { console.warn(`   ⚠️  ${img.file}: ${error?.message}`); continue; }
+    fs.writeFileSync(path.join(libraryDir, img.file), Buffer.from(await data.arrayBuffer()));
+    downloaded++;
+    process.stdout.write('.');
+  }
+
+  // Write library.json (strip publicUrl, keep file/safeZone/tags)
+  const libraryMeta = {
+    ...manifest,
+    images: manifest.images.map(({ publicUrl, ...rest }) => rest),
+  };
+  fs.writeFileSync(path.join(libraryDir, 'library.json'), JSON.stringify(libraryMeta, null, 2));
+
+  console.log(`\n   ✅ Restored ${downloaded}/${manifest.images.length} images`);
+  return downloaded > 0;
+}
+
 // ─── Load image library ───────────────────────────────────────────────────────
-function loadLibrary() {
+async function loadLibrary() {
   const libraryDir = path.join(projectDir, 'image-library');
-  if (!fs.existsSync(libraryDir)) {
-    console.error(`❌ Image library not found: ${libraryDir}`);
-    console.error('   Run "npm run library" first to generate the image library.');
-    process.exit(1);
+  if (!fs.existsSync(libraryDir) || fs.readdirSync(libraryDir).filter(f => /\.(png|jpg|jpeg)$/i.test(f)).length === 0) {
+    const restored = await restoreLibraryFromStorage(libraryDir);
+    if (!restored) {
+      console.error(`❌ Image library not found: ${libraryDir}`);
+      console.error('   Run "npm run library" first to generate the image library.');
+      process.exit(1);
+    }
   }
 
   // Load safeZone metadata from library.json if available
@@ -213,25 +274,31 @@ function updateMeta(picks, outputDir, config) {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-console.log('\n🎨 RunSound — Pick Slides');
-console.log('==========================');
-console.log(`   Config:  ${configPath}`);
-console.log(`   Output:  ${outputDir}`);
+async function main() {
+  console.log('\n🎨 RunSound — Pick Slides');
+  console.log('==========================');
+  console.log(`   Config:  ${configPath}`);
+  console.log(`   Output:  ${outputDir}`);
 
-const library = loadLibrary();
-const history = loadPickHistory();
-const picks   = pickSlides(library, history);
+  const library = await loadLibrary();
+  const history = loadPickHistory();
+  const picks   = pickSlides(library, history);
 
-copySlides(picks, outputDir);
-updateMeta(picks, outputDir, config);
+  copySlides(picks, outputDir);
+  updateMeta(picks, outputDir, config);
 
-// Save pick history
-history.picks.push({
-  usedAt: new Date().toISOString(),
-  files:  picks.map(p => p.file),
-  output: outputDir,
+  history.picks.push({
+    usedAt: new Date().toISOString(),
+    files:  picks.map(p => p.file),
+    output: outputDir,
+  });
+  savePickHistory(history);
+
+  console.log(`\n✅ ${picks.length} slides copied to ${outputDir}`);
+  console.log(`   Next: npm run texts\n`);
+}
+
+main().catch(err => {
+  console.error(`\n💥 Fatal: ${err.message}`);
+  process.exit(1);
 });
-savePickHistory(history);
-
-console.log(`\n✅ ${picks.length} slides copied to ${outputDir}`);
-console.log(`   Next: npm run texts\n`);

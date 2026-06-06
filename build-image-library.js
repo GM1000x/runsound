@@ -706,6 +706,40 @@ Respond ONLY with valid JSON, no other text:
   if (bankIds.length) {
     console.log(`   Bank IDs recorded: ${bankIds.length}`);
   }
+
+  // ── Upload library to Supabase Storage for persistence across Railway redeploys ──
+  // Stored at artist-images/{campaignId}/library/* so pick-slides.js can restore
+  // the library after a Railway redeploy wipes the ephemeral filesystem.
+  const campaignId = config.campaign?.id;
+  if (supabase && campaignId && !DRY_RUN && meta.images.length > 0) {
+    console.log(`\n☁️  Uploading library to Supabase Storage (campaign ${campaignId.slice(0, 8)}...)...`);
+    const manifest = { generatedAt: meta.generatedAt, mode: IMAGE_MODE, images: [] };
+
+    for (const img of meta.images) {
+      const localPath   = path.join(libraryDir, img.file);
+      if (!fs.existsSync(localPath)) continue;
+      const storagePath = `${campaignId}/library/${img.file}`;
+      const buffer      = fs.readFileSync(localPath);
+      const { error }   = await supabase.storage
+        .from('artist-images')
+        .upload(storagePath, buffer, { contentType: 'image/png', upsert: true });
+      if (error) {
+        console.warn(`   ⚠️  ${img.file}: ${error.message}`);
+      } else {
+        const { data: { publicUrl } } = supabase.storage.from('artist-images').getPublicUrl(storagePath);
+        manifest.images.push({ ...img, publicUrl });
+        process.stdout.write('.');
+      }
+    }
+
+    // Upload manifest so pick-slides.js can find all images
+    const manifestBuf = Buffer.from(JSON.stringify(manifest, null, 2));
+    await supabase.storage.from('artist-images')
+      .upload(`${campaignId}/library/manifest.json`, manifestBuf, { contentType: 'application/json', upsert: true });
+
+    console.log(`\n   ✅ ${manifest.images.length} images backed up to Supabase Storage`);
+  }
+
   console.log(`\n   Next: npm run pick\n`);
 
   if (meta.images.length === 0 && !DRY_RUN) {
