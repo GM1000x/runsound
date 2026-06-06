@@ -60,7 +60,7 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const texts  = JSON.parse(fs.readFileSync(textsPath, 'utf8'));
 
 if (!Array.isArray(texts) || texts.length < 4) {
-  console.error(`texts.json must be an array of 4 strings. Got: ${texts.length}`);
+  console.error(`texts.json must be an array of at least 4 strings. Got: ${texts.length}`);
   process.exit(1);
 }
 
@@ -91,14 +91,21 @@ const FONT_URLS = {
 // vignette: true | false
 // align:    'left' | 'center'
 
+// Slide index that gets lyric-slide treatment (0-based = slide 4 "peak")
+const LYRIC_SLIDE_INDEX = 3;
+
 const SLIDE_STYLES = [
   // Slide 1 — Hook: clean white, bottom-left, medium size
   { font: 'Inter', size: 52, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 22 },
-  // Slide 2 — Story: slightly smaller
+  // Slide 2 — Build: slightly smaller
   { font: 'Inter', size: 46, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 18 },
-  // Slide 3 — Peak/punchline: same as slide 1
+  // Slide 3 — Story: same as hook
   { font: 'Inter', size: 52, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 22 },
-  // Slide 4 — CTA: smaller, centered
+  // Slide 4 — Peak: lyric slide (see renderLyricSlide)
+  { font: 'Inter', size: 52, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 22 },
+  // Slide 5 — Release: clean, bottom-left
+  { font: 'Inter', size: 46, position: 'bottom', align: 'left', vignette: true,  shadowBlur: 18 },
+  // Slide 6 — CTA: smaller, centered
   { font: 'Inter', size: 38, position: 'center', align: 'center', vignette: false, shadowBlur: 14 },
 ];
 
@@ -216,6 +223,87 @@ function drawLightBgText(ctx, lines, blockX, blockY, lineHeight, slideStyle) {
   });
 }
 
+// ─── Lyric slide renderer ─────────────────────────────────────────────────────
+// Slide 4 (peak) is rendered as a lyric-quote card:
+//   - Dark gradient overlay (70% opacity) over the background image
+//   - Very large centered text (the peak slide text — short punchy line)
+//   - Thin separator + "Song Title · Artist" attribution at bottom
+// This mimics quote-card TikToks that go viral for music.
+async function renderLyricSlide(rawPath, text, outPath, canvasModule) {
+  const { createCanvas, loadImage } = canvasModule;
+
+  const img    = await loadImage(rawPath);
+  const canvas = createCanvas(W, H);
+  const ctx    = canvas.getContext('2d');
+
+  // 1. Background image
+  ctx.drawImage(img, 0, 0, W, H);
+
+  // 2. Heavy dark overlay — makes the slide feel cinematic, text-first
+  const overlay = ctx.createLinearGradient(0, 0, 0, H);
+  overlay.addColorStop(0,   'rgba(0,0,0,0.55)');
+  overlay.addColorStop(0.4, 'rgba(0,0,0,0.65)');
+  overlay.addColorStop(1,   'rgba(0,0,0,0.80)');
+  ctx.fillStyle = overlay;
+  ctx.fillRect(0, 0, W, H);
+
+  // 3. Main lyric text — large, centered, white
+  const lines      = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const fontSize   = lines.length === 1 ? 110 : lines.length === 2 ? 96 : 80;
+  const lineHeight = fontSize * 1.25;
+  const totalH     = lines.length * lineHeight;
+
+  ctx.font      = `700 ${fontSize}px "Inter SemiBold", "Inter", "Anton", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Start so text block is centered vertically (slightly above center)
+  const startY = H / 2 - totalH / 2 + lineHeight / 2 - H * 0.04;
+
+  lines.forEach((line, i) => {
+    // Subtle glow shadow
+    ctx.shadowColor   = 'rgba(255,255,255,0.08)';
+    ctx.shadowBlur    = 40;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(line, W / 2, startY + i * lineHeight);
+
+    // Second pass — crisp
+    ctx.shadowBlur = 0;
+    ctx.fillText(line, W / 2, startY + i * lineHeight);
+  });
+
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur  = 0;
+
+  // 4. Separator line
+  const sepY = H - H * 0.14;
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth   = 1;
+  ctx.beginPath();
+  ctx.moveTo(W * 0.25, sepY);
+  ctx.lineTo(W * 0.75, sepY);
+  ctx.stroke();
+
+  // 5. Attribution — song title · artist name
+  const songTitle  = (config.song?.title  || '').toLowerCase();
+  const artistName = (config.artist?.name || '').toLowerCase();
+  const attrText   = songTitle && artistName ? `${songTitle}  ·  ${artistName}` : songTitle || artistName;
+
+  ctx.font         = `400 26px "Inter", sans-serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle    = 'rgba(255,255,255,0.55)';
+  ctx.letterSpacing = '0.12em';
+  ctx.fillText(attrText, W / 2, sepY + 44);
+  ctx.letterSpacing = '0';
+
+  // 6. Save
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(outPath, buffer);
+}
+
 // ─── Render one slide ─────────────────────────────────────────────────────────
 async function renderSlide(slideIndex, rawPath, text, outPath, canvasModule, safeZone) {
   const { createCanvas, loadImage } = canvasModule;
@@ -329,11 +417,16 @@ async function main() {
       continue;
     }
 
+    const isLyric = (i === LYRIC_SLIDE_INDEX);
     const preview = text.split('\n')[0].slice(0, 40);
-    process.stdout.write(`   Slide ${slideNum}/${slideCount} [${s.size}px${safeZone ? ` zone:${safeZone}` : ''}] — "${preview}"... `);
+    process.stdout.write(`   Slide ${slideNum}/${slideCount} [${isLyric ? 'LYRIC' : s.size + 'px'}${safeZone && !isLyric ? ` zone:${safeZone}` : ''}] — "${preview}"... `);
 
     try {
-      await renderSlide(i, rawPath, text, outPath, canvasModule, safeZone);
+      if (isLyric) {
+        await renderLyricSlide(rawPath, text, outPath, canvasModule);
+      } else {
+        await renderSlide(i, rawPath, text, outPath, canvasModule, safeZone);
+      }
       console.log('✅');
       success++;
     } catch (err) {
