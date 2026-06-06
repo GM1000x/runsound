@@ -510,23 +510,27 @@ async function main() {
     try {
       const visionRes = await openai.chat.completions.create({
         model: 'gpt-4o',
-        max_tokens: 800,
+        max_tokens: 1500,
         messages: [{
           role: 'user',
           content: [
             ...imageContent,
             {
               type: 'text',
-              text: `You are an image generation expert. Analyse these reference images carefully.
+              text: `You are an image generation expert. Your job is to recreate these reference photos as closely as possible using AI image generation.
 
-Step 1 — Extract the shared visual style (color palette, photographic style, grain/texture, lighting, composition, mood). Write a dense style descriptor of max 40 words.
+Step 1 — For EACH reference photo, write a precise generation prompt that recreates that exact scene. Describe: the subject (who/what), composition (angle, framing), lighting, colors, grain, and mood. Be specific — this prompt must reproduce the photo faithfully. Max 35 words per prompt.
 
-Step 2 — Using that exact same visual style, write ${COUNT} unique scene descriptions. Each scene should depict a different real-world moment or subject that fits naturally in this aesthetic — different angles, subjects, times of day, compositions. Keep each scene under 25 words.
+Step 2 — Extract the shared photographic style (film grain, color grade, camera type, overall aesthetic) in 15 words.
 
-Respond ONLY with valid JSON in this format, no other text:
+Step 3 — I need ${COUNT} total generation prompts. You have ${refPaths.length} reference photos. Cycle through them — for extra prompts beyond the reference count, describe slight variations of the same scenes (slightly different angle, closer crop, different light direction, same subject and setting).
+
+IMPORTANT: Do NOT invent new subjects or settings. Every prompt must faithfully recreate or closely vary one of the reference photos.
+
+Respond ONLY with valid JSON, no other text:
 {
-  "style": "<40 word style descriptor>",
-  "scenes": ["<scene 1>", "<scene 2>", ...]
+  "style": "<15 word shared photographic style>",
+  "scenes": ["<prompt recreating photo 1>", "<prompt recreating photo 2>", ...(${COUNT} total)]
 }`,
             },
           ],
