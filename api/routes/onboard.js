@@ -413,6 +413,55 @@ router.post('/:campaignId/repost', async (req, res) => {
   });
 });
 
+// ─── POST /api/onboard/:campaignId/rebuild-and-repost ────────────────────────
+// Convenience: rebuilds the image library, then immediately reposts.
+// Avoids the race condition of calling rebuild-library + repost separately.
+router.post('/:campaignId/rebuild-and-repost', async (req, res) => {
+  const { campaignId } = req.params;
+
+  const { data: campaign, error } = await supabase
+    .from('campaigns')
+    .select(`id, slug, artist_name, song_title, genre, mood, spotify_url, apple_url,
+             youtube_url, tidal_url, deezer_url, amazon_url, soundcloud_url,
+             smart_link_url, hook_lines, config, tiktok_inbox_id`)
+    .eq('id', campaignId)
+    .single();
+
+  if (error || !campaign) {
+    return res.status(404).json({ ok: false, error: 'Campaign not found' });
+  }
+
+  res.json({ ok: true, status: 'rebuilding', message: `Rebuilding library then reposting for ${campaign.artist_name} — draft arriving in ~5 min` });
+
+  setImmediate(async () => {
+    try {
+      const { dir, cfgPath } = await materializeConfig(campaign);
+
+      // Step 1: Rebuild library
+      const libDir = path.join(dir, 'image-library');
+      if (require('fs').existsSync(libDir) && !require('fs').lstatSync(libDir).isSymbolicLink()) {
+        require('fs').rmSync(libDir, { recursive: true });
+      }
+      await runCommand('node', ['build-image-library.js', '--config', cfgPath], 'rebuild image library');
+      console.log(`[rebuild-and-repost] ✅ Library built for ${campaign.artist_name}`);
+
+      // Step 2: Repost
+      const today     = new Date().toISOString().slice(0, 10);
+      const outputDir = path.join(dir, 'posts', today);
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      await runCommand('node', ['pick-slides.js',     '--config', cfgPath, '--output', outputDir], 'pick slides');
+      await runCommand('node', ['generate-texts.js',  '--config', cfgPath, '--output', outputDir, '--campaign-id', campaignId], 'generate texts');
+      await runCommand('node', ['add-text-overlay.js','--input',  outputDir, '--config', cfgPath, '--texts', path.join(outputDir, 'texts.json')], 'text overlay');
+      await runCommand('node', ['post-to-tiktok.js',  '--input',  outputDir, '--config', cfgPath], 'post to TikTok');
+
+      console.log(`[rebuild-and-repost] ✅ Done for ${campaign.artist_name}`);
+    } catch (err) {
+      console.error(`[rebuild-and-repost] ❌ ${err.message}`);
+    }
+  });
+});
+
 // ─── GET /api/onboard/:campaignId/status ─────────────────────────────────────
 // Polled by connect.html every 3 seconds to show live progress.
 router.get('/:campaignId/status', async (req, res) => {
