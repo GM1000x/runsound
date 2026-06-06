@@ -451,6 +451,13 @@ async function main() {
 
   fs.mkdirSync(libraryDir, { recursive: true });
 
+  // Instantiate OpenAI early — needed for both Vision analysis (reference mode) and image generation
+  if (!DRY_RUN && !process.env.OPENAI_API_KEY) {
+    console.error('❌ OPENAI_API_KEY not set in .env');
+    process.exit(1);
+  }
+  const openai = DRY_RUN ? null : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
   // ── MODE: own — use artist's uploaded photos directly ─────────────────────
   if (IMAGE_MODE === 'own' && UPLOADED_IMAGES.length > 0) {
     console.log(`📸 Using ${UPLOADED_IMAGES.length} artist-uploaded images directly`);
@@ -550,15 +557,6 @@ Respond ONLY with valid JSON in this format, no other text:
     }
     console.log(`   Found ${existing.length} existing images, generating up to ${COUNT} total...`);
   }
-
-  if (!DRY_RUN && !process.env.OPENAI_API_KEY) {
-    console.error('❌ OPENAI_API_KEY not set in .env');
-    process.exit(1);
-  }
-
-  fs.mkdirSync(libraryDir, { recursive: true });
-
-  const openai = DRY_RUN ? null : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   // ── Ensure Supabase Storage bucket exists ──────────────────────────────────
   if (bank && supabase) {
