@@ -142,6 +142,21 @@ app.get('/', (req, res) => {
   }
 });
 
+// ─── Admin routes (manual cron triggers) ─────────────────────────────────────
+const { startCron, runDailyPipeline, runLearnHooks } = require('./cron');
+
+app.post('/api/admin/run-pipeline', (req, res) => {
+  console.log('[admin] Manual pipeline trigger');
+  res.json({ ok: true, message: 'Pipeline started — check server logs for progress' });
+  runDailyPipeline().catch(() => {});
+});
+
+app.post('/api/admin/learn-hooks', (req, res) => {
+  console.log('[admin] Manual hook learning trigger');
+  res.json({ ok: true, message: 'Hook learning started — check server logs for progress' });
+  runLearnHooks().catch(() => {});
+});
+
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
   if (req.path.startsWith('/api')) {
@@ -156,21 +171,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('[server] Unhandled error:', err.message);
   res.status(500).json({ ok: false, error: 'Internal server error' });
-});
-
-// ─── Admin routes (manual cron triggers) ─────────────────────────────────────
-const { startCron, runDailyPipeline, runLearnHooks } = require('./cron');
-
-app.post('/api/admin/run-pipeline', (req, res) => {
-  console.log('[admin] Manual pipeline trigger');
-  res.json({ ok: true, message: 'Pipeline started — check server logs for progress' });
-  runDailyPipeline().catch(() => {});
-});
-
-app.post('/api/admin/learn-hooks', (req, res) => {
-  console.log('[admin] Manual hook learning trigger');
-  res.json({ ok: true, message: 'Hook learning started — check server logs for progress' });
-  runLearnHooks().catch(() => {});
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
