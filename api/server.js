@@ -158,6 +158,21 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, error: 'Internal server error' });
 });
 
+// ─── Admin routes (manual cron triggers) ─────────────────────────────────────
+const { startCron, runDailyPipeline, runLearnHooks } = require('./cron');
+
+app.post('/api/admin/run-pipeline', (req, res) => {
+  console.log('[admin] Manual pipeline trigger');
+  res.json({ ok: true, message: 'Pipeline started — check server logs for progress' });
+  runDailyPipeline().catch(() => {});
+});
+
+app.post('/api/admin/learn-hooks', (req, res) => {
+  console.log('[admin] Manual hook learning trigger');
+  res.json({ ok: true, message: 'Hook learning started — check server logs for progress' });
+  runLearnHooks().catch(() => {});
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀 RunSound API running on http://localhost:${PORT}`);
@@ -165,6 +180,9 @@ app.listen(PORT, () => {
   console.log(`   Smart link:    http://localhost:${PORT}/l/:slug`);
   console.log(`   Dashboard:     http://localhost:${PORT}/dashboard.html`);
   console.log(`   Health check:  http://localhost:${PORT}/api/health\n`);
+
+  // Start scheduled jobs (daily pipeline + weekly hook learning)
+  startCron();
 });
 
 module.exports = app;
