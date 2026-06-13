@@ -78,7 +78,7 @@ function buildConfig(data) {
       model:  'gpt-image-2-2026-04-21',
       style:  'candid lifestyle photography, Pinterest aesthetic, authentic iPhone photo, soft natural light',
       count:  2,
-      mode:   data.image_mode || 'generate', // generate | reference | own
+      mode:   data.image_mode || 'reference', // reference | own
     },
     posting: {
       schedule: '0 3 * * *',
@@ -99,7 +99,7 @@ function smartUpload(req, res, next) {
 router.post('/', smartUpload, async (req, res) => {
   try {
     const { artist, song, genre, spotify, description, mood, lyrics, target_audience, email } = req.body;
-    const imageMode  = req.body.image_mode || 'generate'; // generate | reference | own
+    const imageMode  = req.body.image_mode || 'reference'; // reference | own
     const imageFiles = req.files || [];
 
     console.log(`[signup] image_mode=${imageMode}, files=${imageFiles.length}`);

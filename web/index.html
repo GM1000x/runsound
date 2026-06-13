@@ -709,34 +709,27 @@
 
       <!-- IMAGE MODE -->
       <div class="form-row" style="margin-top:1.5rem">
-        <label>Visuals for your campaign</label>
+        <label>Your campaign visuals</label>
         <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.5rem">
-          <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeGenerateLabel">
-            <input type="radio" name="image_mode" value="generate" id="imgModeGenerate" checked style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
-            <div>
-              <div style="font-weight:600;font-size:0.9rem">Let AI generate images</div>
-              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">RunSound creates cinematic lifestyle photos based on your song's mood and genre.</div>
-            </div>
-          </label>
           <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeReferenceLabel">
-            <input type="radio" name="image_mode" value="reference" id="imgModeReference" style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
+            <input type="radio" name="image_mode" value="reference" id="imgModeReference" checked style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
             <div>
-              <div style="font-weight:600;font-size:0.9rem">Upload reference images</div>
-              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 3–5 photos or Pinterest screenshots. AI generates new images in the same style.</div>
+              <div style="font-weight:600;font-size:0.9rem">Upload reference images — AI recreates the style</div>
+              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 3–5 photos with the aesthetic you want. RunSound generates new images that match the exact look and feel.</div>
             </div>
           </label>
           <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeOwnLabel">
             <input type="radio" name="image_mode" value="own" id="imgModeOwn" style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
             <div>
-              <div style="font-weight:600;font-size:0.9rem">Use my own photos</div>
-              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 6–12 photos and RunSound uses them directly as slides. No AI generation.</div>
+              <div style="font-weight:600;font-size:0.9rem">Upload your own photos — used directly</div>
+              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 6–12 photos you own the rights to. RunSound uses them as-is for your TikTok slides. No AI generation.</div>
             </div>
           </label>
         </div>
       </div>
 
-      <!-- Upload area (shown for reference + own) -->
-      <div id="imageUploadSection" style="display:none;margin-top:0.75rem">
+      <!-- Upload area (always visible) -->
+      <div id="imageUploadSection" style="margin-top:0.75rem">
         <div id="imageDropzone" style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--surface)">
           <div style="font-size:1.5rem;margin-bottom:0.5rem">📸</div>
           <div style="font-weight:600;font-size:0.9rem" id="dropzoneTitle">Drop images here or click to browse</div>
@@ -806,17 +799,15 @@
 
   function updateImageModeUI() {
     const mode = document.querySelector('input[name="image_mode"]:checked').value;
-    const uploadSection = document.getElementById('imageUploadSection');
-    uploadSection.style.display = (mode === 'generate') ? 'none' : '';
     if (mode === 'reference') {
       document.getElementById('dropzoneTitle').textContent = 'Drop reference images here or click to browse';
       document.getElementById('dropzoneHint').textContent = '3–5 images · Pinterest screenshots work great · JPG, PNG · Max 5MB each';
     } else if (mode === 'own') {
-      document.getElementById('dropzoneTitle').textContent = 'Drop your photos here or click to browse';
-      document.getElementById('dropzoneHint').textContent = '6–12 photos · These will be used directly as your TikTok slides · JPG, PNG · Max 5MB each';
+      document.getElementById('dropzoneTitle').textContent = 'Drop your own photos here or click to browse';
+      document.getElementById('dropzoneHint').textContent = '6–12 photos · Must be photos you own the rights to · JPG, PNG · Max 5MB each';
     }
     // Highlight selected card
-    ['Generate','Reference','Own'].forEach(m => {
+    ['Reference','Own'].forEach(m => {
       const label = document.getElementById(`imgMode${m}Label`);
       const radio = document.getElementById(`imgMode${m}`);
       label.style.borderColor = radio.checked ? 'var(--accent)' : 'var(--border)';
