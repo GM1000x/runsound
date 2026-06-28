@@ -143,7 +143,7 @@ app.get('/', (req, res) => {
 });
 
 // ─── Admin routes (manual cron triggers) ─────────────────────────────────────
-const { startCron, runDailyPipeline, runLearnHooks } = require('./cron');
+const { startCron, runDailyPipeline, runLearnHooks, runScrapeTrends } = require('./cron');
 
 app.post('/api/admin/run-pipeline', (req, res) => {
   console.log('[admin] Manual pipeline trigger');
@@ -155,6 +155,12 @@ app.post('/api/admin/learn-hooks', (req, res) => {
   console.log('[admin] Manual hook learning trigger');
   res.json({ ok: true, message: 'Hook learning started — check server logs for progress' });
   runLearnHooks().catch(() => {});
+});
+
+app.post('/api/admin/scrape-trends', (req, res) => {
+  console.log('[admin] Manual trend scrape trigger');
+  res.json({ ok: true, message: 'Trend scrape started — hooks ready in ~2 min' });
+  runScrapeTrends().catch(() => {});
 });
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
