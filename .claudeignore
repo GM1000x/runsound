@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+*.mp3
+*.wav
+*.jpg
+*.png
+*.gif
+*.mp4

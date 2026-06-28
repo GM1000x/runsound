@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunSound – AI-powered music marketing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+  /* ============================================
+     RESET & BASE
+  ============================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --dark: #0A0A0A;
+    --light: #EBEBEB;
+    --white: #FFFFFF;
+    --gray: #888;
+    --mid: #555;
+    --sans: 'Montserrat', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--dark);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  /* ============================================
+     NAV
+  ============================================ */
+  nav {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    transition: background 0.3s;
+    white-space: nowrap;
+  }
+
+  .nav-logo {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--white); }
+
+  .nav-cta {
+    background: var(--white);
+    color: var(--dark);
+    padding: 8px 18px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+  }
+  .nav-cta:hover { opacity: 0.88; }
+
+  /* ============================================
+     HERO
+  ============================================ */
+  .hero {
+    position: relative;
+    height: 100vh;
+    min-height: 640px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--dark);
+  }
+
+  /* dot grid */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.09) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* vignette */
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 55% 55% at 50% 50%, transparent 20%, var(--dark) 75%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* orbit ring */
+  .orbit-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    z-index: 1;
+    animation: orbit-spin 90s linear infinite;
+  }
+
+  @keyframes orbit-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .orbit-slot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .orbit-tile {
+    position: absolute;
+    width: 105px;
+    height: 105px;
+    border-radius: 20px;
+    transform: translateX(-50%) translateY(-50%);
+    animation: counter-spin 90s linear infinite;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+
+  .orbit-tile::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.18);
+  }
+
+  @keyframes counter-spin {
+    from { transform: translateX(-50%) translateY(-50%) rotate(0deg); }
+    to   { transform: translateX(-50%) translateY(-50%) rotate(-360deg); }
+  }
+
+  .ot-1  { background: linear-gradient(145deg,#1a0533,#6b21a8); }
+  .ot-2  { background: linear-gradient(145deg,#0a1628,#1d4ed8); }
+  .ot-3  { background: linear-gradient(145deg,#0d1a0d,#15803d); }
+  .ot-4  { background: linear-gradient(145deg,#2d0a0a,#dc2626); }
+  .ot-5  { background: linear-gradient(145deg,#1a1a0a,#ca8a04); }
+  .ot-6  { background: linear-gradient(145deg,#0a1a1a,#0891b2); }
+  .ot-7  { background: linear-gradient(145deg,#1a0a1a,#a21caf); }
+  .ot-8  { background: linear-gradient(145deg,#0a1a10,#059669); }
+  .ot-9  { background: linear-gradient(145deg,#1a0a0a,#ea580c); }
+  .ot-10 { background: linear-gradient(145deg,#0d0d1a,#4f46e5); }
+  .ot-11 { background: linear-gradient(145deg,#1a1015,#e11d48); }
+  .ot-12 { background: linear-gradient(145deg,#0a1510,#16a34a); }
+  .ot-13 { background: linear-gradient(145deg,#150d0a,#b45309); }
+  .ot-14 { background: linear-gradient(145deg,#0a0d1a,#2563eb); }
+  .ot-15 { background: linear-gradient(145deg,#1a0a14,#db2777); }
+  .ot-16 { background: linear-gradient(145deg,#091519,#0e7490); }
+
+  .orbit-tile span {
+    display: block;
+    position: absolute;
+    bottom: 12px;
+    left: 10px;
+    right: 10px;
+    height: 22px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 3px;
+    clip-path: polygon(
+      0% 100%, 6% 55%, 12% 80%, 18% 40%, 24% 70%,
+      30% 20%, 36% 65%, 42% 35%, 48% 75%, 54% 25%,
+      60% 60%, 66% 30%, 72% 55%, 78% 45%, 84% 70%,
+      90% 35%, 96% 60%, 100% 100%
+    );
+    z-index: 1;
+  }
+
+  .hero-center {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 6px 14px;
+    border-radius: 50px;
+  }
+
+  .hero-badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+  }
+
+  .hero-title {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(5rem, 13vw, 12rem);
+    letter-spacing: -0.05em;
+    line-height: 0.92;
+    margin-bottom: 26px;
+  }
+
+  .hero-sub {
+    font-size: clamp(0.85rem, 1.2vw, 0.95rem);
+    font-weight: 400;
+    color: rgba(255,255,255,0.42);
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+  }
+
+  /* ============================================
+     TOP MARQUEE
+  ============================================ */
+  .top-marquee {
+    background: var(--dark);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 28px 0;
+    overflow: hidden;
+  }
+
+  .marquee-track {
+    display: flex;
+    animation: marquee 24s linear infinite;
+    width: max-content;
+  }
+
+  .marquee-item {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 3rem);
+    color: rgba(255,255,255,0.08);
+    padding-right: 56px;
+    flex-shrink: 0;
+    letter-spacing: -0.03em;
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* ============================================
+     ABOUT
+  ============================================ */
+  .about-wrap {
+    background: var(--dark);
+    padding: 100px 60px 120px;
+  }
+
+  .about {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  /* rotating circle badge */
+  .rotating-badge {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin-bottom: 36px;
+  }
+  .rotating-badge svg { animation: badge-spin 9s linear infinite; }
+  @keyframes badge-spin { to { transform: rotate(360deg); } }
+  .badge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 1.3rem;
+    color: rgba(255,255,255,0.45);
+  }
+
+  .about-heading {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 4.5vw, 5rem);
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+  }
+  .about-heading .dim {
+    color: rgba(255,255,255,0.28);
+    font-weight: 700;
+  }
+
+  .about-right p {
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.85;
+    color: rgba(255,255,255,0.48);
+    margin-bottom: 40px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--white);
+    color: var(--dark);
+    padding: 14px 28px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+
+  /* ============================================
+     CURVE TRANSITIONS
+  ============================================ */
+  .curve-div {
+    line-height: 0;
+    display: block;
+  }
+  .curve-div svg { display: block; width: 100%; }
+
+  /* ============================================
+     HOW IT WORKS  (light)
+  ============================================ */
+  .solutions {
+    background: var(--light);
+    padding: 100px 60px 140px;
+    color: var(--dark);
+  }
+
+  .section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 22px;
+  }
+
+  .section-heading {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(3rem, 6.5vw, 7rem);
+    letter-spacing: -0.04em;
+    line-height: 1.0;
+    margin-bottom: 70px;
+  }
+
+  .heading-dim { color: #C0C0C0; }
+  .heading-dim-dark { color: rgba(255,255,255,0.22); }
+
+  /* trust bar */
+  .trust-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 56px;
+  }
+  .trust-avatars { display: flex; }
+  .trust-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--light);
+    overflow: hidden;
+    margin-left: -8px;
+  }
+  .trust-avatar:first-child { margin-left: 0; }
+  .ta-1 { background: linear-gradient(135deg,#6b21a8,#a855f7); }
+  .ta-2 { background: linear-gradient(135deg,#1d4ed8,#60a5fa); }
+  .ta-3 { background: linear-gradient(135deg,#15803d,#4ade80); }
+  .ta-4 { background: linear-gradient(135deg,#dc2626,#f87171); }
+  .trust-text { font-size: 0.76rem; color: #777; font-weight: 500; }
+  .trust-text strong { color: var(--dark); }
+
+  /* ---- FEATURE CARDS (Cyrclo-style: dashed separator + large deco bottom) ---- */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .feature-card {
+    background: var(--white);
+    border-radius: 22px;
+    padding: 32px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+    min-height: 340px;
+  }
+  .feature-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+  }
+
+  .feature-step {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #bbb;
+    margin-bottom: 18px;
+  }
+
+  .feature-name {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.7rem;
+    color: var(--dark);
+    margin-bottom: 0;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  /* dashed separator — Cyrclo's signature */
+  .feature-sep {
+    width: 100%;
+    border: none;
+    border-top: 1px dashed rgba(0,0,0,0.14);
+    margin: 18px 0;
+  }
+
+  .feature-desc {
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.75;
+    color: #777;
+  }
+
+  /* large decorative graphic at bottom — Cyrclo's globe equivalent */
+  .feature-deco {
+    position: absolute;
+    bottom: -55px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 180px;
+    height: 180px;
+    pointer-events: none;
+    opacity: 0.55;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover .feature-deco { opacity: 0.75; }
+
+  /* ============================================
+     CONTENT IN ACTION  (dark)
+  ============================================ */
+  .case-section {
+    background: var(--dark);
+    padding: 100px 60px 120px;
+  }
+
+  .case-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 56px;
+  }
+
+  .case-list {
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .case-item {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 28px 0;
+    text-decoration: none;
+    color: var(--white);
+    transition: padding-left 0.3s ease;
+    cursor: pointer;
+  }
+  .case-item:hover { padding-left: 12px; }
+  .case-item:hover .case-item-arrow { opacity: 1; transform: translateX(0); }
+  .case-item:hover .case-item-name { color: var(--white); }
+
+  .case-item-meta {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    flex-shrink: 0;
+    width: 280px;
+  }
+
+  .case-item-name {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 2.8rem);
+    letter-spacing: -0.04em;
+    color: rgba(255,255,255,0.82);
+    flex: 1;
+    transition: color 0.2s;
+  }
+
+  .case-item-num {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.18);
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    width: 40px;
+    text-align: right;
+  }
+
+  .case-item-arrow {
+    font-size: 1.2rem;
+    color: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+    margin-left: 20px;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  /* ============================================
+     TESTIMONIALS  (light)
+  ============================================ */
+  .testimonials {
+    background: var(--light);
+    padding: 120px 60px;
+    color: var(--dark);
+  }
+
+  .testimonials-heading {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(3rem, 6vw, 6.5rem);
+    letter-spacing: -0.04em;
+    text-align: center;
+    margin-bottom: 80px;
+    line-height: 1.0;
+  }
+
+  /* floating bubbles */
+  .bubbles {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 36px;
+    margin-bottom: 80px;
+  }
+
+  .bubble-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bubble-group:nth-child(1) { animation: float 3.2s ease-in-out infinite; }
+  .bubble-group:nth-child(2) { animation: float 3.2s ease-in-out infinite; animation-delay: -1.1s; margin-bottom: 28px; }
+  .bubble-group:nth-child(3) { animation: float 3.2s ease-in-out infinite; animation-delay: -0.4s; }
+  .bubble-group:nth-child(4) { animation: float 3.2s ease-in-out infinite; animation-delay: -1.9s; margin-bottom: 14px; }
+  .bubble-group:nth-child(5) { animation: float 3.2s ease-in-out infinite; animation-delay: -0.8s; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-14px); }
+  }
+
+  .bubble-tag {
+    background: var(--dark);
+    color: var(--white);
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    position: relative;
+  }
+  .bubble-tag::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--dark);
+    border-bottom: none;
+  }
+
+  .bubble-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 3px solid var(--white);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+  .av-1 { background: linear-gradient(135deg,#7c3aed,#c084fc); }
+  .av-2 { background: linear-gradient(135deg,#1d4ed8,#93c5fd); }
+  .av-3 { background: linear-gradient(135deg,#15803d,#86efac); }
+  .av-4 { background: linear-gradient(135deg,#b45309,#fcd34d); }
+  .av-5 { background: linear-gradient(135deg,#db2777,#f9a8d4); }
+
+  /* review cards */
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .review-card {
+    background: var(--white);
+    border-radius: 22px;
+    padding: 34px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: transform 0.3s;
+  }
+  .review-card:hover { transform: translateY(-6px); }
+
+  .stars { font-size: 0.9rem; letter-spacing: 2px; color: #111; }
+
+  .review-text {
+    font-size: 0.88rem;
+    font-weight: 400;
+    line-height: 1.78;
+    color: #444;
+    flex: 1;
+  }
+
+  .review-rule {
+    border: none;
+    border-top: 1px dashed #ddd;
+  }
+
+  .review-author {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .review-av {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ra-1 { background: linear-gradient(135deg,#7c3aed,#c084fc); }
+  .ra-2 { background: linear-gradient(135deg,#1d4ed8,#93c5fd); }
+  .ra-3 { background: linear-gradient(135deg,#b45309,#fcd34d); }
+
+  .review-author strong { display: block; font-size: 0.84rem; font-weight: 700; color: var(--dark); }
+  .review-author span { font-size: 0.74rem; color: var(--gray); }
+
+  /* ============================================
+     PRICING  (dark)
+  ============================================ */
+  .pricing {
+    background: var(--dark);
+    padding: 120px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pricing-dots {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    pointer-events: none;
+  }
+
+  .pricing-label {
+    text-align: center;
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  .pricing-heading {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(3rem, 6vw, 6.5rem);
+    letter-spacing: -0.04em;
+    text-align: center;
+    margin-bottom: 80px;
+    position: relative;
+    line-height: 1.0;
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 880px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .pricing-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 44px 38px;
+    transition: border-color 0.3s;
+  }
+  .pricing-card:hover { border-color: rgba(255,255,255,0.22); }
+  .pricing-card.featured { border-color: rgba(255,255,255,0.18); }
+
+  .pricing-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
+  .plan-name {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gray);
+  }
+
+  .plan-badge {
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.45);
+  }
+
+  .plan-price {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(2.8rem, 4.5vw, 4.5rem);
+    letter-spacing: -0.04em;
+    margin-bottom: 8px;
+  }
+  .plan-price sub {
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--gray);
+    vertical-align: middle;
+  }
+
+  .plan-desc {
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.68;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 32px;
+  }
+
+  .plan-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .plan-features li {
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.55);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .plan-features li .chk {
+    color: rgba(255,255,255,0.7);
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 0.7rem;
+  }
+  .plan-features li strong { color: var(--white); font-weight: 600; }
+
+  .plan-btn {
+    display: block;
+    text-align: center;
+    padding: 14px;
+    border-radius: 50px;
+    background: var(--white);
+    color: var(--dark);
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s;
+  }
+  .plan-btn:hover { opacity: 0.88; }
+  .plan-btn-muted {
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.25);
+    cursor: not-allowed;
+  }
+  .plan-btn-muted:hover { opacity: 1; }
+
+  /* ============================================
+     FAQ  (light)
+  ============================================ */
+  .faq-wrap {
+    background: var(--light);
+    padding: 0 60px 120px;
+    color: var(--dark);
+  }
+
+  .faq-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding-top: 80px;
+  }
+
+  .faq-heading {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(2.5rem, 4.5vw, 4.5rem);
+    letter-spacing: -0.04em;
+    margin-bottom: 56px;
+    line-height: 1.05;
+  }
+
+  .faq-item {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding: 22px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .faq-item:last-child { border-bottom: 1px solid rgba(0,0,0,0.1); }
+
+  .faq-q {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    gap: 16px;
+  }
+  .faq-num {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #bbb;
+    margin-right: 12px;
+    flex-shrink: 0;
+    letter-spacing: 0.05em;
+  }
+  .faq-plus {
+    font-size: 1.4rem;
+    color: var(--gray);
+    flex-shrink: 0;
+    transition: transform 0.3s;
+    line-height: 1;
+  }
+  .faq-item.open .faq-plus { transform: rotate(45deg); }
+
+  .faq-a {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s;
+    font-size: 0.86rem;
+    font-weight: 400;
+    line-height: 1.78;
+    color: #666;
+  }
+  .faq-item.open .faq-a {
+    max-height: 200px;
+    padding-top: 14px;
+  }
+
+  /* ============================================
+     FINAL CTA
+  ============================================ */
+  .cta-wrap {
+    background: var(--light);
+    padding: 0 60px 100px;
+  }
+
+  .cta-box {
+    background: var(--dark);
+    border-radius: 32px;
+    padding: 100px 60px;
+    text-align: center;
+  }
+
+  .cta-heading {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(3rem, 6vw, 6.5rem);
+    letter-spacing: -0.04em;
+    margin-bottom: 18px;
+    line-height: 1.0;
+  }
+
+  .cta-sub {
+    font-size: 0.92rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.38);
+    margin-bottom: 48px;
+    letter-spacing: 0.01em;
+  }
+
+  /* ============================================
+     FOOTER
+  ============================================ */
+  footer {
+    background: var(--dark);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 56px 60px 0;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 56px;
+  }
+
+  .footer-logo {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .footer-tagline {
+    font-size: 0.74rem;
+    font-weight: 400;
+    color: var(--gray);
+    margin-top: 5px;
+    letter-spacing: 0.01em;
+  }
+
+  .footer-nav {
+    display: flex;
+    gap: 22px;
+    list-style: none;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .footer-nav a {
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-nav a:hover { color: var(--white); }
+
+  .footer-social {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  .footer-social a {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.13);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.38);
+    text-decoration: none;
+    font-size: 0.72rem;
+    transition: all 0.2s;
+  }
+  .footer-social a:hover { border-color: var(--white); color: var(--white); }
+
+  /* footer marquee */
+  .footer-marquee {
+    overflow: hidden;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 20px 0;
+  }
+  .footer-marquee-track {
+    display: flex;
+    animation: marquee 18s linear infinite;
+    width: max-content;
+  }
+  .footer-marquee-item {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+    color: rgba(255,255,255,0.05);
+    padding-right: 56px;
+    flex-shrink: 0;
+    letter-spacing: -0.04em;
+  }
+
+  /* ============================================
+     SCROLL FADE-IN
+  ============================================ */
+  .fi {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fi.show { opacity: 1; transform: translateY(0); }
+  .fi.delay-1 { transition-delay: 0.1s; }
+  .fi.delay-2 { transition-delay: 0.22s; }
+  .fi.delay-3 { transition-delay: 0.34s; }
+
+  /* ============================================
+     RESPONSIVE
+  ============================================ */
+  @media (max-width: 960px) {
+    nav { gap: 14px; padding: 10px 14px; }
+    .nav-links { display: none; }
+    .about { grid-template-columns: 1fr; gap: 48px; }
+    .about-wrap { padding: 70px 30px 90px; }
+    .features-grid { grid-template-columns: 1fr 1fr; }
+    .reviews-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .solutions, .case-section, .testimonials, .pricing { padding: 80px 30px; }
+    .faq-wrap { padding: 0 30px 80px; }
+    .cta-wrap { padding: 0 20px 80px; }
+    .cta-box { padding: 60px 30px; }
+    .footer-top { grid-template-columns: 1fr; text-align: center; }
+    .footer-social { justify-content: center; }
+    .bubbles { gap: 18px; flex-wrap: wrap; }
+    .case-item-meta { width: 180px; }
+  }
+
+  @media (max-width: 600px) {
+    .features-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: clamp(3.8rem, 18vw, 6rem); }
+    .case-item-meta { display: none; }
+  }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">RunSound</a>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <a href="#pricing" class="nav-cta">Get started free</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="orbit-ring" id="orbitRing">
+    <div class="orbit-slot"><div class="orbit-tile ot-1"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-2"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-3"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-4"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-5"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-6"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-7"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-8"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-9"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-10"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-11"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-12"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-13"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-14"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-15"><span></span></div></div>
+    <div class="orbit-slot"><div class="orbit-tile ot-16"><span></span></div></div>
+  </div>
+
+  <div class="hero-center">
+    <div class="hero-badge"><div class="hero-badge-dot"></div>AI-powered music marketing</div>
+    <h1 class="hero-title">RunSound</h1>
+    <p class="hero-sub">Your music, promoted automatically. Every day. On TikTok.</p>
+  </div>
+</section>
+
+<!-- TOP MARQUEE -->
+<div class="top-marquee">
+  <div class="marquee-track">
+    <span class="marquee-item">Your Music ✦</span>
+    <span class="marquee-item">On TikTok ✦</span>
+    <span class="marquee-item">Every Day ✦</span>
+    <span class="marquee-item">Automatically ✦</span>
+    <span class="marquee-item">Your Music ✦</span>
+    <span class="marquee-item">On TikTok ✦</span>
+    <span class="marquee-item">Every Day ✦</span>
+    <span class="marquee-item">Automatically ✦</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="about-wrap">
+  <div class="about">
+    <div class="fi">
+      <div class="rotating-badge">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <defs>
+            <path id="cp" d="M 55 55 m -43 0 a 43 43 0 1 1 86 0 a 43 43 0 1 1 -86 0"/>
+          </defs>
+          <text fill="rgba(255,255,255,0.32)" font-size="10" font-family="Montserrat,sans-serif" font-weight="600" letter-spacing="3.5">
+            <textPath href="#cp">TikTok · Growth · Smart · Music ·</textPath>
+          </text>
+        </svg>
+        <div class="badge-center">→</div>
+      </div>
+      <h2 class="about-heading">
+        AI-powered<br>music marketing,<br><span class="dim">on autopilot.</span>
+      </h2>
+    </div>
+    <div class="fi delay-1">
+      <p>Every major label has a marketing team. Independent artists don't. RunSound gives you the same unfair advantage — AI that creates TikTok content for your music, posts it automatically, and gets smarter with every post.</p>
+      <a href="#pricing" class="btn-primary">Get started free →</a>
+    </div>
+  </div>
+</div>
+
+<!-- CURVE → LIGHT -->
+<div class="curve-div" style="background:var(--dark)">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none" fill="#EBEBEB">
+    <path d="M0,0 C360,80 1080,80 1440,0 L1440,80 L0,80 Z"/>
+  </svg>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="solutions" id="how">
+  <p class="section-label fi">How it works</p>
+  <h2 class="section-heading fi">
+    Three steps.<br><span class="heading-dim">Then it runs itself.</span>
+  </h2>
+
+  <div class="trust-bar fi">
+    <div class="trust-avatars">
+      <div class="trust-avatar ta-1"></div>
+      <div class="trust-avatar ta-2"></div>
+      <div class="trust-avatar ta-3"></div>
+      <div class="trust-avatar ta-4"></div>
+    </div>
+    <p class="trust-text"><strong>Loved by independent artists</strong> focused on growth.</p>
+  </div>
+
+  <div class="features-grid" id="features">
+
+    <div class="feature-card fi">
+      <p class="feature-step">Step 01 · Connect</p>
+      <h3 class="feature-name">Connect</h3>
+      <hr class="feature-sep" />
+      <p class="feature-desc">Link your TikTok account and tell us about your music — genre, mood, vibe. Setup takes two minutes.</p>
+      <!-- Decorative: concentric rings (Cyrclo-style globe) -->
+      <div class="feature-deco">
+        <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="90" cy="90" r="14" fill="rgba(0,0,0,0.1)"/>
+          <circle cx="90" cy="90" r="34" stroke="rgba(0,0,0,0.08)" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <circle cx="90" cy="90" r="54" stroke="rgba(0,0,0,0.07)" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <circle cx="90" cy="90" r="74" stroke="rgba(0,0,0,0.05)" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <circle cx="90" cy="90" r="94" stroke="rgba(0,0,0,0.04)" stroke-width="1" stroke-dasharray="2 5"/>
+          <!-- dots on rings -->
+          <circle cx="90" cy="56" r="3" fill="rgba(0,0,0,0.12)"/>
+          <circle cx="124" cy="90" r="3" fill="rgba(0,0,0,0.12)"/>
+          <circle cx="90" cy="124" r="3" fill="rgba(0,0,0,0.12)"/>
+          <circle cx="56" cy="90" r="3" fill="rgba(0,0,0,0.12)"/>
+          <circle cx="114" cy="66" r="2.5" fill="rgba(0,0,0,0.09)"/>
+          <circle cx="114" cy="114" r="2.5" fill="rgba(0,0,0,0.09)"/>
+          <circle cx="66" cy="114" r="2.5" fill="rgba(0,0,0,0.09)"/>
+          <circle cx="66" cy="66" r="2.5" fill="rgba(0,0,0,0.09)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="feature-card fi delay-1">
+      <p class="feature-step">Step 02 · Generate</p>
+      <h3 class="feature-name">Generate</h3>
+      <hr class="feature-sep" />
+      <p class="feature-desc">Our AI creates scroll-stopping carousel posts tailored to your sound. Every post unique, every post on-brand.</p>
+      <div class="feature-deco">
+        <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- sparkle / star burst -->
+          <circle cx="90" cy="90" r="18" fill="rgba(0,0,0,0.08)"/>
+          <circle cx="90" cy="90" r="40" stroke="rgba(0,0,0,0.07)" stroke-width="1" stroke-dasharray="4 6"/>
+          <circle cx="90" cy="90" r="62" stroke="rgba(0,0,0,0.05)" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <circle cx="90" cy="90" r="84" stroke="rgba(0,0,0,0.04)" stroke-width="1" stroke-dasharray="2 5"/>
+          <!-- star arms -->
+          <line x1="90" y1="68" x2="90" y2="58" stroke="rgba(0,0,0,0.1)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="90" y1="112" x2="90" y2="122" stroke="rgba(0,0,0,0.1)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="68" y1="90" x2="58" y2="90" stroke="rgba(0,0,0,0.1)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="112" y1="90" x2="122" y2="90" stroke="rgba(0,0,0,0.1)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="75" y1="75" x2="67" y2="67" stroke="rgba(0,0,0,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="105" y1="75" x2="113" y2="67" stroke="rgba(0,0,0,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="105" y1="105" x2="113" y2="113" stroke="rgba(0,0,0,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="75" y1="105" x2="67" y2="113" stroke="rgba(0,0,0,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="feature-card fi delay-2">
+      <p class="feature-step">Step 03 · Deliver</p>
+      <h3 class="feature-name">Deliver</h3>
+      <hr class="feature-sep" />
+      <p class="feature-desc">Posts land in your TikTok drafts. Add your track, hit publish. You stay in control — RunSound does the heavy lifting.</p>
+      <div class="feature-deco">
+        <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- phone outline -->
+          <rect x="68" y="42" width="44" height="76" rx="8" stroke="rgba(0,0,0,0.1)" stroke-width="1.5"/>
+          <circle cx="90" cy="108" r="4" fill="rgba(0,0,0,0.09)"/>
+          <!-- arrow up -->
+          <line x1="90" y1="86" x2="90" y2="66" stroke="rgba(0,0,0,0.12)" stroke-width="2" stroke-linecap="round"/>
+          <polyline points="82,73 90,65 98,73" stroke="rgba(0,0,0,0.12)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- outer rings -->
+          <circle cx="90" cy="90" r="58" stroke="rgba(0,0,0,0.05)" stroke-width="1" stroke-dasharray="3 5"/>
+          <circle cx="90" cy="90" r="80" stroke="rgba(0,0,0,0.04)" stroke-width="1" stroke-dasharray="2 5"/>
+          <!-- dots -->
+          <circle cx="90" cy="32" r="3" fill="rgba(0,0,0,0.08)"/>
+          <circle cx="148" cy="90" r="3" fill="rgba(0,0,0,0.08)"/>
+          <circle cx="32" cy="90" r="3" fill="rgba(0,0,0,0.08)"/>
+          <circle cx="90" cy="148" r="3" fill="rgba(0,0,0,0.08)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="feature-card fi delay-3">
+      <p class="feature-step">Step 04 · Learn</p>
+      <h3 class="feature-name">Learn</h3>
+      <hr class="feature-sep" />
+      <p class="feature-desc">RunSound tracks what performs and gets sharper with every post. The longer you use it, the better it gets.</p>
+      <div class="feature-deco">
+        <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- bar chart -->
+          <rect x="60" y="100" width="12" height="24" rx="2" fill="rgba(0,0,0,0.09)"/>
+          <rect x="78" y="80" width="12" height="44" rx="2" fill="rgba(0,0,0,0.09)"/>
+          <rect x="96" y="62" width="12" height="62" rx="2" fill="rgba(0,0,0,0.09)"/>
+          <rect x="114" y="72" width="12" height="52" rx="2" fill="rgba(0,0,0,0.1)"/>
+          <!-- trend line -->
+          <polyline points="66,100 84,82 102,64 120,74" stroke="rgba(0,0,0,0.14)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- dots on trend -->
+          <circle cx="66" cy="100" r="3" fill="rgba(0,0,0,0.14)"/>
+          <circle cx="120" cy="74" r="3" fill="rgba(0,0,0,0.14)"/>
+          <!-- outer rings -->
+          <circle cx="90" cy="90" r="60" stroke="rgba(0,0,0,0.05)" stroke-width="1" stroke-dasharray="3 5"/>
+          <circle cx="90" cy="90" r="82" stroke="rgba(0,0,0,0.03)" stroke-width="1" stroke-dasharray="2 5"/>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CURVE → DARK -->
+<div class="curve-div" style="background:var(--light)">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none" fill="#0A0A0A">
+    <path d="M0,80 C360,0 1080,0 1440,80 L1440,0 L0,0 Z"/>
+  </svg>
+</div>
+
+<!-- CONTENT IN ACTION -->
+<section class="case-section">
+  <div class="case-header">
+    <div>
+      <p class="section-label">What it creates</p>
+      <h2 class="section-heading fi" style="margin-bottom:0">Content<br><span class="heading-dim-dark">In Action</span></h2>
+    </div>
+    <p style="font-size:0.6rem;color:rgba(255,255,255,0.25);letter-spacing:0.16em;text-transform:uppercase;font-weight:700">Proven Results · 2025</p>
+  </div>
+
+  <div class="case-list">
+
+    <div class="case-item fi">
+      <span class="case-item-meta">( AI Carousel · TikTok · 2025 )</span>
+      <span class="case-item-name">Carousel Posts</span>
+      <span class="case-item-num">01</span>
+      <span class="case-item-arrow">→</span>
+    </div>
+
+    <div class="case-item fi delay-1">
+      <span class="case-item-meta">( AI Visuals · Branding · 2025 )</span>
+      <span class="case-item-name">Generated Visuals</span>
+      <span class="case-item-num">02</span>
+      <span class="case-item-arrow">→</span>
+    </div>
+
+    <div class="case-item fi delay-2">
+      <span class="case-item-meta">( Hook Copy · Captions · 2025 )</span>
+      <span class="case-item-name">Smart Hooks</span>
+      <span class="case-item-num">03</span>
+      <span class="case-item-arrow">→</span>
+    </div>
+
+    <div class="case-item fi delay-3">
+      <span class="case-item-meta">( Automation · Daily Posts · 2025 )</span>
+      <span class="case-item-name">Daily Posting</span>
+      <span class="case-item-num">04</span>
+      <span class="case-item-arrow">→</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- CURVE → LIGHT -->
+<div class="curve-div" style="background:var(--dark)">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none" fill="#EBEBEB">
+    <path d="M0,0 C360,80 1080,80 1440,0 L1440,80 L0,80 Z"/>
+  </svg>
+</div>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <p class="section-label" style="text-align:center;color:#aaa">What artists say</p>
+  <h2 class="testimonials-heading fi">Loved by <span class="heading-dim">Artists</span></h2>
+
+  <div class="bubbles">
+    <div class="bubble-group">
+      <div class="bubble-tag">"Game changer"</div>
+      <div class="bubble-avatar av-1"></div>
+    </div>
+    <div class="bubble-group">
+      <div class="bubble-tag">"Finally!"</div>
+      <div class="bubble-avatar av-2"></div>
+    </div>
+    <div class="bubble-group">
+      <div class="bubble-tag">"Incredible"</div>
+      <div class="bubble-avatar av-3"></div>
+    </div>
+    <div class="bubble-group">
+      <div class="bubble-tag">"Love it"</div>
+      <div class="bubble-avatar av-4"></div>
+    </div>
+    <div class="bubble-group">
+      <div class="bubble-tag">"Amazing"</div>
+      <div class="bubble-avatar av-5"></div>
+    </div>
+  </div>
+
+  <div class="reviews-grid">
+    <div class="review-card fi">
+      <div class="stars">★★★★★</div>
+      <p class="review-text">"I went from posting twice a month to every single day — without spending a minute extra. My streams tripled in six weeks."</p>
+      <hr class="review-rule" />
+      <div class="review-author">
+        <div class="review-av ra-1"></div>
+        <div><strong>Alex M.</strong><span>Indie pop artist</span></div>
+      </div>
+    </div>
+    <div class="review-card fi delay-1">
+      <div class="stars">★★★★★</div>
+      <p class="review-text">"I was spending $400/month on ads with okay results. RunSound costs me $39 and the content actually converts to real listeners."</p>
+      <hr class="review-rule" />
+      <div class="review-author">
+        <div class="review-av ra-2"></div>
+        <div><strong>Sara K.</strong><span>Singer-songwriter</span></div>
+      </div>
+    </div>
+    <div class="review-card fi delay-2">
+      <div class="stars">★★★★★</div>
+      <p class="review-text">"Finally something built for actual musicians, not marketers. The AI understands my vibe and creates posts that feel authentic."</p>
+      <hr class="review-rule" />
+      <div class="review-author">
+        <div class="review-av ra-3"></div>
+        <div><strong>Jamie R.</strong><span>Bedroom producer</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CURVE → DARK -->
+<div class="curve-div" style="background:var(--light)">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none" fill="#0A0A0A">
+    <path d="M0,80 C360,0 1080,0 1440,80 L1440,0 L0,0 Z"/>
+  </svg>
+</div>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="pricing-dots"></div>
+  <p class="section-label pricing-label">Invest in your music</p>
+  <h2 class="pricing-heading fi">Plans built to <span class="heading-dim-dark">scale</span></h2>
+
+  <div class="pricing-grid">
+    <div class="pricing-card featured fi">
+      <div class="pricing-card-top">
+        <p class="plan-name">ARTIST</p>
+        <span class="plan-badge">Most popular</span>
+      </div>
+      <h3 class="plan-price">$39<sub>/month</sub></h3>
+      <p class="plan-desc">Everything you need to promote your music on TikTok — automatically, every day, without lifting a finger.</p>
+      <ul class="plan-features">
+        <li><span class="chk">✦</span><span><strong>AI visuals</strong> — unique carousels for your music</span></li>
+        <li><span class="chk">✦</span><span><strong>Smart hooks</strong> — captions that stop the scroll</span></li>
+        <li><span class="chk">✦</span><span><strong>TikTok Drafts</strong> — ready to publish in your inbox</span></li>
+        <li><span class="chk">✦</span><span><strong>Learning loop</strong> — gets smarter every week</span></li>
+        <li><span class="chk">✦</span><span><strong>Analytics</strong> — track what's working</span></li>
+        <li><span class="chk">✦</span><span><strong>Email support</strong> — we've got you covered</span></li>
+      </ul>
+      <a href="https://run-sound.com/signup" class="plan-btn">Start free trial</a>
+    </div>
+    <div class="pricing-card fi delay-1">
+      <div class="pricing-card-top">
+        <p class="plan-name">PRO</p>
+        <span class="plan-badge">Coming soon</span>
+      </div>
+      <h3 class="plan-price">$79<sub>/month</sub></h3>
+      <p class="plan-desc">For artists ready to scale across platforms with advanced AI, deeper analytics, and multi-channel content.</p>
+      <ul class="plan-features">
+        <li><span class="chk">✦</span><span>Everything in Artist</span></li>
+        <li><span class="chk">✦</span><span><strong>Multi-platform</strong> — Reels, Shorts + TikTok</span></li>
+        <li><span class="chk">✦</span><span><strong>A/B testing</strong> — automated hook optimization</span></li>
+        <li><span class="chk">✦</span><span><strong>Audience insights</strong> — who's engaging and why</span></li>
+        <li><span class="chk">✦</span><span><strong>Priority support</strong> — direct line to our team</span></li>
+        <li><span class="chk">✦</span><span><strong>API access</strong> — plug into your workflow</span></li>
+      </ul>
+      <a href="#" class="plan-btn plan-btn-muted">Coming soon</a>
+    </div>
+  </div>
+</section>
+
+<!-- CURVE → LIGHT -->
+<div class="curve-div" style="background:var(--dark)">
+  <svg viewBox="0 0 1440 80" preserveAspectRatio="none" fill="#EBEBEB">
+    <path d="M0,0 C360,80 1080,80 1440,0 L1440,80 L0,80 Z"/>
+  </svg>
+</div>
+
+<!-- FAQ -->
+<div class="faq-wrap" id="faq">
+  <div class="faq-inner">
+    <p class="section-label">FAQ</p>
+    <h2 class="faq-heading fi">Common<br><span class="heading-dim">Questions</span></h2>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span><span class="faq-num">01.</span>Do I need any tech or marketing skills?</span><span class="faq-plus">+</span></div>
+      <div class="faq-a">No. If you can use TikTok, you can use RunSound. Setup takes two minutes and everything else is automatic.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span><span class="faq-num">02.</span>Will the posts look generic?</span><span class="faq-plus">+</span></div>
+      <div class="faq-a">No. Every post is generated based on your specific music, genre, mood, and audience data. No two artists get the same content.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span><span class="faq-num">03.</span>Do I have to post everything RunSound creates?</span><span class="faq-plus">+</span></div>
+      <div class="faq-a">No. Posts go to your TikTok drafts — you review and publish what you like. You're always in full control.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span><span class="faq-num">04.</span>How is this different from buying TikTok ads?</span><span class="faq-plus">+</span></div>
+      <div class="faq-a">Ads cost $300–1,000+/month and stop working the moment you stop paying. RunSound builds your organic audience and profile long-term at a fraction of the cost.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span><span class="faq-num">05.</span>What if I want to cancel?</span><span class="faq-plus">+</span></div>
+      <div class="faq-a">Cancel anytime from your dashboard. No questions asked, no lock-in, no cancellation fees.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span><span class="faq-num">06.</span>When will I start seeing results?</span><span class="faq-plus">+</span></div>
+      <div class="faq-a">Most artists see measurable improvements in profile visits and followers within the first 2–4 weeks of consistent posting.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL CTA -->
+<div class="cta-wrap">
+  <div class="cta-box">
+    <p class="section-label fi" style="color:#555">Start now</p>
+    <h2 class="cta-heading fi">Get Your Music Heard</h2>
+    <p class="cta-sub fi">Start your free trial today. No credit card. No commitment.</p>
+    <a href="https://run-sound.com/signup" class="btn-primary fi">Get started free →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div>
+      <a href="#" class="footer-logo">RunSound</a>
+      <p class="footer-tagline">AI-powered music marketing for independent artists.</p>
+    </div>
+    <ul class="footer-nav">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="/terms">Terms</a></li>
+      <li><a href="/privacy">Privacy</a></li>
+    </ul>
+    <div class="footer-social">
+      <a href="#">𝕏</a>
+      <a href="#">in</a>
+      <a href="#">ig</a>
+      <a href="#">tt</a>
+    </div>
+  </div>
+
+  <div class="footer-marquee">
+    <div class="footer-marquee-track">
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+      <span class="footer-marquee-item">RunSound ✦</span>
+    </div>
+  </div>
+</footer>
+
+<!-- JAVASCRIPT -->
+<script>
+/* ORBIT */
+(function () {
+  const ring  = document.getElementById('orbitRing');
+  const slots = ring.querySelectorAll('.orbit-slot');
+  const count = slots.length;
+  const radius = Math.min(window.innerWidth * 0.38, 340);
+
+  slots.forEach((slot, i) => {
+    const angle = (i / count) * 2 * Math.PI - Math.PI / 2;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    slot.style.transform = `translate(${x}px, ${y}px)`;
+  });
+})();
+
+/* SCROLL FADE-IN */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('show');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fi').forEach(el => observer.observe(el));
+
+/* FAQ */
+function toggleFaq(item) {
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/* NAV SCROLL */
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('nav');
+  nav.style.background = window.scrollY > 60
+    ? 'rgba(10,10,10,0.9)'
+    : 'rgba(255,255,255,0.08)';
+}, { passive: true });
+</script>
+
+</body>
+</html>

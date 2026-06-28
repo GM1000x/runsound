@@ -66,9 +66,9 @@ async function scrapeTikTok() {
   console.log(`   Hashtags: ${HASHTAGS.join(', ')}`);
   console.log(`   Target posts: ${LIMIT}`);
 
-  // Use Apify's clockworks/free-tiktok-scraper actor (free, no login needed)
+  // Use Apify's clockworks/tiktok-scraper actor
   const runRes = await fetch(
-    `https://api.apify.com/v2/acts/clockworks~free-tiktok-scraper/runs?token=${APIFY_TOKEN}`,
+    `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
