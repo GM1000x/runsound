@@ -74,10 +74,11 @@ const PHASE         = followerCount >= 1000 ? 2 : 1;
 // Phase 1 archetypes: make people want to follow the artist
 // Phase 2 archetypes: make people click through to Spotify
 const ARCHETYPES_PHASE1 = {
-  G: 'artist_identity',   // who is this artist? builds curiosity about the person
-  H: 'series_hook',       // "follow for more songs like this" — drives follows
-  C: 'mystery',           // curiosity gap still works for follows too
-  D: 'lifestyle_placement', // relatable moment — good for follows
+  G: 'artist_identity',    // who is this artist? builds curiosity about the person
+  H: 'series_hook',        // "follow for more songs like this" — drives follows
+  C: 'mystery',            // curiosity gap still works for follows too
+  D: 'lifestyle_placement',// relatable moment — good for follows
+  T: 'trending_format',    // this week's viral TikTok hook format, adapted for music
 };
 
 const ARCHETYPES_PHASE2 = {
@@ -87,6 +88,7 @@ const ARCHETYPES_PHASE2 = {
   D: 'lifestyle_placement',  // "this is the type of song i play when..."
   E: 'raw_lyric',            // single powerful lyric line, zero framing — let it speak
   F: 'question_hook',        // opens with a question drawn from lyric theme
+  T: 'trending_format',      // this week's viral TikTok hook format, adapted for music
 };
 
 const ARCHETYPES    = PHASE === 1 ? ARCHETYPES_PHASE1 : ARCHETYPES_PHASE2;
@@ -95,6 +97,38 @@ const DEFAULT_WEIGHTS = Object.fromEntries(Object.keys(ARCHETYPES).map(k => [k, 
 // ─── Bank utils (optional — gracefully skipped if not present) ────────────────
 let bank = null;
 try { bank = require('./bank-utils'); } catch { /* bank-utils not present */ }
+
+// ─── Load this week's trending hook from Supabase ────────────────────────────
+// Returns the highest-scoring pattern from trending_hooks for current week.
+// Falls back to a strong evergreen POV hook if table is empty or missing.
+let trendingHook = null;
+async function loadTrendingHook() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) return null;
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    // Get most recent week's hooks (within last 14 days)
+    const { data } = await sb
+      .from('trending_hooks')
+      .select('hooks, week_insight, week_of')
+      .gte('week_of', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+      .order('week_of', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!data?.hooks?.length) return null;
+
+    // Pick the hook with best combined score (emotional × music fit)
+    const best = data.hooks
+      .sort((a, b) => (b.emotional_score * b.music_fit) - (a.emotional_score * a.music_fit))[0];
+
+    console.log(`   📈 Trending hook loaded (${data.week_of}): ${best.name}`);
+    console.log(`      "${best.music_example}"`);
+    return best;
+  } catch {
+    return null; // silent fallback
+  }
+}
 
 // ─── Load hook_weights — merges campaign-specific data with cross-artist bank ──
 // Priority:
@@ -428,6 +462,38 @@ function buildTexts(variant) {
       `${st} by ${an}\n🎵 link in bio`,
     ],
   };
+  // ── T: trending_format — this week's viral hook adapted for music ─────────
+  // Uses pattern from scrape-trends.js → Supabase trending_hooks.
+  // Falls back to evergreen POV format if no trending hook available.
+  if (variant === 'T') {
+    const hook = trendingHook;
+    if (hook?.music_example) {
+      // Adapt the trending example to this artist/song
+      const adapted = hook.music_example
+        .replace(/\[song\]/gi, st)
+        .replace(/\[artist\]/gi, an)
+        .replace(/this song/gi, st)
+        .replace(/this artist/gi, an);
+      return [
+        adapted,
+        `the feeling doesn't go away.`,
+        `${st} — out now.`,
+        lyrics ? `"${deriveLyricFragment()}"` : `press play.`,
+        `this is the one.`,
+        `${st} by ${an}\n🎵 link in bio`,
+      ];
+    }
+    // Evergreen fallback: strong POV hook that always works for music
+    return [
+      `POV: you're driving home at night\nand this song comes on.`,
+      `you don't know why it hits so hard.`,
+      `it just does.`,
+      lyrics ? `"${deriveLyricFragment()}"` : `${st}.`,
+      `you'll want to save this one.`,
+      `${st} by ${an}\n🎵 link in bio`,
+    ];
+  }
+
   return texts[variant] || texts[Object.keys(texts)[0]];
 }
 
@@ -446,8 +512,14 @@ function buildTexts(variant) {
   if (previewFrag) console.log(`   Lyric frag:  "${previewFrag.slice(0, 50)}"`);
   else             console.log(`   Lyric frag:  none (no lyrics provided — using generic templates)`);
 
+  // Load trending hook + weights in parallel
+  [trendingHook] = await Promise.all([
+    loadTrendingHook(),
+    Promise.resolve(), // placeholder — weights loaded below
+  ]);
+
   const weights          = await loadWeightsFromSupabase();
-  console.log(`\n   Hook weights: A=${weights.A?.toFixed(2)} B=${weights.B?.toFixed(2)} C=${weights.C?.toFixed(2)} D=${weights.D?.toFixed(2)}`);
+  console.log(`\n   Hook weights: A=${weights.A?.toFixed(2)} B=${weights.B?.toFixed(2)} C=${weights.C?.toFixed(2)} D=${weights.D?.toFixed(2)} T=${weights.T?.toFixed(2) || '1.00'}`);
 
   const selectedVariant   = selectVariant(weights);
   const selectedArchetype = ARCHETYPES[selectedVariant];

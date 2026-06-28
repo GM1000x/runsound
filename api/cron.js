@@ -77,8 +77,24 @@ async function runLearnHooks() {
   }
 }
 
+// ─── Trending hook scrape ─────────────────────────────────────────────────────
+// Runs Sunday 01:00 UTC — before the pipeline at 03:00 so fresh hooks are ready
+async function runScrapeTrends() {
+  console.log(`\n[cron] 🔥 Trending scrape starting — ${new Date().toISOString()}`);
+  try {
+    await runScript('scrape-trends.js', [], 'scrape-trends');
+    console.log('[cron] ✅ Trending scrape complete');
+  } catch (err) {
+    console.error(`[cron] ❌ Trending scrape failed: ${err.message}`);
+    // Non-fatal — pipeline still runs with existing/fallback hooks
+  }
+}
+
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 function startCron() {
+  // Trending hook scrape: Sunday 01:00 UTC (before pipeline)
+  cron.schedule('0 1 * * 0', runScrapeTrends, { timezone: 'UTC' });
+
   // Full pipeline: every day at 03:00 UTC
   cron.schedule('0 3 * * *', runDailyPipeline, { timezone: 'UTC' });
 
@@ -86,10 +102,11 @@ function startCron() {
   cron.schedule('0 4 * * 1', runLearnHooks, { timezone: 'UTC' });
 
   console.log('⏰ Cron scheduled:');
+  console.log('   01:00 UTC Sunday  → trending scrape (fresh TikTok hook patterns)');
   console.log('   03:00 UTC daily   → full pipeline (pick → texts → overlay → post)');
   console.log('   04:00 UTC Monday  → hook learning (update archetype weights)');
 
-  return { runDailyPipeline, runLearnHooks };
+  return { runDailyPipeline, runLearnHooks, runScrapeTrends };
 }
 
 module.exports = { startCron, runDailyPipeline, runLearnHooks };
