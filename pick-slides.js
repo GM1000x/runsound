@@ -79,39 +79,48 @@ async function restoreLibraryFromStorage(libraryDir) {
 
   console.log(`☁️  Local library missing — restoring from Supabase Storage...`);
 
-  // Download manifest
+  // Try manifest first, fall back to listing files directly
+  let imageFiles = [];
+
   const { data: manifestBlob, error: manifestErr } = await supabase.storage
     .from('artist-images')
     .download(`${campaignId}/library/manifest.json`);
 
-  if (manifestErr || !manifestBlob) {
-    console.warn(`   ⚠️  No manifest found in Storage: ${manifestErr?.message || 'not found'}`);
-    return false;
+  if (!manifestErr && manifestBlob) {
+    const manifest = JSON.parse(await manifestBlob.text());
+    imageFiles = (manifest.images || []).map(img => img.file || img);
+    console.log(`   Using manifest.json (${imageFiles.length} images)`);
+  } else {
+    // No manifest — list files directly from Storage
+    console.warn(`   ⚠️  No manifest — listing Storage directly...`);
+    const { data: listed, error: listErr } = await supabase.storage
+      .from('artist-images')
+      .list(`${campaignId}/library`, { limit: 100 });
+    if (listErr || !listed?.length) {
+      console.warn(`   ❌ Storage list failed: ${listErr?.message || 'empty'}`);
+      return false;
+    }
+    imageFiles = listed
+      .map(f => f.name)
+      .filter(n => /\.(png|jpg|jpeg|webp)$/i.test(n));
+    console.log(`   Found ${imageFiles.length} images in Storage`);
   }
 
-  const manifest = JSON.parse(await manifestBlob.text());
-  if (!manifest.images?.length) return false;
+  if (!imageFiles.length) return false;
 
   fs.mkdirSync(libraryDir, { recursive: true });
 
   let downloaded = 0;
-  for (const img of manifest.images) {
-    const storagePath = `${campaignId}/library/${img.file}`;
+  for (const file of imageFiles) {
+    const storagePath = `${campaignId}/library/${file}`;
     const { data, error } = await supabase.storage.from('artist-images').download(storagePath);
-    if (error || !data) { console.warn(`   ⚠️  ${img.file}: ${error?.message}`); continue; }
-    fs.writeFileSync(path.join(libraryDir, img.file), Buffer.from(await data.arrayBuffer()));
+    if (error || !data) { console.warn(`   ⚠️  ${file}: ${error?.message}`); continue; }
+    fs.writeFileSync(path.join(libraryDir, file), Buffer.from(await data.arrayBuffer()));
     downloaded++;
     process.stdout.write('.');
   }
 
-  // Write library.json (strip publicUrl, keep file/safeZone/tags)
-  const libraryMeta = {
-    ...manifest,
-    images: manifest.images.map(({ publicUrl, ...rest }) => rest),
-  };
-  fs.writeFileSync(path.join(libraryDir, 'library.json'), JSON.stringify(libraryMeta, null, 2));
-
-  console.log(`\n   ✅ Restored ${downloaded}/${manifest.images.length} images`);
+  console.log(`\n   ✅ Restored ${downloaded}/${imageFiles.length} images`);
   return downloaded > 0;
 }
 
