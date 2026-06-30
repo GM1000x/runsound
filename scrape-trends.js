@@ -29,7 +29,8 @@ require('dotenv').config();
 
 const args    = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
-const LIMIT   = parseInt(args[args.indexOf('--limit') + 1] || '100', 10);
+const limitIdx = args.indexOf('--limit');
+const LIMIT   = limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : 100;
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 let fetch;
