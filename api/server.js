@@ -53,8 +53,14 @@ app.use('/api/click',      require('./routes/click'));
 app.use('/api/link',       require('./routes/link'));
 app.use('/api/dashboard',  require('./routes/dashboard'));
 app.use('/api/onboard',    require('./routes/onboard'));
+app.use('/api/templates',  require('./routes/templates'));
+app.use('/api/campaigns',  require('./routes/campaigns'));
+app.use('/api/spotify',    require('./routes/spotify'));
 app.use('/auth/tiktok',    require('./routes/tiktok-auth'));
 app.use('/api/tiktok',    require('./routes/tiktok-demo'));
+app.use('/api/outreach',  require('./routes/outreach'));
+app.use('/api/skills',   require('./routes/skills'));
+app.use('/api/credits',  require('./routes/skills')); // credits routes live in skills.js
 
 // Health check
 app.get('/api/health', (req, res) => {

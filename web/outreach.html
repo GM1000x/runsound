@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Creator Outreach — RunSound</title>
+  <style>
+    :root {
+      --bg:      #0a0a0a;
+      --surface: #111111;
+      --card:    #161616;
+      --border:  #222222;
+      --accent:  #e8ff47;
+      --accent2: #47e8c8;
+      --muted:   #666666;
+      --text:    #f0f0f0;
+      --radius:  16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+    .header-logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
+    .header-logo span { color: var(--accent); }
+    .header-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Layout ── */
+    .main { max-width: 640px; margin: 0 auto; padding: 1.25rem; }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.875rem;
+      text-align: center;
+    }
+    .stat-num { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+    .stat-num.green { color: var(--accent); }
+    .stat-num.blue  { color: var(--accent2); }
+    .stat-label { font-size: 0.65rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Section heading ── */
+    .section-head {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    /* ── Account cards ── */
+    .account-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .account-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.875rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .account-info { display: flex; align-items: center; gap: 0.75rem; }
+    .account-avatar {
+      width: 36px; height: 36px;
+      background: var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .account-name { font-size: 0.9rem; font-weight: 600; }
+    .account-limit { font-size: 0.75rem; color: var(--muted); }
+    .pill {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .pill.green { background: rgba(232,255,71,0.12); color: var(--accent); }
+    .pill.muted { background: var(--border); color: var(--muted); }
+
+    .add-account-btn {
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 0.875rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-account-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Category chips ── */
+    .category-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip.active { background: rgba(232,255,71,0.12); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Big action buttons ── */
+    .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.5rem; }
+    .btn {
+      padding: 0.875rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-secondary { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+    .btn-full { grid-column: 1 / -1; }
+
+    /* ── Contact list ── */
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .tab {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .tab.active { border-color: var(--accent); color: var(--accent); background: rgba(232,255,71,0.08); }
+
+    .contact-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .contact-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.875rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+    .contact-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .contact-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .contact-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .contact-status { display: flex; gap: 4px; flex-shrink: 0; }
+    .status-dot {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem;
+      title: attr(data-tip);
+    }
+    .status-dot.active { background: rgba(232,255,71,0.15); color: var(--accent); }
+    .status-dot.blue-active { background: rgba(71,232,200,0.15); color: var(--accent2); }
+
+    /* ── Modal (add account) ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex; align-items: flex-end;
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      transform: translateY(30px);
+      transition: transform 0.2s;
+      border-top: 1px solid var(--border);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal-close {
+      float: right;
+      background: var(--border);
+      border: none; border-radius: 50%;
+      width: 28px; height: 28px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 6px; }
+    input, textarea {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      color: var(--text);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    textarea { height: 100px; resize: vertical; }
+
+    .helper-text {
+      background: rgba(232,255,71,0.06);
+      border: 1px solid rgba(232,255,71,0.15);
+      border-radius: 10px;
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+    .helper-text strong { color: var(--accent); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%; transform: translateX(-50%);
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 100px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── DM preview ── */
+    .dm-preview {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 1rem;
+      line-height: 1.6;
+    }
+    .dm-preview-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 0.5rem; }
+    .dm-preview-text { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div>
+    <div class="header-logo">Run<span>Sound</span></div>
+    <div class="header-sub" id="campaign-subtitle">Creator Outreach</div>
+  </div>
+  <a href="dashboard.html" style="color:var(--muted);font-size:0.8rem;text-decoration:none;">← Dashboard</a>
+</div>
+
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Stats -->
+  <div class="stats-strip">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-found">—</div>
+      <div class="stat-label">Found</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num green" id="stat-sent">—</div>
+      <div class="stat-label">DMs sent</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num blue" id="stat-replied">—</div>
+      <div class="stat-label">Replied</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num green" id="stat-used">—</div>
+      <div class="stat-label">Used sound</div>
+    </div>
+  </div>
+
+  <!-- TikTok Accounts -->
+  <div class="section-head">TikTok Accounts</div>
+  <div class="account-list" id="account-list">
+    <div style="color:var(--muted);font-size:0.8rem;padding:0.5rem 0;">Loading...</div>
+  </div>
+  <div id="daily-capacity" style="font-size:0.75rem;color:var(--muted);text-align:right;margin-top:0.5rem;"></div>
+  <button class="add-account-btn" style="margin-top:0.5rem;" onclick="openAddAccount()">
+    + Add TikTok Account
+  </button>
+
+  <!-- Target Categories -->
+  <div class="section-head">Target Creator Categories</div>
+  <div class="category-chips" id="category-chips"></div>
+
+  <!-- DM Template preview -->
+  <div id="dm-preview-section" style="display:none;">
+    <div class="dm-preview-label" style="margin-top:1.5rem;">AI-generated DM template</div>
+    <div class="dm-preview">
+      <div class="dm-preview-text" id="dm-template-text">—</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <button class="btn btn-secondary" id="btn-discover" onclick="runDiscover()">
+      🔍 Find Creators
+    </button>
+    <button class="btn btn-primary" id="btn-send" onclick="sendDMs()">
+      📨 Send DMs
+    </button>
+  </div>
+
+  <!-- Creator list -->
+  <div class="section-head" style="margin-top:2rem;">Creators</div>
+  <div class="filter-tabs">
+    <button class="tab active" onclick="setFilter('all', this)">All</button>
+    <button class="tab" onclick="setFilter('pending', this)">Pending</button>
+    <button class="tab" onclick="setFilter('sent', this)">Sent</button>
+    <button class="tab" onclick="setFilter('replied', this)">Replied</button>
+    <button class="tab" onclick="setFilter('used_sound', this)">Used Sound 🎵</button>
+  </div>
+  <div class="contact-list" id="contact-list">
+    <div class="empty"><div class="empty-icon">🎯</div>No creators yet — click Find Creators</div>
+  </div>
+  <div id="load-more-wrap" style="margin-top:1rem;text-align:center;display:none;">
+    <button class="btn btn-secondary" onclick="loadMore()">Load more</button>
+  </div>
+
+</div>
+
+<!-- ── Add Account Modal ── -->
+<div class="modal-overlay" id="add-account-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('add-account-modal')">×</button>
+    <div class="modal-title">Connect TikTok Account</div>
+
+    <div class="helper-text">
+      <strong>How to get your session cookies:</strong><br>
+      1. Log in to tiktok.com in Chrome<br>
+      2. Open DevTools → Application → Cookies → tiktok.com<br>
+      3. Copy all cookies and paste them as JSON below<br><br>
+      Or use the <strong>Cookie-Editor</strong> Chrome extension — click "Export as JSON".
+    </div>
+
+    <label>TikTok username (without @)</label>
+    <input type="text" id="input-username" placeholder="yourartistaccount">
+
+    <label>Session cookies (JSON)</label>
+    <textarea id="input-cookies" placeholder='[{"name":"sessionid","value":"abc123","domain":".tiktok.com",...}]'></textarea>
+
+    <button class="btn btn-primary" style="width:100%;" onclick="addAccount()">
+      Connect Account
+    </button>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Config ────────────────────────────────────────────────────────────────
+  const token = new URLSearchParams(location.search).get('token');
+  if (!token) {
+    document.body.innerHTML = '<div style="padding:2rem;color:#666;text-align:center;">Missing ?token= — open this from your RunSound dashboard</div>';
+  }
+
+  const API = '';   // same origin
+  let outreachCampaignId = null;
+  let currentFilter = 'all';
+  let currentPage   = 1;
+
+  // All available categories
+  const ALL_CATEGORIES = [
+    'dance','gym','lifestyle','fashion','aesthetic',
+    'travel','romance','study','art','party','chill',
+    'gaming','comedy','emotional','vlogs','outdoor',
+    'street','nature','humor'
+  ];
+
+  let selectedCategories = [];
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  async function init() {
+    // Create or fetch outreach campaign
+    const res  = await apiFetch('/api/outreach/campaigns', 'POST', {});
+    if (!res.ok) return showToast('Error loading campaign');
+
+    outreachCampaignId = res.campaign.id;
+    selectedCategories = res.campaign.target_categories || [];
+
+    // Update UI
+    document.getElementById('campaign-subtitle').textContent = 'Creator Outreach';
+    updateStats(res.campaign);
+
+    if (res.campaign.dm_template) {
+      document.getElementById('dm-template-text').textContent = res.campaign.dm_template;
+      document.getElementById('dm-preview-section').style.display = 'block';
+    }
+
+    renderCategoryChips();
+    await loadAccounts();
+    await loadContacts();
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  function updateStats(c) {
+    document.getElementById('stat-found').textContent   = c.creators_found  || 0;
+    document.getElementById('stat-sent').textContent    = c.dms_sent        || 0;
+    document.getElementById('stat-replied').textContent = c.replies_received || 0;
+    document.getElementById('stat-used').textContent    = c.sounds_used     || 0;
+  }
+
+  // ── Accounts ──────────────────────────────────────────────────────────────
+  async function loadAccounts() {
+    const res = await apiFetch('/api/outreach/accounts', 'GET');
+    const list = document.getElementById('account-list');
+
+    if (!res.ok || res.accounts.length === 0) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.25rem 0;">No accounts connected yet</div>';
+      document.getElementById('daily-capacity').textContent = '';
+      return;
+    }
+
+    list.innerHTML = res.accounts.map(a => `
+      <div class="account-card">
+        <div class="account-info">
+          <div class="account-avatar">🎵</div>
+          <div>
+            <div class="account-name">@${a.tiktok_username}</div>
+            <div class="account-limit">${a.daily_limit} DMs/day</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <span class="pill ${a.active ? 'green' : 'muted'}">${a.active ? 'Active' : 'Off'}</span>
+          <button onclick="removeAccount('${a.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">×</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('daily-capacity').textContent = `Total capacity: ${res.total_daily_dms} DMs/day`;
+  }
+
+  function openAddAccount() {
+    document.getElementById('add-account-modal').classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  async function addAccount() {
+    const username = document.getElementById('input-username').value.trim().replace('@','');
+    const cookies  = document.getElementById('input-cookies').value.trim();
+
+    if (!username || !cookies) return showToast('Fill in username and cookies');
+
+    try { JSON.parse(cookies); } catch {
+      return showToast('Cookies must be valid JSON');
+    }
+
+    const res = await apiFetch('/api/outreach/accounts', 'POST', {
+      tiktok_username: username,
+      session_cookies: cookies,
+    });
+
+    if (res.ok) {
+      closeModal('add-account-modal');
+      showToast(`@${username} connected ✓`);
+      await loadAccounts();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  }
+
+  async function removeAccount(id) {
+    await apiFetch(`/api/outreach/accounts/${id}`, 'DELETE');
+    showToast('Account removed');
+    await loadAccounts();
+  }
+
+  // ── Categories ────────────────────────────────────────────────────────────
+  function renderCategoryChips() {
+    const el = document.getElementById('category-chips');
+    el.innerHTML = ALL_CATEGORIES.map(cat => `
+      <div class="chip ${selectedCategories.includes(cat) ? 'active' : ''}"
+           onclick="toggleCategory('${cat}', this)">
+        ${cat}
+      </div>
+    `).join('');
+  }
+
+  function toggleCategory(cat, el) {
+    if (selectedCategories.includes(cat)) {
+      selectedCategories = selectedCategories.filter(c => c !== cat);
+      el.classList.remove('active');
+    } else {
+      selectedCategories.push(cat);
+      el.classList.add('active');
+    }
+  }
+
+  // ── Discover ──────────────────────────────────────────────────────────────
+  async function runDiscover() {
+    if (!outreachCampaignId) return;
+    const btn = document.getElementById('btn-discover');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;"></div> Searching...';
+
+    showToast('Scanning TikTok for creators...');
+
+    const res = await apiFetch(`/api/outreach/campaigns/${outreachCampaignId}/discover`, 'POST', {
+      limit: 100,
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Find Creators';
+
+    if (res.ok) {
+      showToast(`Found ${res.creators_found} creators ✓`);
+      await loadContacts();
+      // Refresh stats
+      const camp = await apiFetch(`/api/outreach/campaigns/${outreachCampaignId}`, 'GET');
+      if (camp.ok) updateStats(camp.campaign);
+    } else {
+      showToast('Error: ' + (res.error || 'Discovery failed'));
+    }
+  }
+
+  // ── Send DMs ──────────────────────────────────────────────────────────────
+  async function sendDMs() {
+    if (!outreachCampaignId) return;
+    const btn = document.getElementById('btn-send');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Sending...';
+
+    const res = await apiFetch(`/api/outreach/campaigns/${outreachCampaignId}/send-dms`, 'POST', {});
+
+    btn.disabled = false;
+    btn.innerHTML = '📨 Send DMs';
+
+    if (res.ok) {
+      showToast(`Sent ${res.sent} DMs ✓`);
+      await loadContacts();
+      const camp = await apiFetch(`/api/outreach/campaigns/${outreachCampaignId}`, 'GET');
+      if (camp.ok) updateStats(camp.campaign);
+    } else {
+      showToast('Error: ' + (res.error || 'Send failed'));
+    }
+  }
+
+  // ── Contacts ──────────────────────────────────────────────────────────────
+  async function loadContacts(page = 1) {
+    currentPage = page;
+    const filterParam = currentFilter !== 'all' ? `&filter=${currentFilter}` : '';
+    const res = await apiFetch(`/api/outreach/campaigns/${outreachCampaignId}/contacts?page=${page}&limit=30${filterParam}`, 'GET');
+
+    const list = document.getElementById('contact-list');
+
+    if (!res.ok || res.contacts.length === 0) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div>${
+        currentFilter === 'all' ? 'No creators yet — click Find Creators' :
+        currentFilter === 'pending' ? 'No pending creators' :
+        currentFilter === 'sent' ? 'No DMs sent yet' :
+        currentFilter === 'replied' ? 'No replies yet' :
+        'No creators have used the sound yet'
+      }</div>`;
+      document.getElementById('load-more-wrap').style.display = 'none';
+      return;
+    }
+
+    const html = res.contacts.map(c => `
+      <div class="contact-card">
+        <div class="contact-avatar">
+          ${c.avatar_url ? `<img src="${c.avatar_url}" alt="">` : '🎵'}
+        </div>
+        <div class="contact-info">
+          <div class="contact-name">${c.display_name || c.tiktok_username}</div>
+          <div class="contact-meta">
+            @${c.tiktok_username} · ${formatNum(c.follower_count)} followers
+            ${c.engagement_rate ? ` · ${c.engagement_rate}% eng` : ''}
+            ${c.email ? ' · ✉️' : ''}
+          </div>
+        </div>
+        <div class="contact-status">
+          <div class="status-dot ${c.dm_sent ? 'active' : ''}" title="DM sent">💬</div>
+          <div class="status-dot ${c.replied ? 'blue-active' : ''}" title="Replied">↩️</div>
+          <div class="status-dot ${c.sound_used ? 'active' : ''}" title="Used sound">🎵</div>
+        </div>
+      </div>
+    `).join('');
+
+    if (page === 1) {
+      list.innerHTML = html;
+    } else {
+      list.innerHTML += html;
+    }
+
+    const total = res.total || 0;
+    const shown = page * res.limit;
+    document.getElementById('load-more-wrap').style.display = shown < total ? 'block' : 'none';
+  }
+
+  function setFilter(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    loadContacts(1);
+  }
+
+  function loadMore() {
+    loadContacts(currentPage + 1);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function formatNum(n) {
+    if (!n) return '—';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000)    return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+  }
+
+  async function apiFetch(path, method, body) {
+    const sep = path.includes('?') ? '&' : '?';
+    const url = `${API}${path}${sep}token=${token}`;
+    try {
+      const r = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body !== undefined && method !== 'GET' ? JSON.stringify(body) : undefined,
+      });
+      return r.json();
+    } catch (err) {
+      console.error(err);
+      return { ok: false, error: err.message };
+    }
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('add-account-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal('add-account-modal');
+  });
+
+  // ── Start ─────────────────────────────────────────────────────────────────
+  if (token) init();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "runsound-tiktok-dm-sender",
+  "version": "1.0.0",
+  "description": "RunSound — TikTok DM sender for creator outreach",
+  "main": "main.js",
+  "dependencies": {
+    "apify": "^3.0.0",
+    "playwright": "^1.44.0"
+  }
+}

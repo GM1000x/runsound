@@ -1,0 +1,14 @@
+{
+  "name": "runsound",
+  "version": "0.1.0",
+  "description": "RunSound Skills — music marketing for AI agents",
+  "main": "index.js",
+  "bin": {
+    "runsound": "./index.js"
+  },
+  "keywords": ["music", "tiktok", "promotion", "ai", "agent", "skills"],
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

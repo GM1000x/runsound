@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>RunSound — Content Templates</title>
+  <meta name="theme-color" content="#0a0a0f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1a1a24;
+      --border:  #1e1e2e;
+      --accent:  #7c3aed;
+      --accent2: #a855f7;
+      --green:   #22c55e;
+      --yellow:  #eab308;
+      --red:     #ef4444;
+      --text:    #f0f0f8;
+      --muted:   #888899;
+      --card-bg: #111118;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,10,15,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
+      color: var(--text); text-decoration: none;
+    }
+    .logo span { color: var(--accent2); }
+    .nav-back {
+      font-size: 0.8rem; color: var(--muted); text-decoration: none;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .nav-back:hover { color: var(--text); }
+
+    /* ── AMBIENT GLOW ── */
+    .glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 70%);
+    }
+
+    /* ── MAIN CONTENT ── */
+    .page { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 1.5rem 1.25rem 6rem; }
+
+    /* ── HEADER ── */
+    .page-header { margin-bottom: 1.75rem; }
+    .page-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.4rem; }
+    .page-sub { font-size: 0.875rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── GENERATE BAR ── */
+    .generate-bar {
+      background: linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(168,85,247,0.08) 100%);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 16px;
+      padding: 1.25rem 1.25rem;
+      margin-bottom: 1.75rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .generate-bar-top {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    }
+    .generate-bar h3 { font-size: 0.95rem; font-weight: 700; }
+    .generate-bar p  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .generate-controls {
+      display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
+    }
+    .count-select {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: inherit;
+      font-size: 0.82rem; padding: 0.45rem 0.75rem; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+    }
+    .btn-generate {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 10px;
+      padding: 0.55rem 1.25rem; font-family: inherit; font-size: 0.85rem;
+      font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn-generate:hover { background: var(--accent2); transform: translateY(-1px); }
+    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .selected-template-badge {
+      font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 6px;
+    }
+    .selected-template-badge strong { color: var(--accent2); }
+
+    /* ── FILTER ROW ── */
+    .filter-row {
+      display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: none; margin-bottom: 1.25rem;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 100px; color: var(--muted);
+      font-family: inherit; font-size: 0.76rem; font-weight: 500;
+      padding: 0.35rem 0.9rem; cursor: pointer; white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .filter-btn.active {
+      background: rgba(124,58,237,0.2); border-color: var(--accent);
+      color: var(--accent2);
+    }
+    .filter-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+    /* ── TEMPLATE GRID ── */
+    .template-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.875rem;
+    }
+    @media (max-width: 420px) { .template-grid { grid-template-columns: 1fr; } }
+
+    /* ── TEMPLATE CARD ── */
+    .template-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+      overflow: hidden;
+      position: relative;
+    }
+    .template-card:hover {
+      border-color: rgba(124,58,237,0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124,58,237,0.15);
+    }
+    .template-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.25);
+    }
+    .template-card.hidden { display: none; }
+
+    /* Template preview area — 4 mini slides */
+    .template-preview {
+      padding: 0.75rem 0.75rem 0.5rem;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+    .mini-slide {
+      border-radius: 6px;
+      aspect-ratio: 9/16;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; font-weight: 700;
+      text-align: center; padding: 4px;
+      line-height: 1.2; overflow: hidden;
+    }
+
+    /* Color tone styles for preview slides */
+    .tone-dark_moody    .mini-slide { background: #0a0a12; color: #fff; }
+    .tone-warm_golden   .mini-slide { background: #2a1a05; color: #f5e0b0; }
+    .tone-cool_minimal  .mini-slide { background: #f0f0f5; color: #1a1a2e; }
+    .tone-colorful_vibrant .mini-slide { background: #1a0a2e; color: #e040fb; }
+    .tone-black_white   .mini-slide { background: #111; color: #fff; }
+    .tone-bright_energetic .mini-slide { background: #ff4d9d; color: #fff; }
+
+    /* Special slide styles */
+    .mini-slide.hook   { font-size: 0.65rem; font-weight: 900; }
+    .mini-slide.payoff { font-size: 0.65rem; font-weight: 900; }
+    .mini-slide.cta    { opacity: 0.7; }
+
+    /* Card body */
+    .template-card-body { padding: 0.75rem 0.875rem 0.875rem; }
+    .template-emoji { font-size: 1.1rem; margin-bottom: 4px; }
+    .template-name { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+    .template-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.45; margin-bottom: 8px; }
+    .template-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tag {
+      font-size: 0.62rem; padding: 2px 6px;
+      border-radius: 100px; background: var(--surface2);
+      color: var(--muted); font-weight: 500;
+    }
+    .tag.archetype { background: rgba(124,58,237,0.15); color: var(--accent2); }
+
+    /* Selected checkmark */
+    .check-badge {
+      position: absolute; top: 8px; right: 8px;
+      width: 22px; height: 22px;
+      background: var(--accent); border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+    }
+    .template-card.selected .check-badge { display: flex; }
+
+    /* ── QUEUE PREVIEW ── */
+    .queue-section { margin-top: 2rem; }
+    .section-title {
+      font-size: 0.8rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.875rem;
+    }
+    .queue-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .queue-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.875rem 1rem;
+      display: flex; align-items: center; gap: 0.875rem;
+    }
+    .queue-item-date {
+      font-size: 0.72rem; color: var(--muted); white-space: nowrap;
+      min-width: 70px;
+    }
+    .queue-item-text { flex: 1; min-width: 0; }
+    .queue-item-hook { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .queue-item-template { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .queue-status {
+      font-size: 0.68rem; padding: 3px 8px; border-radius: 100px;
+      font-weight: 600; white-space: nowrap;
+    }
+    .queue-status.pending  { background: rgba(234,179,8,0.15);  color: var(--yellow); }
+    .queue-status.approved { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .queue-status.posted   { background: rgba(124,58,237,0.15); color: var(--accent2); }
+
+    .empty-queue {
+      text-align: center; padding: 2.5rem 1rem;
+      background: var(--surface); border: 1px dashed var(--border);
+      border-radius: 16px; color: var(--muted); font-size: 0.82rem;
+    }
+    .empty-queue .big-emoji { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 5.5rem; left: 50%; transform: translateX(-50%);
+      background: #18181f; border: 1px solid var(--border); border-radius: 100px;
+      padding: 0.65rem 1.25rem; font-size: 0.82rem; font-weight: 600;
+      color: var(--text); z-index: 999;
+      opacity: 0; transition: opacity 0.25s;
+      pointer-events: none; white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error   { border-color: var(--red);   color: var(--red); }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+      background: rgba(10,10,15,0.96); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 0.6rem 0 env(safe-area-inset-bottom);
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      text-decoration: none; color: var(--muted); font-size: 0.6rem; font-weight: 500;
+      padding: 0.25rem 0.75rem;
+    }
+    .nav-item.active { color: var(--accent2); }
+    .nav-item .nav-icon { font-size: 1.2rem; }
+
+    /* ── LOADING ── */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<!-- NAV -->
+<nav class="topnav">
+  <a class="logo" href="#">Run<span>Sound</span></a>
+  <a class="nav-back" href="dashboard.html">← Dashboard</a>
+</nav>
+
+<!-- MAIN -->
+<main class="page">
+
+  <header class="page-header">
+    <h1 class="page-title">Content Templates</h1>
+    <p class="page-sub">Pick a visual style, then generate a week (or a month) of posts in one click. RunSound adapts each template to your artwork and genre.</p>
+  </header>
+
+  <!-- GENERATE BAR -->
+  <div class="generate-bar">
+    <div class="generate-bar-top">
+      <div>
+        <h3>Bulk Generate</h3>
+        <p>Creates posts and adds them to your content queue</p>
+      </div>
+      <div class="generate-controls">
+        <select class="count-select" id="postCount">
+          <option value="7">7 posts (1 week)</option>
+          <option value="14">14 posts (2 weeks)</option>
+          <option value="30" selected>30 posts (1 month)</option>
+        </select>
+        <button class="btn-generate" id="btnGenerate" onclick="generateBatch()">
+          Generate posts
+        </button>
+      </div>
+    </div>
+    <div class="selected-template-badge" id="selectedBadge">
+      No template selected — pick one below (or we'll auto-select for your genre)
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filter-row" id="filterRow">
+    <button class="filter-btn active" onclick="filterTemplates('all', this)">All</button>
+    <button class="filter-btn" onclick="filterTemplates('dark_moody', this)">🌑 Dark</button>
+    <button class="filter-btn" onclick="filterTemplates('bright_energetic', this)">☀️ Bright</button>
+    <button class="filter-btn" onclick="filterTemplates('warm_golden', this)">🌾 Warm</button>
+    <button class="filter-btn" onclick="filterTemplates('cool_minimal', this)">🤍 Minimal</button>
+    <button class="filter-btn" onclick="filterTemplates('colorful_vibrant', this)">⚡ Neon</button>
+    <button class="filter-btn" onclick="filterTemplates('black_white', this)">🖤 B&W</button>
+  </div>
+
+  <!-- TEMPLATE GRID -->
+  <div class="template-grid" id="templateGrid">
+    <!-- populated by JS -->
+  </div>
+
+  <!-- QUEUE SECTION -->
+  <section class="queue-section">
+    <p class="section-title">Content Queue</p>
+    <div class="queue-list" id="queueList">
+      <div class="empty-queue">
+        <span class="big-emoji">📅</span>
+        No posts scheduled yet. Generate some above!
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="dashboard.html">
+    <span class="nav-icon">📊</span>Dashboard
+  </a>
+  <a class="nav-item active" href="templates.html">
+    <span class="nav-icon">🎨</span>Templates
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-icon">📅</span>Schedule
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-icon">⚙️</span>Settings
+  </a>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let selectedTemplateId = null;
+let campaignId   = null;
+let token        = null;
+let currentFilter = 'all';
+
+// ─── Templates data (mirrors api/routes/templates.js) ────────────────────────
+const TEMPLATES = [
+  {
+    id: 'dark_cinematic', name: 'Dark Cinematic', preview_emoji: '🎬',
+    color_tone: 'dark_moody',
+    description: 'Full-bleed dark artwork with centered bold white text.',
+    best_for_genres: ['indie','alternative','ambient','electronic','metal','r&b'],
+    best_for_archetypes: ['mystery','raw_lyric','contrarian'],
+    slides: ['STOP\nSCROLLING', 'the song that\nmade me feel\neverything', 'you\'ll know\nit when you\nhear it', '🎵 link in bio'],
+  },
+  {
+    id: 'lyrics_slideshow', name: 'Lyrics Slideshow', preview_emoji: '🎵',
+    color_tone: 'warm_golden',
+    description: 'One lyric line per slide, large and centered.',
+    best_for_genres: ['pop','indie-pop','singer-songwriter','country','r&b'],
+    best_for_archetypes: ['raw_lyric','question_hook','lifestyle_placement'],
+    slides: ['"i can\'t stop\nthinking about\nit"', '"and every night\nfeels like\nthe last"', '"this is the song\ni didn\'t know\ni needed"', '🎵 full song\nlink in bio'],
+  },
+  {
+    id: 'aesthetic_minimal', name: 'Aesthetic Minimal', preview_emoji: '🤍',
+    color_tone: 'cool_minimal',
+    description: 'Clean white background, small lowercase text.',
+    best_for_genres: ['indie-folk','ambient','classical','jazz','lo-fi'],
+    best_for_archetypes: ['mystery','artist_identity','lifestyle_placement'],
+    slides: ['the song\nfor 3am', 'when you\'re\nin your\nfeelings', 'you know\nthe one', '→ bio'],
+  },
+  {
+    id: 'neon_energy', name: 'Neon Energy', preview_emoji: '⚡',
+    color_tone: 'colorful_vibrant',
+    description: 'Dark background, electric neon accent colors.',
+    best_for_genres: ['pop','dance','edm','hip-hop','electronic'],
+    best_for_archetypes: ['social_proof','contrarian','series_hook'],
+    slides: ['THIS SONG\nHIT DIFFERENT', 'i showed my\nfriend and\nshe cried', 'NOW IT\'S ON\nREPEAT', '⚡ STREAM NOW'],
+  },
+  {
+    id: 'grain_vintage', name: 'Grain & Vintage', preview_emoji: '📷',
+    color_tone: 'warm_golden',
+    description: 'Film grain texture, muted tones, retro type.',
+    best_for_genres: ['indie','folk','country','blues','soul','americana'],
+    best_for_archetypes: ['lifestyle_placement','artist_identity','raw_lyric'],
+    slides: ['the type of\nsong you find\nat 2am', 'and save for\nthe rest of\nyour life', 'this one\nstayed with\nme', '↓ listen'],
+  },
+  {
+    id: 'text_only_bold', name: 'Text Only Bold', preview_emoji: '✊',
+    color_tone: 'dark_moody',
+    description: 'Solid color background, nothing but big text.',
+    best_for_genres: ['hip-hop','rap','punk','metal','indie'],
+    best_for_archetypes: ['contrarian','question_hook','series_hook'],
+    slides: ['THEY SAID\nMY MUSIC\nWASN\'T READY', 'SO I DROPPED\nIT ANYWAY', 'NOW IT\'S\nEVERYWHERE', 'LINK IN BIO'],
+  },
+  {
+    id: 'split_artwork', name: 'Split Artwork', preview_emoji: '📰',
+    color_tone: 'cool_minimal',
+    description: 'Left: artwork. Right: text. Editorial layout.',
+    best_for_genres: ['pop','r&b','indie-pop','jazz'],
+    best_for_archetypes: ['artist_identity','social_proof','lifestyle_placement'],
+    slides: ['the song\nfor every\ndrive home', 'windows down,\nthis on\nrepeat', 'you\'ll add\nit to every\nplaylist', '→ stream'],
+  },
+  {
+    id: 'black_white_contrast', name: 'Black & White', preview_emoji: '🖤',
+    color_tone: 'black_white',
+    description: 'Desaturated artwork, pure black/white palette.',
+    best_for_genres: ['classical','jazz','ambient','post-rock','metal'],
+    best_for_archetypes: ['mystery','raw_lyric','artist_identity'],
+    slides: ['some songs\ndon\'t need\ncolor', 'they just need\nyour full\nattention', 'this is\none of them', '⬥ listen'],
+  },
+  {
+    id: 'bright_pop', name: 'Bright Pop', preview_emoji: '🌈',
+    color_tone: 'bright_energetic',
+    description: 'Saturated colors, playful type, lots of energy.',
+    best_for_genres: ['pop','indie-pop','k-pop','dance'],
+    best_for_archetypes: ['series_hook','lifestyle_placement','social_proof'],
+    slides: ['THE SONG\nTHAT STARTED\nEVERYTHING', 'you\'ve been\nlooking for\nthis one', 'TRUST ME\nON THIS', '🌈 bio ↓'],
+  },
+  {
+    id: 'face_reaction', name: 'Face Reaction', preview_emoji: '😮',
+    color_tone: 'warm_golden',
+    description: 'Face fills the frame, text overlay at top/bottom.',
+    best_for_genres: ['pop','r&b','hip-hop','indie','country'],
+    best_for_archetypes: ['social_proof','contrarian','question_hook'],
+    slides: ['POV: you just\nheard this\nfor the first time', 'and you can\'t\nbelieve it\'s\nthis good', 'yeah we know\nthat face\nyou\'re making', '🔗 link in bio'],
+  },
+];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+(function init() {
+  const params = new URLSearchParams(window.location.search);
+  token      = params.get('token');
+  campaignId = params.get('campaign');
+
+  if (!token || !campaignId) {
+    // Try to get from dashboard referrer or show helpful message
+    document.querySelector('.page-sub').textContent =
+      'Open this page from your dashboard link to connect your campaign.';
+  }
+
+  renderTemplates();
+  loadQueue();
+})();
+
+// ─── Render templates ─────────────────────────────────────────────────────────
+function renderTemplates() {
+  const grid = document.getElementById('templateGrid');
+  grid.innerHTML = '';
+
+  TEMPLATES.forEach(t => {
+    const hidden = (currentFilter !== 'all' && t.color_tone !== currentFilter) ? 'hidden' : '';
+    const selected = selectedTemplateId === t.id ? 'selected' : '';
+
+    const slideHTML = t.slides.map((text, i) => {
+      const role = ['hook','build','payoff','cta'][i] || 'slide';
+      return `<div class="mini-slide ${role}">${escHtml(text)}</div>`;
+    }).join('');
+
+    const genreTags = t.best_for_genres.slice(0, 3)
+      .map(g => `<span class="tag">${g}</span>`).join('');
+    const archetypeTags = t.best_for_archetypes.slice(0, 2)
+      .map(a => `<span class="tag archetype">${a.replace(/_/g,' ')}</span>`).join('');
+
+    grid.innerHTML += `
+      <div class="template-card tone-${t.color_tone} ${selected} ${hidden}"
+           id="card-${t.id}" onclick="selectTemplate('${t.id}', '${t.name}')">
+        <div class="check-badge">✓</div>
+        <div class="template-preview">
+          ${slideHTML}
+        </div>
+        <div class="template-card-body">
+          <div class="template-emoji">${t.preview_emoji}</div>
+          <div class="template-name">${t.name}</div>
+          <div class="template-desc">${t.description}</div>
+          <div class="template-tags">${genreTags}${archetypeTags}</div>
+        </div>
+      </div>`;
+  });
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+function filterTemplates(tone, btn) {
+  currentFilter = tone;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTemplates();
+}
+
+// ─── Select template ──────────────────────────────────────────────────────────
+function selectTemplate(id, name) {
+  selectedTemplateId = selectedTemplateId === id ? null : id; // toggle
+  renderTemplates();
+
+  const badge = document.getElementById('selectedBadge');
+  if (selectedTemplateId) {
+    badge.innerHTML = `Template: <strong>${escHtml(name)}</strong> selected`;
+  } else {
+    badge.textContent = 'No template selected — auto-select for your genre';
+  }
+}
+
+// ─── Generate batch ───────────────────────────────────────────────────────────
+async function generateBatch() {
+  if (!token || !campaignId) {
+    showToast('Open this page from your dashboard link first', 'error');
+    return;
+  }
+
+  const count  = parseInt(document.getElementById('postCount').value);
+  const btn    = document.getElementById('btnGenerate');
+
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating…';
+
+  try {
+    const body = {
+      count,
+      template_id: selectedTemplateId || null,
+    };
+
+    const res = await fetch(
+      `/api/campaigns/${campaignId}/generate-batch?token=${encodeURIComponent(token)}`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      }
+    );
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || 'Generation failed');
+
+    showToast(`✅ ${data.generated} posts added to your queue!`, 'success');
+    await loadQueue();
+
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = 'Generate posts';
+  }
+}
+
+// ─── Load queue ───────────────────────────────────────────────────────────────
+async function loadQueue() {
+  if (!token || !campaignId) return;
+
+  try {
+    const res  = await fetch(`/api/campaigns/${campaignId}/queue?token=${encodeURIComponent(token)}&limit=10`);
+    const data = await res.json();
+    renderQueue(data.posts || []);
+  } catch { /* silent — queue is non-critical */ }
+}
+
+function renderQueue(posts) {
+  const list = document.getElementById('queueList');
+  if (!posts.length) {
+    list.innerHTML = `
+      <div class="empty-queue">
+        <span class="big-emoji">📅</span>
+        No posts scheduled yet. Generate some above!
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = posts.map(p => {
+    const d = new Date(p.scheduled_for);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const template = TEMPLATES.find(t => t.id === p.template_id);
+    const emoji = template?.preview_emoji || '🎨';
+    const statusClass = p.status === 'posted' ? 'posted' : p.status === 'approved' ? 'approved' : 'pending';
+    const statusLabel = p.status === 'posted' ? 'Posted' : p.status === 'approved' ? 'Approved' : 'Pending';
+
+    return `
+      <div class="queue-item">
+        <div class="queue-item-date">${dateStr}</div>
+        <div class="queue-item-text">
+          <div class="queue-item-hook">${escHtml(p.hook_text || '—')}</div>
+          <div class="queue-item-template">${emoji} ${template?.name || p.template_id || 'Auto'}</div>
+        </div>
+        <span class="queue-status ${statusClass}">${statusLabel}</span>
+      </div>`;
+  }).join('');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.className = 'toast show ' + type;
+  t.textContent = msg;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+</script>
+</body>
+</html>

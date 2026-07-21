@@ -133,6 +133,74 @@ function filterPosts(posts) {
     .slice(0, 50); // top 50 for GPT analysis
 }
 
+// ─── Step 3b: Analyze visual formats with GPT-4o Vision ──────────────────────
+async function analyzeVisuals(posts) {
+  // Extract thumbnail URLs — Apify returns covers in several field names
+  const withThumbs = posts
+    .map(p => ({
+      url:   p.covers?.[0] || p.videoMeta?.coverUrl || p.dynamicCover || p.cover || null,
+      views: p.playCount   || p.stats?.playCount    || 0,
+    }))
+    .filter(p => p.url)
+    .slice(0, 12); // top 12 thumbnails — cost control (~$0.02 total)
+
+  if (withThumbs.length === 0) {
+    console.log('   ⚠️  No thumbnail URLs in Apify results — skipping visual analysis');
+    return null;
+  }
+
+  console.log(`\n👁  Analyzing ${withThumbs.length} thumbnails with GPT-4o Vision...`);
+
+  const imageContent = withThumbs.map(p => ({
+    type:      'image_url',
+    image_url: { url: p.url, detail: 'low' },
+  }));
+
+  const res = await openai.chat.completions.create({
+    model:    'gpt-4o',
+    messages: [{
+      role:    'user',
+      content: [
+        {
+          type: 'text',
+          text: `These are thumbnail covers from top-performing music TikTok posts. Analyze the visual patterns across them.
+
+For each distinct visual style you observe, identify:
+- format_type: one of "lyrics_slideshow" | "aesthetic_video" | "talking_head" | "text_overlay_only" | "album_art_focused" | "b_roll_nature" | "face_reaction" | "dark_cinematic"
+- color_tone: one of "dark_moody" | "bright_energetic" | "warm_golden" | "cool_minimal" | "colorful_vibrant" | "black_white"
+- text_style: one of "large_bold_centered" | "small_subtitle" | "no_text" | "scattered_overlay" | "lyrics_line_by_line"
+- frequency: 0.0–1.0 (how common this style was across the images)
+- why_it_works: one sentence
+
+Return the TOP 3–5 most common styles. Then add a one-sentence insight about what visual style is dominating music TikTok right now.
+
+Respond ONLY with valid JSON:
+{
+  "formats": [
+    {
+      "format_type": "dark_cinematic",
+      "color_tone": "dark_moody",
+      "text_style": "large_bold_centered",
+      "frequency": 0.4,
+      "why_it_works": "High contrast makes text instantly readable while the mood matches the music."
+    }
+  ],
+  "top_visual_insight": "Dark, cinematic aesthetics with bold centered text dominate music TikTok this week."
+}`,
+        },
+        ...imageContent,
+      ],
+    }],
+    max_tokens:      800,
+    response_format: { type: 'json_object' },
+  });
+
+  const result = JSON.parse(res.choices[0].message.content);
+  console.log(`   Found ${result.formats?.length || 0} visual format patterns`);
+  console.log(`   Visual insight: ${result.top_visual_insight}`);
+  return result;
+}
+
 // ─── Step 3: Extract hook patterns with GPT-4o ───────────────────────────────
 async function analyzeHooks(posts) {
   console.log(`\n🧠 Analyzing ${posts.length} posts with GPT-4o...`);
@@ -192,22 +260,117 @@ Respond ONLY with valid JSON:
   return result;
 }
 
-// ─── Step 4: Save to Supabase ─────────────────────────────────────────────────
-async function saveToSupabase(analysis) {
+// ─── Step 4: Save clips to Supabase ──────────────────────────────────────────
+// Stores top individual clips (not just patterns) so Blitz Mode can show them.
+async function saveClipsToSupabase(posts, hooksAnalysis) {
+  const weekOf = new Date().toISOString().slice(0, 10);
+
+  // Build a quick hook name → template lookup from GPT analysis
+  const patternMap = {};
+  for (const p of hooksAnalysis?.patterns || []) {
+    patternMap[p.name] = { template: p.template, music_example: p.music_example, music_fit: p.music_fit };
+  }
+
+  // Ask GPT to assign each clip a hook pattern name + genre tags
+  const captionList = posts.slice(0, 20).map((p, i) => {
+    const views = p.playCount || p.stats?.playCount || 0;
+    const text  = p.text || p.desc || '';
+    return `${i+1}. [${views.toLocaleString()} views] "${text.slice(0, 120)}"`;
+  }).join('\n');
+
+  let clipMeta = [];
+  try {
+    const res = await openai.chat.completions.create({
+      model:           'gpt-4o',
+      messages: [{
+        role: 'user',
+        content: `For each TikTok clip below, extract:
+- hook_pattern: one of [pov_relatable, emotional_confession, shared_experience, countdown_list, behind_the_scenes, trending_sound, storytelling, aesthetic_vibe, nostalgia_trigger, energy_hype]
+- genre_tags: which music genres this format works for, e.g. ["Pop","R&B","Indie"]
+- format_type: one of [slideshow, talking_head, text_overlay, b_roll, face_reaction, lyrics_video]
+- one_liner: the core hook formula in max 8 words
+
+Clips:
+${captionList}
+
+Respond ONLY with JSON: { "clips": [ { "index": 1, "hook_pattern": "...", "genre_tags": [...], "format_type": "...", "one_liner": "..." } ] }`
+      }],
+      max_tokens:      1000,
+      response_format: { type: 'json_object' },
+    });
+    clipMeta = JSON.parse(res.choices[0].message.content).clips || [];
+  } catch (e) {
+    console.warn('   ⚠️  Clip meta GPT call failed (non-fatal):', e.message);
+  }
+
+  const rows = posts.slice(0, 20).map((p, i) => {
+    const meta    = clipMeta.find(c => c.index === i + 1) || {};
+    const views   = p.playCount   || p.stats?.playCount   || 0;
+    const likes   = p.diggCount   || p.stats?.diggCount   || 0;
+    const shares  = p.shareCount  || p.stats?.shareCount  || 0;
+    const author  = p.authorMeta?.name || p.author?.name || '';
+    const videoId = p.id || p.videoId || '';
+    const tiktokUrl = p.webVideoUrl || p.shareUrl ||
+      (author && videoId ? `https://www.tiktok.com/@${author}/video/${videoId}` : null);
+    const coverUrl  = p.covers?.[0] || p.videoMeta?.coverUrl || p.dynamicCover || p.cover || null;
+
+    if (!tiktokUrl) return null; // skip clips without a usable URL
+
+    const pattern = patternMap[meta.hook_pattern] || {};
+
+    return {
+      tiktok_url:    tiktokUrl,
+      cover_url:     coverUrl,
+      caption:       (p.text || p.desc || '').slice(0, 500),
+      views,
+      likes,
+      shares,
+      author,
+      hook_pattern:  meta.hook_pattern  || null,
+      hook_template: pattern.template   || null,
+      one_liner:     meta.one_liner     || null,
+      genre_tags:    meta.genre_tags    || [],
+      format_type:   meta.format_type   || null,
+      music_fit:     pattern.music_fit  || null,
+      week_of:       weekOf,
+    };
+  }).filter(Boolean);
+
+  if (rows.length === 0) {
+    console.log('   ⚠️  No clips with usable URLs — skipping clip save');
+    return;
+  }
+
+  // Upsert by tiktok_url so reruns don't duplicate
+  const { error } = await supabase
+    .from('trending_clips')
+    .upsert(rows, { onConflict: 'tiktok_url', ignoreDuplicates: false });
+
+  if (error) console.warn('   ⚠️  trending_clips upsert error:', error.message);
+  else console.log(`   ✅ ${rows.length} clips saved to trending_clips`);
+}
+
+// ─── Step 5: Save patterns to Supabase ───────────────────────────────────────
+async function saveToSupabase(analysis, visuals) {
   const weekOf = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
   const { error } = await supabase
     .from('trending_hooks')
     .upsert({
-      week_of:      weekOf,
-      hooks:        analysis.patterns,
-      week_insight: analysis.week_insights,
-      post_count:   analysis.patterns?.length || 0,
-      created_at:   new Date().toISOString(),
+      week_of:        weekOf,
+      hooks:          analysis.patterns,
+      week_insight:   analysis.week_insights,
+      post_count:     analysis.patterns?.length || 0,
+      visual_formats: visuals?.formats       || null,
+      visual_insight: visuals?.top_visual_insight || null,
+      created_at:     new Date().toISOString(),
     }, { onConflict: 'week_of' });
 
   if (error) throw new Error(`Supabase write failed: ${error.message}`);
   console.log(`\n   ✅ ${analysis.patterns?.length} hook patterns saved for week ${weekOf}`);
+  if (visuals?.formats?.length) {
+    console.log(`   ✅ ${visuals.formats.length} visual formats saved`);
+  }
 }
 
 // ─── Fallback: GPT-only mode (when no Apify token) ───────────────────────────
@@ -269,12 +432,23 @@ Respond ONLY with valid JSON:
 
   let analysis;
 
+  let visuals = null;
+
   if (APIFY_TOKEN) {
-    // Full pipeline: scrape real TikTok data → analyze
+    // Full pipeline: scrape real TikTok data → analyze hooks + visuals + save clips
     const posts    = await scrapeTikTok();
     const filtered = filterPosts(posts);
     console.log(`   After filtering: ${filtered.length} high-engagement posts`);
     analysis = await analyzeHooks(filtered);
+    visuals  = await analyzeVisuals(filtered).catch(e => {
+      console.warn(`   ⚠️  Visual analysis failed (non-fatal): ${e.message}`);
+      return null;
+    });
+    if (!DRY_RUN) {
+      await saveClipsToSupabase(filtered, analysis).catch(e => {
+        console.warn(`   ⚠️  Clip save failed (non-fatal): ${e.message}`);
+      });
+    }
   } else {
     // Fallback: GPT-only (no real scraping, uses training knowledge)
     console.log('⚠️  No APIFY_API_TOKEN — using GPT-4o knowledge mode');
@@ -283,14 +457,20 @@ Respond ONLY with valid JSON:
   }
 
   if (DRY_RUN) {
-    console.log('\n[dry-run] Patterns found:');
+    console.log('\n[dry-run] Hook patterns:');
     analysis.patterns?.forEach((p, i) =>
       console.log(`  ${i+1}. ${p.name} (emo:${p.emotional_score} music:${p.music_fit})\n     "${p.music_example}"`)
     );
+    if (visuals?.formats?.length) {
+      console.log('\n[dry-run] Visual formats:');
+      visuals.formats.forEach((f, i) =>
+        console.log(`  ${i+1}. ${f.format_type} / ${f.color_tone} (${Math.round(f.frequency * 100)}%)\n     ${f.why_it_works}`)
+      );
+    }
     return;
   }
 
-  await saveToSupabase(analysis);
+  await saveToSupabase(analysis, visuals);
 
   console.log('\n✅ Done — trending hooks ready for generate-texts.js');
   console.log('   Next run: Sunday 01:00 UTC (auto via cron)\n');
