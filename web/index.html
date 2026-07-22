@@ -347,11 +347,72 @@
     footer a:hover { color: var(--text); }
     .footer-links { display: flex; gap: 1.5rem; }
 
+    /* ── MODE TOGGLE ── */
+    .mode-toggle {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 2px;
+      margin-bottom: 40px;
+    }
+    .mode-btn {
+      background: none;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+    .mode-btn.active {
+      background: var(--text);
+      color: var(--bg);
+      font-weight: 600;
+    }
+
+    /* ── DASHBOARD STEPS ── */
+    .dash-steps {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .dash-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+    .dash-step-num {
+      width: 22px; height: 22px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
     @media (max-width: 640px) {
       .steps, .nosub-grid, .ways-grid { grid-template-columns: 1fr; }
       .skills-grid { grid-template-columns: 1fr; }
       .nav-links { display: none; }
       footer { flex-direction: column; gap: 12px; text-align: center; }
+      .mode-btn { padding: 8px 12px; font-size: 0.78rem; }
+      .dash-steps { flex-direction: column; align-items: center; }
     }
   </style>
 </head>
@@ -376,19 +437,49 @@
     Live · 10 music skills
   </div>
 
-  <h1>Give your agent every<br><em>music marketing skill</em><br>it needs.</h1>
-
-  <p class="hero-sub">
-    One skill unlocks TikTok creator outreach, playlist pitching, hook generation, press kits, and more — billed per call, no subscriptions.
-  </p>
-
-  <div class="skill-box">
-    <strong>$set up</strong> https://run-sound.com/SKILL.md
-    <button class="copy-btn" onclick="navigator.clipboard.writeText('$set up https://run-sound.com/SKILL.md');this.textContent='Copied!'">Copy</button>
+  <!-- MODE TOGGLE -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-agent" onclick="setMode('agent')">I want an AI agent to handle it</button>
+    <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">I want to do it myself</button>
   </div>
-  <div class="skill-box-label">Give this to Claude, Cursor, Goose, or any AI agent</div>
 
-  <a href="/signup.html" class="hero-cta">Start with $5 in free credits →</a>
+  <!-- AGENT MODE -->
+  <div id="mode-agent">
+    <h1>Give your agent every<br><em>music marketing skill</em><br>it needs.</h1>
+    <p class="hero-sub">
+      One skill unlocks TikTok creator outreach, playlist pitching, hook generation, press kits, and more — billed per call, no subscriptions.
+    </p>
+    <div class="skill-box">
+      <strong>$set up</strong> https://run-sound.com/SKILL.md
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('$set up https://run-sound.com/SKILL.md');this.textContent='Copied!'">Copy</button>
+    </div>
+    <div class="skill-box-label">Give this to Claude, Cursor, Goose, or any AI agent</div>
+    <a href="/signup.html" class="hero-cta">Start with $5 in free credits →</a>
+  </div>
+
+  <!-- MANUAL / DASHBOARD MODE -->
+  <div id="mode-manual" style="display:none">
+    <h1>Run your campaign.<br><em>No AI agent</em><br>required.</h1>
+    <p class="hero-sub">
+      Create campaigns, scout TikTok creators, send personalized DMs, and track results from your dashboard — step by step, you stay in control.
+    </p>
+    <div class="dash-steps">
+      <div class="dash-step">
+        <div class="dash-step-num">1</div>
+        Paste your Spotify link
+      </div>
+      <div class="dash-step">
+        <div class="dash-step-num">2</div>
+        Pick creators &amp; set budget
+      </div>
+      <div class="dash-step">
+        <div class="dash-step-num">3</div>
+        Launch — we handle the rest
+      </div>
+    </div>
+    <a href="/signup.html" class="hero-cta">Open dashboard →</a>
+    <div class="skill-box-label" style="margin-top:14px">Same skills, same pricing — no agent needed</div>
+  </div>
 </div>
 
 <!-- SCROLLING SKILLS -->
@@ -708,6 +799,13 @@
 </footer>
 
 <script>
+  function setMode(mode) {
+    document.getElementById('mode-agent').style.display  = mode === 'agent'  ? 'block' : 'none';
+    document.getElementById('mode-manual').style.display = mode === 'manual' ? 'block' : 'none';
+    document.getElementById('btn-agent').classList.toggle('active',  mode === 'agent');
+    document.getElementById('btn-manual').classList.toggle('active', mode === 'manual');
+  }
+
   function toggleFaq(btn) {
     const item = btn.closest('.faq-item');
     item.classList.toggle('open');
