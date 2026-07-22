@@ -41,6 +41,29 @@ Get your key at **runsound.ai/settings/api** after adding credits.
 
 ## Core Skills
 
+### 🚀 full-campaign ⭐ RECOMMENDED
+Run a complete music promotion campaign end-to-end in a single call. Generates hooks, scouts TikTok creators matched to your song, queues personalized DMs, and activates sound tracking — all automatically.
+
+**Input:**
+```json
+{
+  "skill": "full-campaign",
+  "spotify_url": "https://open.spotify.com/track/...",
+  "artist_name": "My Artist",
+  "song_title": "My Song",
+  "follower_min": 1000,
+  "follower_max": 100000,
+  "creator_limit": 30,
+  "hooks_count": 5
+}
+```
+**Output:** Hooks, matched creators, trending formats, queued DMs, tracking status, next steps.
+**Cost:** $0.02 per action (scout + DM + track combined)
+
+**Example agent prompt:** *"Promote my new track [spotify url], find 30 creators and run a full campaign"*
+
+---
+
 ### 🎯 creator-scout
 Find TikTok creators whose content matches your song's energy, genre and mood.
 

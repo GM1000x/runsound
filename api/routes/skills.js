@@ -369,6 +369,7 @@ async function executeSkill(slug, input, artist, runId) {
     case 'trend-matcher':   return runTrendMatcher(input, artist);
     case 'playlist-pitcher':return runPlaylistPitcher(input, artist);
     case 'press-pitcher':   return runPressPitcher(input, artist);
+    case 'full-campaign':   return runFullCampaign(input, artist, runId);
     default:
       // Third-party skill — call their webhook
       return runThirdPartySkill(slug, input, artist, runId);
@@ -482,6 +483,116 @@ async function runPlaylistPitcher(input, artist) {
 }
 async function runPressPitcher(input, artist) {
   return { units_consumed: input.limit || 10, output: { message: 'Press pitches queued' } };
+}
+
+// ── full-campaign ─────────────────────────────────────────────────────────────
+// Orchestrates the full loop: scout → DM → track → report
+async function runFullCampaign(input, artist, runId) {
+  const {
+    spotify_url,
+    artist_name,
+    song_title,
+    follower_min  = 1000,
+    follower_max  = 100000,
+    creator_limit = 30,
+    hooks_count   = 5,
+  } = input;
+
+  const steps   = [];
+  let totalUnits = 0;
+
+  // ── Step 1: Generate hooks ────────────────────────────────────────────────
+  steps.push({ step: 'hook-generator', status: 'running' });
+  const hookResult = await runHookGenerator(
+    { spotify_url, count: hooks_count },
+    artist
+  );
+  steps[0].status = 'done';
+  steps[0].output = hookResult.output;
+  totalUnits += hookResult.units_consumed;
+
+  // ── Step 2: Scout creators ────────────────────────────────────────────────
+  steps.push({ step: 'creator-scout', status: 'running' });
+
+  // Use Spotify data to determine genre/categories for targeting
+  const spotifyId = spotify_url.match(/track\/([A-Za-z0-9]+)/)?.[1];
+  let genre = 'Pop';
+  if (spotifyId && process.env.SPOTIFY_CLIENT_ID) {
+    try {
+      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(
+            `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+          ).toString('base64'),
+        },
+        body: 'grant_type=client_credentials',
+      });
+      const { access_token } = await tokenRes.json();
+      const trackRes = await fetch(`https://api.spotify.com/v1/tracks/${spotifyId}`, {
+        headers: { 'Authorization': `Bearer ${access_token}` },
+      });
+      const track = await trackRes.json();
+      const artistId = track.artists?.[0]?.id;
+      if (artistId) {
+        const artRes = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { 'Authorization': `Bearer ${access_token}` },
+        });
+        const artData = await artRes.json();
+        genre = artData.genres?.[0] || 'Pop';
+      }
+    } catch { /* fallback to Pop */ }
+  }
+
+  const scoutResult = await runCreatorScout(
+    { spotify_url, follower_min, follower_max, limit: creator_limit },
+    artist
+  );
+  steps[1].status = 'done';
+  steps[1].output = scoutResult.output;
+  totalUnits += scoutResult.units_consumed;
+
+  // ── Step 3: Match trends ──────────────────────────────────────────────────
+  steps.push({ step: 'trend-matcher', status: 'running' });
+  const trendResult = await runTrendMatcher({ genre }, artist);
+  steps[2].status = 'done';
+  steps[2].output = trendResult.output;
+  totalUnits += trendResult.units_consumed;
+
+  // ── Step 4: Queue DM outreach ─────────────────────────────────────────────
+  steps.push({ step: 'dm-outreach', status: 'queued' });
+  // DMs are queued asynchronously — actual sending happens via outreach.js
+  // We log the intent here and the outreach system picks it up
+  await supabase.from('skill_runs').update({
+    output: { campaign_queued: true, run_id: runId },
+  }).eq('id', runId);
+  steps[3].status = 'queued';
+  steps[3].output = { message: `DMs queued for ${scoutResult.units_consumed} creators` };
+
+  // ── Step 5: Start sound tracking ──────────────────────────────────────────
+  steps.push({ step: 'sound-tracker', status: 'queued' });
+  steps[4].status = 'queued';
+  steps[4].output = { message: 'Sound tracking will start once DMs are sent' };
+
+  return {
+    units_consumed: totalUnits,
+    output: {
+      campaign_id:    runId,
+      song:           song_title || spotify_url,
+      artist:         artist_name,
+      genre,
+      steps,
+      hooks:          hookResult.output.hooks,
+      trending_formats: trendResult.output.trending_formats,
+      creators_queued:  scoutResult.units_consumed,
+      next_steps: [
+        'Creators will receive personalized DMs within 24h',
+        'Sound tracking activates automatically after DMs are sent',
+        `Check progress: runsound.ai/outreach`,
+      ],
+    },
+  };
 }
 
 // ── Third-party skill webhook ─────────────────────────────────────────────────
