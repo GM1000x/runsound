@@ -3,27 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RunSound — Automated TikTok Marketing for Artists</title>
-  <meta name="description" content="RunSound posts daily TikTok carousels for your music — automatically. The AI learns what drives Spotify streams and gets smarter every day." />
+  <title>RunSound — Music marketing skills for AI agents</title>
+  <meta name="description" content="One skill unlocks every music marketing tool your agent needs. Find TikTok creators, send DMs, pitch playlists, generate hooks — pay per call, no subscriptions." />
+  <meta name="og:title" content="RunSound — Music marketing skills for AI agents" />
+  <meta name="og:description" content="One skill. Every music promotion tool. No subscriptions — your agent discovers, pays per call, and delivers." />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:      #0a0a0f;
-      --surface: #13131a;
-      --border:  #1e1e2e;
-      --accent:  #7c3aed;
-      --accent2: #a855f7;
-      --green:   #22c55e;
-      --text:    #f0f0f8;
-      --muted:   #888899;
-      --card-bg: #111118;
+      --bg:       #FAFAF7;
+      --surface:  #ffffff;
+      --border:   #E8E8E3;
+      --border2:  #D4D4CE;
+      --text:     #1a1a18;
+      --muted:    #6b6b65;
+      --accent:   #7c3aed;
+      --accent-l: #ede9fe;
+      --green:    #16a34a;
+      --green-l:  #dcfce7;
+      --radius:   10px;
     }
 
     html { scroll-behavior: smooth; }
-
     body {
       background: var(--bg);
       color: var(--text);
@@ -32,345 +36,322 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    a { color: inherit; text-decoration: none; }
+
     /* ── NAV ── */
     nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 5%;
-      height: 68px;
-      background: rgba(10,10,15,0.85);
-      backdrop-filter: blur(12px);
+      height: 60px;
       border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky; top: 0; z-index: 100;
     }
-    .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; }
-    .logo span { color: var(--accent2); }
-    nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; margin-left: 2rem; transition: color .2s; }
-    nav a:hover { color: var(--text); }
+    .logo { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a { color: var(--muted); font-size: 0.88rem; transition: color .15s; }
+    .nav-links a:hover { color: var(--text); }
     .nav-cta {
-      background: var(--accent);
-      color: #fff !important;
+      background: var(--text);
+      color: var(--bg) !important;
       padding: 0.45rem 1.1rem;
-      border-radius: 8px;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
       font-weight: 600;
-      font-size: 0.85rem !important;
-      transition: background .2s !important;
+      transition: opacity .15s;
     }
-    .nav-cta:hover { background: var(--accent2) !important; }
+    .nav-cta:hover { opacity: 0.8; }
 
     /* ── HERO ── */
     .hero {
-      min-height: 100vh;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 100px 5% 72px;
       text-align: center;
-      padding: 120px 5% 80px;
-      position: relative;
-      overflow: hidden;
     }
-    .hero::before {
-      content: '';
-      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
-      width: 900px; height: 900px;
-      background: radial-gradient(ellipse, rgba(124,58,237,0.18) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(124,58,237,0.15);
-      border: 1px solid rgba(124,58,237,0.3);
-      color: var(--accent2);
-      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.35rem 0.9rem; border-radius: 100px;
-      margin-bottom: 2rem;
-    }
-    .badge::before { content: '●'; font-size: 0.5rem; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    h1 {
-      font-size: clamp(2.8rem, 7vw, 5.5rem);
-      font-weight: 900;
-      letter-spacing: -0.04em;
-      line-height: 1.05;
-      max-width: 900px;
-      margin-bottom: 1.5rem;
-    }
-    h1 em { font-style: normal; color: var(--accent2); }
-
-    .hero-sub {
-      font-size: clamp(1rem, 2vw, 1.25rem);
-      color: var(--muted);
-      max-width: 560px;
-      margin-bottom: 3rem;
-    }
-
-    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      padding: 0.85rem 2rem;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 1rem;
-      text-decoration: none;
-      border: none; cursor: pointer;
-      transition: background .2s, transform .15s;
-    }
-    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text);
-      padding: 0.85rem 2rem;
-      border-radius: 10px;
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--green-l);
+      color: var(--green);
+      border: 1px solid #bbf7d0;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
       font-weight: 600;
-      font-size: 1rem;
-      text-decoration: none;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: border-color .2s, transform .15s;
+      margin-bottom: 28px;
     }
-    .btn-ghost:hover { border-color: var(--muted); transform: translateY(-1px); }
-
-    /* ── SOCIAL PROOF ── */
-    .proof {
-      margin-top: 4rem;
+    .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+    h1 em { color: var(--accent); font-style: normal; }
+    .hero-sub {
       color: var(--muted);
-      font-size: 0.85rem;
-      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 1.1rem;
+      max-width: 540px;
+      margin: 0 auto 40px;
+      line-height: 1.65;
     }
-    .proof-avatars { display: flex; }
-    .proof-avatars span {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: 2px solid var(--bg);
-      margin-left: -8px;
+    .skill-box {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-family: 'Inter', monospace;
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .skill-box strong { color: var(--accent); font-weight: 600; }
+    .skill-box-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 32px; }
+    .copy-btn {
+      background: none; border: 1px solid var(--border2);
+      border-radius: 6px; padding: 3px 10px;
+      font-size: 0.75rem; color: var(--muted);
+      cursor: pointer; transition: all .15s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .hero-cta {
+      display: inline-block;
+      background: var(--text);
+      color: var(--bg);
+      padding: 0.7rem 1.8rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: opacity .15s;
+    }
+    .hero-cta:hover { opacity: 0.8; }
+
+    /* ── SCROLLING SKILLS ── */
+    .scroll-section {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      padding: 20px 0;
+      background: var(--surface);
+    }
+    .scroll-track {
+      display: flex; gap: 0;
+      animation: scroll-left 28s linear infinite;
+      width: max-content;
+    }
+    .scroll-track:hover { animation-play-state: paused; }
+    @keyframes scroll-left {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .skill-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 28px;
+      white-space: nowrap;
+      border-right: 1px solid var(--border);
+    }
+    .skill-chip-icon {
+      width: 28px; height: 28px;
+      background: var(--accent-l);
+      border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.65rem; font-weight: 700; color: #fff;
+      font-size: 14px;
     }
-    .proof-avatars span:first-child { margin-left: 0; }
+    .skill-chip-name { font-size: 0.88rem; font-weight: 500; }
+    .skill-chip-desc { font-size: 0.78rem; color: var(--muted); }
 
     /* ── HOW IT WORKS ── */
-    section { padding: 100px 5%; }
-    .section-label {
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--accent2);
-      margin-bottom: 1rem;
-    }
+    section { max-width: 860px; margin: 0 auto; padding: 80px 5%; }
     h2 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      margin-bottom: 1rem;
+      font-size: 1.8rem; font-weight: 700;
+      letter-spacing: -0.025em; margin-bottom: 12px;
     }
-    .section-sub {
-      color: var(--muted);
-      font-size: 1.05rem;
-      max-width: 500px;
-      margin-bottom: 4rem;
-    }
+    .section-sub { color: var(--muted); font-size: 1rem; margin-bottom: 48px; }
 
-    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
     .step {
-      background: var(--card-bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.5rem 2rem;
-      position: relative;
-      overflow: hidden;
-      transition: border-color .25s;
+      border-radius: 12px;
+      padding: 24px;
     }
-    .step:hover { border-color: rgba(124,58,237,0.5); }
     .step-num {
-      font-size: 3.5rem; font-weight: 900;
-      color: rgba(124,58,237,0.12);
-      position: absolute; top: 1.2rem; right: 1.5rem;
-      line-height: 1; letter-spacing: -0.04em;
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-l);
+      border-radius: 999px;
+      padding: 2px 10px;
+      display: inline-block;
+      margin-bottom: 14px;
     }
-    .step-icon { font-size: 1.8rem; margin-bottom: 1.2rem; }
-    .step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.6rem; }
-    .step p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
-
-    /* ── FEATURES ── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-    }
-    .feature {
-      background: var(--card-bg);
+    .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .step p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+    .step code {
+      display: block; margin-top: 12px;
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 2rem;
-      transition: border-color .25s;
-    }
-    .feature:hover { border-color: rgba(168,85,247,0.4); }
-    .feature-icon { font-size: 1.6rem; margin-bottom: 1rem; }
-    .feature h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .feature p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
-
-    /* ── PRICING ── */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .plan {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2.5rem 2rem;
-      position: relative;
-    }
-    .plan.featured {
-      border-color: var(--accent);
-      background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(10,10,15,1));
-    }
-    .plan-badge {
-      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-      background: var(--accent);
-      color: #fff;
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-      padding: 0.3rem 0.9rem; border-radius: 100px;
-    }
-    .plan-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--muted); }
-    .plan-price {
-      font-size: 3rem; font-weight: 900; letter-spacing: -0.04em;
-      line-height: 1; margin-bottom: 0.3rem;
-    }
-    .plan-price span { font-size: 1rem; font-weight: 500; color: var(--muted); }
-    .plan-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
-    .plan-features { list-style: none; margin-bottom: 2rem; }
-    .plan-features li {
-      font-size: 0.9rem; padding: 0.45rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      display: flex; align-items: center; gap: 0.6rem;
-    }
-    .plan-features li::before { content: '✓'; color: var(--green); font-weight: 700; }
-    .plan-features li.dimmed::before { content: '✗'; color: var(--border); }
-    .plan-features li.dimmed { color: var(--muted); }
-
-    /* ── SIGNUP FORM ── */
-    #signup {
-      max-width: 580px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    #signup h2 { margin-bottom: 0.5rem; }
-    #signup .section-sub { margin: 0 auto 3rem; }
-
-    .form-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2.5rem;
-      text-align: left;
-    }
-    .form-row { margin-bottom: 1.25rem; }
-    .form-row label {
-      display: block;
-      font-size: 0.82rem; font-weight: 600; color: var(--muted);
-      margin-bottom: 0.4rem;
-      letter-spacing: 0.03em;
-    }
-    .form-row input, .form-row textarea, .form-row select {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      color: var(--text);
-      font-size: 0.95rem;
-      font-family: inherit;
-      outline: none;
-      transition: border-color .2s;
-    }
-    .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
-      border-color: var(--accent);
-    }
-    .form-row textarea { resize: vertical; min-height: 90px; }
-    .form-row select option { background: var(--surface); }
-    .form-hint { font-size: 0.77rem; color: var(--muted); margin-top: 0.3rem; }
-    #imageDropzone:hover, #imageDropzone.drag-over { border-color: var(--accent); }
-    .img-preview { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--surface2); }
-    .img-preview img { width:100%; height:100%; object-fit:cover; }
-    .img-preview .remove-img { position:absolute; top:3px; right:3px; background:rgba(0,0,0,0.7); border:none; color:#fff; border-radius:50%; width:20px; height:20px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
-
-    /* More platforms toggle */
-    .more-platforms { margin-bottom: 1.25rem; }
-    .more-platforms-toggle {
-      width: 100%;
-      background: none;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      font-family: inherit;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
       color: var(--muted);
-      font-size: 0.88rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: border-color .2s, color .2s;
+      font-family: monospace;
     }
-    .more-platforms-toggle:hover { border-color: var(--accent); color: var(--accent2); }
-    .more-platforms-toggle.open { border-color: var(--accent); color: var(--accent2); }
-    .toggle-hint { font-size: 0.75rem; opacity: 0.6; }
-    .more-platforms-fields {
-      display: none;
-      padding-top: 1rem;
+    .step code strong { color: var(--accent); }
+
+    /* ── NO SUBSCRIPTIONS ── */
+    .nosub-section {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
-    .more-platforms-fields.open { display: block; }
-    .platforms-grid {
+    .nosub-inner {
+      max-width: 860px; margin: 0 auto; padding: 80px 5%;
+    }
+    .nosub-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 32px; margin-top: 48px;
+    }
+    .nosub-stat { text-align: center; }
+    .nosub-num { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; }
+    .nosub-label { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── SKILLS GRID ── */
+    .skills-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
     }
-    @media (max-width: 500px) { .platforms-grid { grid-template-columns: 1fr; } }
+    .skill-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color .15s;
+    }
+    .skill-card:hover { border-color: var(--border2); }
+    .skill-card-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .skill-icon {
+      width: 32px; height: 32px;
+      background: var(--accent-l);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .skill-price {
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--green);
+      background: var(--green-l);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .skill-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
+    .skill-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    .featured-badge {
+      font-size: 0.7rem; font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-l);
+      padding: 1px 7px; border-radius: 999px;
+      margin-left: 8px;
+    }
 
-    .form-submit {
-      width: 100%;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 0.95rem;
-      font-size: 1rem;
-      font-weight: 700;
+    /* ── THREE WAYS ── */
+    .ways-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
+    .way {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .way-tag {
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .way h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .way p { font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; }
+    .way code {
+      display: block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* ── FAQ ── */
+    .faq-list { margin-top: 40px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      width: 100%; background: none; border: none;
+      padding: 20px 24px;
+      text-align: left;
+      font-size: 0.95rem; font-weight: 500;
+      color: var(--text);
       cursor: pointer;
-      font-family: inherit;
-      transition: background .2s;
-      margin-top: 0.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'Inter', sans-serif;
     }
-    .form-submit:hover { background: var(--accent2); }
-
-    .success-msg {
+    .faq-q:hover { background: var(--bg); }
+    .faq-chevron { transition: transform .2s; font-size: 1.1rem; color: var(--muted); }
+    .faq-a {
       display: none;
-      text-align: center;
-      padding: 2rem;
+      padding: 0 24px 20px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.7;
     }
-    .success-msg .check { font-size: 3rem; margin-bottom: 1rem; }
-    .success-msg h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .success-msg p { color: var(--muted); font-size: 0.95rem; }
+    .faq-item.open .faq-a { display: block; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+
+    /* ── DEVELOPER CTA ── */
+    .dev-section {
+      background: var(--text);
+      color: var(--bg);
+      text-align: center;
+      padding: 80px 5%;
+    }
+    .dev-section h2 { color: var(--bg); margin-bottom: 12px; }
+    .dev-section p { color: rgba(250,250,247,0.6); font-size: 1rem; margin-bottom: 32px; }
+    .dev-cta {
+      display: inline-block;
+      background: var(--bg);
+      color: var(--text);
+      padding: 0.7rem 1.8rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .dev-cta:hover { opacity: 0.85; }
 
     /* ── FOOTER ── */
     footer {
       border-top: 1px solid var(--border);
-      padding: 3rem 5%;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 1rem;
-      color: var(--muted); font-size: 0.85rem;
+      padding: 40px 5%;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.82rem; color: var(--muted);
+      max-width: 100%;
     }
-    footer a { color: var(--muted); text-decoration: none; }
+    footer a { color: var(--muted); transition: color .15s; }
     footer a:hover { color: var(--text); }
+    .footer-links { display: flex; gap: 1.5rem; }
 
-    /* ── RESPONSIVE ── */
     @media (max-width: 640px) {
-      nav a:not(.nav-cta) { display: none; }
-      .hero-actions { flex-direction: column; align-items: center; }
-      .btn-primary, .btn-ghost { width: 100%; max-width: 320px; text-align: center; }
+      .steps, .nosub-grid, .ways-grid { grid-template-columns: 1fr; }
+      .skills-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
     }
   </style>
 </head>
@@ -379,796 +360,358 @@
 <!-- NAV -->
 <nav>
   <div class="logo">Run<span>Sound</span></div>
-  <div>
-    <a href="#how-it-works">How it works</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#signup" class="nav-cta">Get started</a>
+  <div class="nav-links">
+    <a href="#skills">Skills</a>
+    <a href="#how">How it works</a>
+    <a href="https://run-sound.com/SKILL.md">SKILL.md</a>
+    <a href="#faq">FAQ</a>
   </div>
+  <a href="/signup.html" class="nav-cta">Get started →</a>
 </nav>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="badge">AI-powered music marketing</div>
-  <h1>Your music. Posted daily.<br /><em>While you sleep.</em></h1>
+<div class="hero">
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    Live · 10 music skills
+  </div>
+
+  <h1>Give your agent every<br><em>music marketing skill</em><br>it needs.</h1>
+
   <p class="hero-sub">
-    RunSound creates TikTok carousels for your songs every night — learns what hooks drive Spotify streams — and gets smarter the longer it runs.
+    One skill unlocks TikTok creator outreach, playlist pitching, hook generation, press kits, and more — billed per call, no subscriptions.
   </p>
-  <div class="hero-actions">
-    <a href="#signup" class="btn-primary">Start free trial →</a>
-    <a href="#how-it-works" class="btn-ghost">See how it works</a>
+
+  <div class="skill-box">
+    <strong>$set up</strong> https://run-sound.com/SKILL.md
+    <button class="copy-btn" onclick="navigator.clipboard.writeText('$set up https://run-sound.com/SKILL.md');this.textContent='Copied!'">Copy</button>
   </div>
-  <div class="proof">
-    <div class="proof-avatars">
-      <span>JK</span><span>ML</span><span>AR</span><span>+</span>
+  <div class="skill-box-label">Give this to Claude, Cursor, Goose, or any AI agent</div>
+
+  <a href="/signup.html" class="hero-cta">Start with $5 in free credits →</a>
+</div>
+
+<!-- SCROLLING SKILLS -->
+<div class="scroll-section">
+  <div class="scroll-track" id="scrollTrack">
+    <!-- First set -->
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🎯</div>
+      <div><div class="skill-chip-name">full-campaign</div><div class="skill-chip-desc">end-to-end</div></div>
     </div>
-    Join artists already growing on TikTok
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🔍</div>
+      <div><div class="skill-chip-name">creator-scout</div><div class="skill-chip-desc">TikTok creators</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📨</div>
+      <div><div class="skill-chip-name">dm-outreach</div><div class="skill-chip-desc">personalized DMs</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🪝</div>
+      <div><div class="skill-chip-name">hook-generator</div><div class="skill-chip-desc">viral TikTok hooks</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🎵</div>
+      <div><div class="skill-chip-name">playlist-pitcher</div><div class="skill-chip-desc">Spotify curators</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📰</div>
+      <div><div class="skill-chip-name">press-pitcher</div><div class="skill-chip-desc">music blogs</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📦</div>
+      <div><div class="skill-chip-name">release-kit</div><div class="skill-chip-desc">press release + bio</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📈</div>
+      <div><div class="skill-chip-name">trend-matcher</div><div class="skill-chip-desc">TikTok formats</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">👂</div>
+      <div><div class="skill-chip-name">sound-tracker</div><div class="skill-chip-desc">usage monitoring</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📅</div>
+      <div><div class="skill-chip-name">post-scheduler</div><div class="skill-chip-desc">TikTok posting</div></div>
+    </div>
+    <!-- Duplicate for seamless loop -->
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🎯</div>
+      <div><div class="skill-chip-name">full-campaign</div><div class="skill-chip-desc">end-to-end</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🔍</div>
+      <div><div class="skill-chip-name">creator-scout</div><div class="skill-chip-desc">TikTok creators</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📨</div>
+      <div><div class="skill-chip-name">dm-outreach</div><div class="skill-chip-desc">personalized DMs</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🪝</div>
+      <div><div class="skill-chip-name">hook-generator</div><div class="skill-chip-desc">viral TikTok hooks</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">🎵</div>
+      <div><div class="skill-chip-name">playlist-pitcher</div><div class="skill-chip-desc">Spotify curators</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📰</div>
+      <div><div class="skill-chip-name">press-pitcher</div><div class="skill-chip-desc">music blogs</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📦</div>
+      <div><div class="skill-chip-name">release-kit</div><div class="skill-chip-desc">press release + bio</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📈</div>
+      <div><div class="skill-chip-name">trend-matcher</div><div class="skill-chip-desc">TikTok formats</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">👂</div>
+      <div><div class="skill-chip-name">sound-tracker</div><div class="skill-chip-desc">usage monitoring</div></div>
+    </div>
+    <div class="skill-chip">
+      <div class="skill-chip-icon">📅</div>
+      <div><div class="skill-chip-name">post-scheduler</div><div class="skill-chip-desc">TikTok posting</div></div>
+    </div>
   </div>
-</section>
+</div>
 
 <!-- HOW IT WORKS -->
-<section id="how-it-works">
-  <div class="section-label">How it works</div>
-  <h2>Set it up once.<br />It runs forever.</h2>
-  <p class="section-sub">
-    You give RunSound your song, a few hook lines, and your streaming links. That's it.
-  </p>
+<section id="how">
+  <h2>Tell your agent what to do.<br>It handles the rest.</h2>
+  <p class="section-sub">Your agent discovers the right skill, runs it, and pays from one credit balance.</p>
+
   <div class="steps">
     <div class="step">
-      <div class="step-num">01</div>
-      <div class="step-icon">🎵</div>
-      <h3>You add your song</h3>
-      <p>Song title, artist name, 5 hook lines that capture the emotion of the track. Takes 3 minutes.</p>
+      <div class="step-num">01 — Discover</div>
+      <h3>Agent finds the skill</h3>
+      <p>Your agent queries the skills registry and gets ranked suggestions based on your goal.</p>
+      <code><strong>GET</strong> /api/skills/discover<br>?q=find tiktok creators</code>
     </div>
     <div class="step">
-      <div class="step-num">02</div>
-      <div class="step-icon">🤖</div>
-      <h3>AI builds your campaign</h3>
-      <p>RunSound generates a cohesive set of cinematic images and three hook variants — direct, emotional, and minimal.</p>
+      <div class="step-num">02 — Run</div>
+      <h3>Skill executes instantly</h3>
+      <p>One API call. The skill runs against your Spotify track and artist account — no manual steps.</p>
+      <code><strong>POST</strong> /api/skills/run<br>{ skill: "creator-scout" }</code>
     </div>
     <div class="step">
-      <div class="step-num">03</div>
-      <div class="step-icon">🌙</div>
-      <h3>Posts every night at 3am</h3>
-      <p>A finished carousel lands in your TikTok drafts. You open the app, add your song, tap publish.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">04</div>
-      <div class="step-icon">📈</div>
-      <h3>Learns what converts</h3>
-      <p>Every click to Spotify is tracked. The AI learns which hooks and images drive streams — and optimises the next post accordingly.</p>
+      <div class="step-num">03 — Pay</div>
+      <h3>Debited per call</h3>
+      <p>Credits are deducted per action. No monthly fees, no wasted spend on tools you don't use.</p>
+      <code><strong>$0.01</strong> per creator found<br><strong>$0.03</strong> per DM sent</code>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
-<section id="features" style="padding-top:0">
-  <div class="section-label">Features</div>
-  <h2>Everything built in.</h2>
-  <p class="section-sub">No tools to stitch together. No agency to hire.</p>
-  <div class="features-grid">
-    <div class="feature">
-      <div class="feature-icon">🎨</div>
-      <h3>AI-generated visuals</h3>
-      <p>Cinematic, cohesive images generated once per song. Every slide matches the arc — hook, tension, peak, release, aftermath, CTA.</p>
+<!-- NO SUBSCRIPTIONS -->
+<div class="nosub-section">
+  <div class="nosub-inner">
+    <h2>We killed the music marketing subscription.</h2>
+    <p class="section-sub">
+      SoundCampaign, Groover, SubmitHub — you pay every month whether you release or not.<br>
+      RunSound charges only when your agent runs a skill.
+    </p>
+    <div class="nosub-grid">
+      <div class="nosub-stat">
+        <div class="nosub-num">10</div>
+        <div class="nosub-label">Music marketing skills</div>
+      </div>
+      <div class="nosub-stat">
+        <div class="nosub-num">1</div>
+        <div class="nosub-label">Balance for everything</div>
+      </div>
+      <div class="nosub-stat">
+        <div class="nosub-num">$0</div>
+        <div class="nosub-label">Monthly minimum</div>
+      </div>
     </div>
-    <div class="feature">
-      <div class="feature-icon">✍️</div>
-      <h3>Hook variant testing</h3>
-      <p>Three text styles per post — direct lyrics, emotional reaction, minimalist mystery. The AI picks the best based on your history.</p>
+  </div>
+</div>
+
+<!-- SKILLS GRID -->
+<section id="skills">
+  <h2>Every skill your agent needs.</h2>
+  <p class="section-sub">From creator discovery to press kits — all in one API.</p>
+
+  <div class="skills-grid">
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">🎯</div>
+        <span class="skill-price">$0.02 / action</span>
+      </div>
+      <h3>full-campaign <span class="featured-badge">recommended</span></h3>
+      <p>Run a complete campaign end-to-end. Scouts creators, generates hooks, queues DMs, starts tracking — one call.</p>
     </div>
-    <div class="feature">
-      <div class="feature-icon">🔗</div>
-      <h3>Smart link page</h3>
-      <p>A beautiful landing page showing all your streaming platforms. Every click is tracked back to the exact post that drove it.</p>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">🔍</div>
+        <span class="skill-price">$0.01 / creator</span>
+      </div>
+      <h3>creator-scout</h3>
+      <p>Find TikTok creators matched to your song's energy, genre, and mood via Spotify audio features.</p>
     </div>
-    <div class="feature">
-      <div class="feature-icon">📊</div>
-      <h3>Streaming CTR learning</h3>
-      <p>RunSound tracks streaming clicks per post via UTM, computes your streamingCTR, and self-optimises the strategy daily.</p>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">📨</div>
+        <span class="skill-price">$0.03 / DM</span>
+      </div>
+      <h3>dm-outreach</h3>
+      <p>Send personalized TikTok DMs to creators. GPT writes a unique message per creator based on their bio.</p>
     </div>
-    <div class="feature">
-      <div class="feature-icon">📬</div>
-      <h3>TikTok draft delivery</h3>
-      <p>Posts go straight to your TikTok drafts via the official API. You stay in control — just add your song and publish.</p>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">🪝</div>
+        <span class="skill-price">$0.05 / hook</span>
+      </div>
+      <h3>hook-generator</h3>
+      <p>Generate viral TikTok hooks based on trending formats in your genre. POV, storytime, emotional — all of it.</p>
     </div>
-    <div class="feature">
-      <div class="feature-icon">🌍</div>
-      <h3>Multi-campaign support</h3>
-      <p>Running multiple singles at once? RunSound handles them all, with separate learning loops per song.</p>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">🎵</div>
+        <span class="skill-price">$0.10 / pitch</span>
+      </div>
+      <h3>playlist-pitcher</h3>
+      <p>Find Spotify playlist curators in your genre and send personalized pitches automatically.</p>
+    </div>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">📰</div>
+        <span class="skill-price">$0.10 / pitch</span>
+      </div>
+      <h3>press-pitcher</h3>
+      <p>Find music blogs and Substack writers covering your genre and send tailored pitches.</p>
+    </div>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">📦</div>
+        <span class="skill-price">$0.25 / kit</span>
+      </div>
+      <h3>release-kit</h3>
+      <p>Generate a complete release package: press release, artist bio, social captions, and pitch templates.</p>
+    </div>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">📈</div>
+        <span class="skill-price">$0.05 / analysis</span>
+      </div>
+      <h3>trend-matcher</h3>
+      <p>Match your song to currently trending TikTok formats, sounds, and hashtags in your genre.</p>
+    </div>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">👂</div>
+        <span class="skill-price">$0.01 / check</span>
+      </div>
+      <h3>sound-tracker</h3>
+      <p>Monitor TikTok to detect when creators post videos using your sound. Track campaign results automatically.</p>
+    </div>
+    <div class="skill-card">
+      <div class="skill-card-top">
+        <div class="skill-icon">📅</div>
+        <span class="skill-price">$0.05 / post</span>
+      </div>
+      <h3>post-scheduler</h3>
+      <p>Schedule and publish content to TikTok at optimal times for your audience's time zone.</p>
     </div>
   </div>
 </section>
 
-<!-- PRICING -->
-<section id="pricing">
-  <div style="text-align:center">
-    <div class="section-label">Pricing</div>
-    <h2>Simple, transparent pricing.</h2>
-    <p class="section-sub" style="margin:0 auto 3rem">No hidden fees. Cancel anytime.</p>
-  </div>
-  <div class="pricing-grid">
-    <div class="plan">
-      <div class="plan-name">Starter</div>
-      <div class="plan-price">$29<span>/mo</span></div>
-      <div class="plan-desc">Perfect for a single release</div>
-      <ul class="plan-features">
-        <li>1 active campaign</li>
-        <li>Daily TikTok drafts</li>
-        <li>Smart link page</li>
-        <li>Streaming CTR tracking</li>
-        <li>AI hook optimisation</li>
-        <li class="dimmed">Multi-campaign</li>
-        <li class="dimmed">Priority support</li>
-      </ul>
-      <a href="#signup" class="btn-primary" style="display:block;text-align:center">Get started</a>
+<!-- THREE WAYS -->
+<section>
+  <h2>Three ways to connect.</h2>
+  <p class="section-sub">Same skills, same balance — whichever your agent speaks.</p>
+
+  <div class="ways-grid">
+    <div class="way">
+      <div class="way-tag">Skill</div>
+      <h3>One line into your agent's chat</h3>
+      <p>Works with Claude, Cursor, Goose, and any agent that supports SKILL.md.</p>
+      <code>$set up https://run-sound.com/SKILL.md</code>
     </div>
-    <div class="plan featured">
-      <div class="plan-badge">Most popular</div>
-      <div class="plan-name">Growth</div>
-      <div class="plan-price">$79<span>/mo</span></div>
-      <div class="plan-desc">For artists with multiple releases</div>
-      <ul class="plan-features">
-        <li>3 active campaigns</li>
-        <li>Daily TikTok drafts</li>
-        <li>Smart link page</li>
-        <li>Streaming CTR tracking</li>
-        <li>AI hook optimisation</li>
-        <li>Multi-campaign</li>
-        <li class="dimmed">Priority support</li>
-      </ul>
-      <a href="#signup" class="btn-primary" style="display:block;text-align:center">Get started</a>
+    <div class="way">
+      <div class="way-tag">CLI</div>
+      <h3>Install from your terminal</h3>
+      <p>Installs SKILL.md into your project and stores your API key locally.</p>
+      <code>npx runsound install</code>
     </div>
-    <div class="plan">
-      <div class="plan-name">Pro</div>
-      <div class="plan-price">$149<span>/mo</span></div>
-      <div class="plan-desc">For labels and prolific artists</div>
-      <ul class="plan-features">
-        <li>5 active campaigns</li>
-        <li>Daily TikTok drafts</li>
-        <li>Smart link page</li>
-        <li>Streaming CTR tracking</li>
-        <li>AI hook optimisation</li>
-        <li>Multi-campaign</li>
-        <li>Priority support</li>
-      </ul>
-      <a href="#signup" class="btn-primary" style="display:block;text-align:center">Get started</a>
+    <div class="way">
+      <div class="way-tag">API</div>
+      <h3>Call the REST API directly</h3>
+      <p>Full REST API with structured JSON responses. Works in any language or framework.</p>
+      <code>POST run-sound.com/api/skills/run</code>
     </div>
   </div>
 </section>
 
-<!-- SIGNUP FORM -->
-<section id="signup">
-  <div class="section-label" style="text-align:center">Get started</div>
-  <h2>Launch your first campaign</h2>
-  <p class="section-sub">Takes 60 seconds. Your first draft lands in TikTok tonight.</p>
-
-  <div class="form-card">
-
-    <!-- Step indicator -->
-    <div style="display:flex;gap:0;margin-bottom:1.75rem;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
-      <div id="stepDot1" style="flex:1;padding:0.6rem;text-align:center;font-size:0.78rem;font-weight:700;background:var(--accent);color:#fff;transition:background .2s">1 · Your song</div>
-      <div id="stepDot2" style="flex:1;padding:0.6rem;text-align:center;font-size:0.78rem;font-weight:600;color:var(--muted);transition:all .2s">2 · Your email</div>
-    </div>
-
-    <!-- STEP 1 -->
-    <div id="step1">
-
-      <!-- Path toggle -->
-      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.875rem">Is your song already on Spotify?</p>
-      <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
-        <button type="button" id="pathSpotify" class="path-btn path-btn--active" onclick="setPath('spotify')">
-          ✅ Yes, it's out
-        </button>
-        <button type="button" id="pathManual" class="path-btn" onclick="setPath('manual')">
-          🔒 Not released yet
-        </button>
-      </div>
-
-      <!-- ── PATH A: Spotify URL ── -->
-      <div id="pathSpotifyForm">
-        <div class="form-row">
-          <label>Paste your Spotify track link</label>
-          <div style="display:flex;gap:0.5rem">
-            <input type="url" id="spotifyUrlInput" placeholder="https://open.spotify.com/track/…"
-              style="flex:1" oninput="onSpotifyInput()" />
-            <button type="button" id="btnLookup" onclick="lookupSpotify()"
-              style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 1rem;font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s"
-              onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'">
-              Fetch →
-            </button>
-          </div>
-          <div class="form-hint">open.spotify.com/track/… — right-click any song → Share → Copy link</div>
-        </div>
-
-        <!-- Preview card (hidden until lookup succeeds) -->
-        <div id="spotifyPreview" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:1.25rem;display:none">
-          <div style="display:flex;gap:0.875rem;align-items:center">
-            <img id="previewArt" src="" alt="" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0" />
-            <div style="min-width:0">
-              <div id="previewTitle" style="font-weight:700;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-              <div id="previewArtist" style="color:var(--muted);font-size:0.8rem;margin-top:2px"></div>
-              <div id="previewGenre" style="display:inline-block;margin-top:6px;font-size:0.7rem;background:rgba(124,58,237,0.15);color:var(--accent2);padding:2px 8px;border-radius:100px;font-weight:600"></div>
-            </div>
-            <div id="previewCheck" style="margin-left:auto;font-size:1.5rem;flex-shrink:0">✅</div>
-          </div>
-          <!-- genre override if auto-detected is wrong or missing -->
-          <div id="genreOverrideRow" style="margin-top:0.875rem;display:none">
-            <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Genre (tap to change)</label>
-            <select id="genreOverrideSelect" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.82rem;padding:0.45rem 0.75rem">
-            </select>
-          </div>
-        </div>
-
-        <div id="spotifyError" style="display:none;color:#ef4444;font-size:0.8rem;margin-top:-0.75rem;margin-bottom:1rem"></div>
-      </div>
-
-      <!-- ── PATH B: Manual (pre-release) ── -->
-      <div id="pathManualForm" style="display:none">
-        <div class="form-row">
-          <label>Artist name</label>
-          <input type="text" id="manualArtist" placeholder="e.g. Carly Rae Jepsen" />
-        </div>
-        <div class="form-row">
-          <label>Song title</label>
-          <input type="text" id="manualSong" placeholder="e.g. Summer Love" />
-        </div>
-        <div class="form-row">
-          <label>Genre</label>
-          <select id="manualGenre">
-            <option value="">Select genre…</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Artwork <span style="color:var(--muted);font-weight:400">(your cover art)</span></label>
-          <div id="artDropzone" style="border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--surface)" onclick="document.getElementById('artFileInput').click()">
-            <div id="artDropzoneContent">
-              <div style="font-size:1.5rem;margin-bottom:0.4rem">🖼️</div>
-              <div style="font-weight:600;font-size:0.85rem">Drop your cover art here or click to browse</div>
-              <div style="color:var(--muted);font-size:0.75rem;margin-top:0.25rem">JPG or PNG · Square · Max 5MB</div>
-            </div>
-            <input type="file" id="artFileInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleArtUpload(this.files[0])">
-          </div>
-        </div>
-      </div>
-
-      <button type="button" id="btnNext" onclick="goStep2()"
-        style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:0.9rem;font-family:inherit;font-size:0.95rem;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;margin-top:0.5rem"
-        onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'">
-        Continue →
+<!-- FAQ -->
+<section id="faq">
+  <h2>Common questions.</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Do I need separate accounts for each platform?
+        <span class="faq-chevron">▾</span>
       </button>
+      <div class="faq-a">No. You connect your Spotify once during signup. For TikTok outreach, you connect your TikTok session — one account sends up to 30 DMs per day, and you can connect multiple accounts to scale.</div>
     </div>
-
-    <!-- STEP 2 -->
-    <div id="step2" style="display:none">
-      <button type="button" onclick="goStep1()" style="background:none;border:none;color:var(--muted);font-family:inherit;font-size:0.8rem;cursor:pointer;margin-bottom:1.25rem;padding:0">← Back</button>
-
-      <!-- Song summary -->
-      <div id="step2Summary" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.75rem">
-        <img id="step2Art" src="" alt="" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0;display:none" />
-        <div>
-          <div id="step2Title" style="font-weight:700;font-size:0.9rem"></div>
-          <div id="step2Artist" style="color:var(--muted);font-size:0.78rem;margin-top:1px"></div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <label>Your email</label>
-        <input type="email" id="emailInput" placeholder="you@example.com" />
-        <div class="form-hint">We'll send your dashboard link here. No spam, ever.</div>
-      </div>
-
-      <button type="button" id="btnSubmit" onclick="submitSignup()"
-        style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:0.9rem;font-family:inherit;font-size:0.95rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:0.5rem"
-        onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'">
-        Launch my campaign →
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How does pricing work?
+        <span class="faq-chevron">▾</span>
       </button>
+      <div class="faq-a">You top up a credit balance and each skill call debits from it. No monthly fees. A typical release campaign (30 creators scouted, 30 DMs sent, 5 hooks, 1 release kit) costs around $2–3 total.</div>
     </div>
-
-    <div class="success-msg" id="successMsg" style="display:none">
-      <div class="check">🎉</div>
-      <h3>You're in!</h3>
-      <p>We're setting up your campaign. Check your email for next steps — your first TikTok draft arrives tonight.</p>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Which AI agents are supported?
+        <span class="faq-chevron">▾</span>
+      </button>
+      <div class="faq-a">Claude (Claude.ai and Claude Code), Cursor, Goose, and any agent that can read SKILL.md files or call a REST API. The CLI installs SKILL.md into your project's .claude/ folder automatically.</div>
     </div>
-  </div>
-</section>
-      <div class="form-row">
-        <label>Artist name</label>
-        <input type="text" name="artist" placeholder="e.g. Carly Rae Jepsen" required />
-      </div>
-      <div class="form-row">
-        <label>Song title</label>
-        <input type="text" name="song" placeholder="e.g. Summer Love" required />
-      </div>
-      <div class="form-row">
-        <label>Genre</label>
-        <select name="genre" required>
-          <option value="">Select genre...</option>
-          <optgroup label="Pop">
-            <option>Pop</option>
-            <option>Indie Pop</option>
-            <option>Singer-Songwriter</option>
-            <option>Bedroom Pop</option>
-          </optgroup>
-          <optgroup label="Electronic / Dance">
-            <option>Deep House</option>
-            <option>Tech House</option>
-            <option>Afro House</option>
-            <option>Melodic House</option>
-            <option>Tropical House</option>
-            <option>Progressive House</option>
-            <option>Dance / EDM</option>
-            <option>Techno</option>
-            <option>Trance</option>
-            <option>Drum &amp; Bass</option>
-            <option>Electronic / Other</option>
-          </optgroup>
-          <optgroup label="Hip-Hop / R&amp;B">
-            <option>Hip-Hop</option>
-            <option>Rap</option>
-            <option>Trap</option>
-            <option>Drill</option>
-            <option>R&amp;B</option>
-            <option>Soul / Neo-Soul</option>
-          </optgroup>
-          <optgroup label="Rock / Alternative">
-            <option>Indie Rock</option>
-            <option>Rock</option>
-            <option>Alternative</option>
-            <option>Folk</option>
-            <option>Country</option>
-          </optgroup>
-          <optgroup label="World / Other">
-            <option>Afrobeats</option>
-            <option>Afropop</option>
-            <option>Latin</option>
-            <option>Reggaeton</option>
-            <option>Reggae</option>
-            <option>Jazz</option>
-            <option>K-Pop</option>
-            <option>Classical</option>
-            <option>Other</option>
-          </optgroup>
-        </select>
-        <div class="form-hint">Be specific — "Deep House" gives RunSound much better images than just "House".</div>
-      </div>
-      <div class="form-row">
-        <label>Spotify link</label>
-        <input type="url" name="spotify" placeholder="https://open.spotify.com/track/..." required />
-      </div>
-
-      <!-- More platforms — collapsible -->
-      <div class="more-platforms">
-        <button type="button" class="more-platforms-toggle" id="morePlatformsBtn">
-          <span>+ Add Apple Music, Tidal &amp; more</span>
-          <span class="toggle-hint">optional but recommended</span>
-        </button>
-        <div class="more-platforms-fields" id="morePlatformsFields">
-          <div class="platforms-grid">
-            <div class="form-row">
-              <label>Apple Music</label>
-              <input type="url" name="apple" placeholder="https://music.apple.com/..." />
-            </div>
-            <div class="form-row">
-              <label>YouTube Music</label>
-              <input type="url" name="youtube" placeholder="https://music.youtube.com/..." />
-            </div>
-            <div class="form-row">
-              <label>Tidal</label>
-              <input type="url" name="tidal" placeholder="https://tidal.com/browse/track/..." />
-            </div>
-            <div class="form-row">
-              <label>Deezer</label>
-              <input type="url" name="deezer" placeholder="https://www.deezer.com/track/..." />
-            </div>
-            <div class="form-row">
-              <label>Amazon Music</label>
-              <input type="url" name="amazon" placeholder="https://music.amazon.com/..." />
-            </div>
-            <div class="form-row">
-              <label>SoundCloud</label>
-              <input type="url" name="soundcloud" placeholder="https://soundcloud.com/..." />
-            </div>
-          </div>
-          <p class="form-hint" style="margin-top:0.25rem">RunSound tracks which platform each listener chooses so you know where your fans stream.</p>
-          <div class="form-row" style="margin-top:1rem">
-            <label>Album artwork URL <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-            <input type="url" name="artwork_url" placeholder="https://i.scdn.co/image/... or any image URL" />
-            <div class="form-hint">RunSound auto-fetches your cover from Spotify. Paste a URL here only if you want to override it.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Lyrics or Instrumental -->
-      <div class="form-row" style="margin-top:1.25rem">
-        <label>Does your song have lyrics?</label>
-        <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:400">
-            <input type="radio" name="song_type" value="lyrics" id="songTypeHasLyrics" checked style="accent-color:var(--accent);width:16px;height:16px">
-            Yes — it has lyrics
-          </label>
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:400">
-            <input type="radio" name="song_type" value="instrumental" id="songTypeInstrumental" style="accent-color:var(--accent);width:16px;height:16px">
-            No — it's instrumental
-          </label>
-        </div>
-      </div>
-
-      <!-- Shown when has lyrics -->
-      <div id="lyricsSection">
-        <div class="form-row" style="margin-top:0.75rem">
-          <label>Lyrics</label>
-          <textarea name="lyrics" id="lyricsTextarea" rows="8" placeholder="Paste the full lyrics here…&#10;&#10;RunSound reads them to extract key phrases, emotion and story — so every hook we write is grounded in what the song actually says."></textarea>
-          <div class="form-hint">Kept private — never shown publicly. The AI uses these to write hooks that sound like they came from inside the song.</div>
-        </div>
-      </div>
-
-      <!-- Shown when instrumental — description + mood become the primary source -->
-      <div id="instrumentalSection" style="display:none">
-        <div class="form-row" style="margin-top:0.75rem">
-          <label>What is the song about?</label>
-          <textarea name="description" id="descriptionInstrumental" placeholder="e.g. The feeling of driving alone at 3am through an empty city. Acceptance. That moment when silence finally feels like peace." rows="3"></textarea>
-          <div class="form-hint">Since there are no lyrics, this is what RunSound uses to write hooks and generate visuals. Be specific — what does the song make you feel or picture?</div>
-        </div>
-        <div class="form-row">
-          <label>Mood &amp; feeling</label>
-          <textarea name="mood" id="moodInstrumental" placeholder="e.g. Dark and hypnotic. Melancholic but driving. Like a slow exhale." rows="2"></textarea>
-          <div class="form-hint">The emotional texture of the track.</div>
-        </div>
-      </div>
-
-      <!-- Always shown for lyric songs — lighter role when lyrics are pasted -->
-      <div id="lyricSongMeta">
-        <div class="form-row" style="margin-top:0.75rem">
-          <label>Mood &amp; feeling <span style="color:var(--muted);font-weight:400">(optional — AI reads it from your lyrics)</span></label>
-          <textarea name="mood" id="moodLyric" placeholder="e.g. Melancholic but freeing. Bittersweet and hopeful. Like a 3am drive with the windows down." rows="2"></textarea>
-        </div>
-        <div class="form-row">
-          <label>What is the song about? <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-          <textarea name="description" id="descriptionLyric" placeholder="e.g. A late-night drive after a breakup, trying to let go but still holding on." rows="2"></textarea>
-        </div>
-      </div>
-
-      <div class="form-row" style="margin-top:1rem">
-        <label>Who listens to this song?</label>
-        <input type="text" name="target_audience" placeholder="e.g. Young women going through a breakup, 18–25, fans of Olivia Rodrigo" />
-        <div class="form-hint">Describe your target listener. The AI uses this to write hooks that speak directly to them.</div>
-      </div>
-
-      <!-- IMAGE MODE -->
-      <div class="form-row" style="margin-top:1.5rem">
-        <label>Your campaign visuals</label>
-        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.5rem">
-          <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeReferenceLabel">
-            <input type="radio" name="image_mode" value="reference" id="imgModeReference" checked style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
-            <div>
-              <div style="font-weight:600;font-size:0.9rem">Upload reference images — AI recreates the style</div>
-              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 3–5 photos with the aesthetic you want. RunSound generates new images that match the exact look and feel.</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:flex-start;gap:0.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;cursor:pointer;transition:border-color .2s" id="imgModeOwnLabel">
-            <input type="radio" name="image_mode" value="own" id="imgModeOwn" style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0">
-            <div>
-              <div style="font-weight:600;font-size:0.9rem">Upload your own photos — used directly</div>
-              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Upload 6–12 photos you own the rights to. RunSound uses them as-is for your TikTok slides. No AI generation.</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <!-- Upload area (always visible) -->
-      <div id="imageUploadSection" style="margin-top:0.75rem">
-        <div id="imageDropzone" style="border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--surface)">
-          <div style="font-size:1.5rem;margin-bottom:0.5rem">📸</div>
-          <div style="font-weight:600;font-size:0.9rem" id="dropzoneTitle">Drop images here or click to browse</div>
-          <div style="color:var(--muted);font-size:0.78rem;margin-top:0.3rem" id="dropzoneHint">3–5 images recommended · JPG, PNG · Max 5MB each</div>
-          <input type="file" id="imageFileInput" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
-        </div>
-        <div id="imagePreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:0.75rem"></div>
-        <div id="imageUploadCount" style="font-size:0.78rem;color:var(--muted);margin-top:0.4rem"></div>
-      </div>
-
-      <div class="form-row">
-        <label>Your email</label>
-        <input type="email" name="email" placeholder="you@example.com" required />
-      </div>
-      <button type="submit" class="form-submit">Launch my campaign →</button>
-    </form>
-
-    <div class="success-msg" id="successMsg">
-      <div class="check">🎉</div>
-      <h3>You're in!</h3>
-      <p>We'll set up your campaign and send your first TikTok draft tonight. Check your email for next steps.</p>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What if a skill fails — am I charged?
+        <span class="faq-chevron">▾</span>
+      </button>
+      <div class="faq-a">No. Credits are only debited when a skill completes successfully. Failed runs are logged but not billed.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Can I use RunSound without an AI agent?
+        <span class="faq-chevron">▾</span>
+      </button>
+      <div class="faq-a">Yes. You can use the dashboard at run-sound.com to run skills manually with a click — the same skills, same pricing, no agent required.</div>
     </div>
   </div>
 </section>
+
+<!-- DEVELOPER CTA -->
+<div class="dev-section">
+  <h2>Build a music skill. Earn 70%.</h2>
+  <p>Have an API artists should be calling? List it on RunSound. We route agent traffic to it, meter every call, and share the revenue.</p>
+  <a href="mailto:hello@run-sound.com" class="dev-cta">Apply to list your skill →</a>
+</div>
 
 <!-- FOOTER -->
 <footer>
-  <div class="logo">Run<span>Sound</span></div>
-  <div style="display:flex;gap:1.5rem">
-    <a href="#">Terms</a>
-    <a href="#">Privacy</a>
-    <a href="mailto:hello@runsound.fm">hello@runsound.fm</a>
+  <div class="logo">Run<span style="color:var(--accent)">Sound</span></div>
+  <div class="footer-links">
+    <a href="/signup.html">Get started</a>
+    <a href="https://run-sound.com/SKILL.md">SKILL.md</a>
+    <a href="mailto:hello@run-sound.com">Support</a>
   </div>
-  <div>© 2025 RunSound</div>
+  <div>© 2026 RunSound</div>
 </footer>
 
-<style>
-  .path-btn {
-    flex: 1; padding: 0.65rem 0.75rem;
-    background: var(--surface); border: 2px solid var(--border);
-    border-radius: 10px; color: var(--muted);
-    font-family: inherit; font-size: 0.82rem; font-weight: 600;
-    cursor: pointer; transition: all .15s;
-  }
-  .path-btn--active {
-    background: rgba(124,58,237,0.12);
-    border-color: var(--accent); color: var(--text);
-  }
-  .lookup-spinner {
-    display: inline-block; width: 12px; height: 12px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff; border-radius: 50%;
-    animation: spin .7s linear infinite;
-    vertical-align: middle; margin-right: 5px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-
 <script>
-// ── Genre options (shared between both paths) ─────────────────────────────────
-const GENRES = [
-  'Pop','Indie Pop','Singer-Songwriter','Bedroom Pop',
-  'Deep House','Tech House','Afro House','Melodic House','Tropical House',
-  'Progressive House','Dance / EDM','Techno','Trance','Drum & Bass','Electronic / Other',
-  'Hip-Hop','Rap','Trap','Drill','R&B','Soul / Neo-Soul',
-  'Indie Rock','Rock','Alternative','Folk','Country',
-  'Afrobeats','Afropop','Latin','Reggaeton','Reggae','Jazz','K-Pop','Classical','Other',
-];
-
-function buildGenreOptions(selectEl, selectedVal) {
-  selectEl.innerHTML = '<option value="">Select genre…</option>';
-  GENRES.forEach(g => {
-    const o = document.createElement('option');
-    o.value = o.textContent = g;
-    if (g === selectedVal) o.selected = true;
-    selectEl.appendChild(o);
-  });
-}
-buildGenreOptions(document.getElementById('manualGenre'));
-buildGenreOptions(document.getElementById('genreOverrideSelect'));
-
-// ── State ─────────────────────────────────────────────────────────────────────
-let currentPath    = 'spotify'; // 'spotify' | 'manual'
-let spotifyData    = null;      // result from /api/spotify/lookup
-let artworkFile    = null;      // File object for manual path artwork
-let artworkDataUrl = null;      // base64 preview for manual path
-
-// ── Path toggle ───────────────────────────────────────────────────────────────
-function setPath(path) {
-  currentPath = path;
-  document.getElementById('pathSpotifyForm').style.display = path === 'spotify' ? '' : 'none';
-  document.getElementById('pathManualForm').style.display  = path === 'manual'  ? '' : 'none';
-  document.getElementById('pathSpotify').className = 'path-btn' + (path === 'spotify' ? ' path-btn--active' : '');
-  document.getElementById('pathManual').className  = 'path-btn' + (path === 'manual'  ? ' path-btn--active' : '');
-}
-
-// ── Spotify lookup ────────────────────────────────────────────────────────────
-let _lookupTimer = null;
-function onSpotifyInput() {
-  clearTimeout(_lookupTimer);
-  const val = document.getElementById('spotifyUrlInput').value.trim();
-  if (val.includes('spotify.com/track/')) {
-    _lookupTimer = setTimeout(lookupSpotify, 600); // auto-lookup after 600ms pause
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    item.classList.toggle('open');
   }
-}
-
-async function lookupSpotify() {
-  const url = document.getElementById('spotifyUrlInput').value.trim();
-  if (!url) return;
-
-  const btn = document.getElementById('btnLookup');
-  const err = document.getElementById('spotifyError');
-  const preview = document.getElementById('spotifyPreview');
-
-  btn.innerHTML = '<span class="lookup-spinner"></span>';
-  btn.disabled  = true;
-  err.style.display = 'none';
-  preview.style.display = 'none';
-  spotifyData = null;
-
-  try {
-    const res  = await fetch(`/api/spotify/lookup?url=${encodeURIComponent(url)}`);
-    const data = await res.json();
-
-    if (!data.ok) throw new Error(data.error || 'Could not find that track');
-
-    spotifyData = data;
-
-    // Show preview card
-    document.getElementById('previewArt').src    = data.artwork_url || '';
-    document.getElementById('previewTitle').textContent  = data.song_title;
-    document.getElementById('previewArtist').textContent = data.artist_name;
-
-    const genreEl = document.getElementById('previewGenre');
-    if (data.genre) {
-      genreEl.textContent = data.genre;
-      genreEl.style.display = 'inline-block';
-      document.getElementById('genreOverrideRow').style.display = 'none';
-    } else {
-      genreEl.style.display = 'none';
-      // No genre detected — show dropdown
-      buildGenreOptions(document.getElementById('genreOverrideSelect'));
-      document.getElementById('genreOverrideRow').style.display = '';
-    }
-
-    preview.style.display = '';
-
-  } catch (e) {
-    err.textContent = e.message;
-    err.style.display = '';
-  } finally {
-    btn.innerHTML = 'Fetch →';
-    btn.disabled  = false;
-  }
-}
-
-// ── Manual artwork upload ──────────────────────────────────────────────────────
-function handleArtUpload(file) {
-  if (!file) return;
-  artworkFile = file;
-  const reader = new FileReader();
-  reader.onload = e => {
-    artworkDataUrl = e.target.result;
-    document.getElementById('artDropzoneContent').innerHTML =
-      `<img src="${artworkDataUrl}" style="width:80px;height:80px;border-radius:8px;object-fit:cover;margin:0 auto;display:block;margin-bottom:0.4rem">
-       <div style="font-size:0.75rem;color:var(--muted)">${file.name} · click to change</div>`;
-  };
-  reader.readAsDataURL(file);
-}
-
-// Drag-and-drop for art dropzone
-const artDropzone = document.getElementById('artDropzone');
-artDropzone.addEventListener('dragover', e => { e.preventDefault(); artDropzone.style.borderColor = 'var(--accent)'; });
-artDropzone.addEventListener('dragleave', () => { artDropzone.style.borderColor = 'var(--border)'; });
-artDropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  artDropzone.style.borderColor = 'var(--border)';
-  const f = e.dataTransfer.files[0];
-  if (f && f.type.startsWith('image/')) handleArtUpload(f);
-});
-
-// ── Step navigation ───────────────────────────────────────────────────────────
-function goStep2() {
-  // Validate step 1
-  if (currentPath === 'spotify') {
-    if (!spotifyData) {
-      const url = document.getElementById('spotifyUrlInput').value.trim();
-      if (!url) { alert('Paste your Spotify track link first'); return; }
-      lookupSpotify().then(() => { if (spotifyData) goStep2(); });
-      return;
-    }
-    // If no genre was auto-detected, require manual select
-    if (!spotifyData.genre) {
-      const sel = document.getElementById('genreOverrideSelect').value;
-      if (!sel) { alert('Please select your genre'); return; }
-      spotifyData.genre = sel;
-    }
-  } else {
-    const artist = document.getElementById('manualArtist').value.trim();
-    const song   = document.getElementById('manualSong').value.trim();
-    const genre  = document.getElementById('manualGenre').value;
-    if (!artist || !song || !genre) {
-      alert('Please fill in artist name, song title and genre');
-      return;
-    }
-  }
-
-  // Show step 2 summary
-  const title  = currentPath === 'spotify' ? spotifyData.song_title  : document.getElementById('manualSong').value.trim();
-  const artist = currentPath === 'spotify' ? spotifyData.artist_name : document.getElementById('manualArtist').value.trim();
-  const art    = currentPath === 'spotify' ? (spotifyData.artwork_url || '') : (artworkDataUrl || '');
-
-  document.getElementById('step2Title').textContent  = title;
-  document.getElementById('step2Artist').textContent = artist;
-  const artEl = document.getElementById('step2Art');
-  if (art) { artEl.src = art; artEl.style.display = ''; }
-  else       { artEl.style.display = 'none'; }
-
-  document.getElementById('step1').style.display = 'none';
-  document.getElementById('step2').style.display = '';
-  document.getElementById('stepDot1').style.background = 'var(--surface2)';
-  document.getElementById('stepDot1').style.color = 'var(--muted)';
-  document.getElementById('stepDot2').style.background = 'var(--accent)';
-  document.getElementById('stepDot2').style.color = '#fff';
-}
-
-function goStep1() {
-  document.getElementById('step1').style.display = '';
-  document.getElementById('step2').style.display = 'none';
-  document.getElementById('stepDot1').style.background = 'var(--accent)';
-  document.getElementById('stepDot1').style.color = '#fff';
-  document.getElementById('stepDot2').style.background = 'var(--surface2)';
-  document.getElementById('stepDot2').style.color = 'var(--muted)';
-}
-
-// ── Submit ────────────────────────────────────────────────────────────────────
-async function submitSignup() {
-  const email = document.getElementById('emailInput').value.trim();
-  if (!email || !email.includes('@')) { alert('Please enter a valid email'); return; }
-
-  const btn = document.getElementById('btnSubmit');
-  btn.textContent = 'Launching…';
-  btn.disabled    = true;
-
-  try {
-    let body;
-
-    if (currentPath === 'spotify') {
-      body = {
-        artist:      spotifyData.artist_name,
-        song:        spotifyData.song_title,
-        genre:       spotifyData.genre,
-        spotify:     spotifyData.spotify_url,
-        artwork_url: spotifyData.artwork_url || '',
-        email,
-        is_released: true,
-      };
-
-      const res  = await fetch('/api/signup', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Server error');
-      onSuccess(json);
-
-    } else {
-      // Manual path — may have artwork file
-      const artist = document.getElementById('manualArtist').value.trim();
-      const song   = document.getElementById('manualSong').value.trim();
-      const genre  = document.getElementById('manualGenre').value;
-
-      if (artworkFile) {
-        const fd = new FormData();
-        fd.append('artist', artist);
-        fd.append('song',   song);
-        fd.append('genre',  genre);
-        fd.append('email',  email);
-        fd.append('is_released', 'false');
-        fd.append('image_0', artworkFile);
-        fd.append('image_mode', 'own');
-
-        const res  = await fetch('/api/signup', { method: 'POST', body: fd });
-        const json = await res.json();
-        if (!json.ok) throw new Error(json.error || 'Server error');
-        onSuccess(json);
-      } else {
-        const res  = await fetch('/api/signup', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ artist, song, genre, email, is_released: false }),
-        });
-        const json = await res.json();
-        if (!json.ok) throw new Error(json.error || 'Server error');
-        onSuccess(json);
-      }
-    }
-  } catch (err) {
-    btn.textContent = 'Try again';
-    btn.disabled    = false;
-    alert(err.message || 'Something went wrong. Please try again.');
-  }
-}
-
-function onSuccess(json) {
-  const song = encodeURIComponent(
-    currentPath === 'spotify' ? spotifyData?.song_title : document.getElementById('manualSong')?.value || ''
-  );
-  window.location.href =
-    `/connect.html?campaign_id=${encodeURIComponent(json.campaignId)}&artist_id=${encodeURIComponent(json.artistId)}&token=${encodeURIComponent(json.dashToken)}&song=${song}`;
-}
 </script>
 
 </body>
