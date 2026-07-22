@@ -13,10 +13,13 @@ require('dotenv').config();
 const express  = require('express');
 const router   = express.Router();
 const supabase = require('../db');
-const Stripe   = require('stripe');
-
-const stripe   = Stripe(process.env.STRIPE_SECRET_KEY);
 const BASE_URL = process.env.BASE_URL || 'https://run-sound.com';
+
+// Lazy Stripe init — avoids crash on startup if key not yet set
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
 
 // ─── Auth middleware (reuse artist API key) ───────────────────────────────────
 async function requireArtist(req, res, next) {
@@ -51,6 +54,12 @@ router.post('/', requireArtist, async (req, res) => {
     return res.status(400).json({ ok: false, error: 'track_name, spotify_url, payout_per_post_usd, max_creators required' });
   }
 
+  // Pricing guidance (returned as advisory, not enforced)
+  const payout = parseFloat(payout_per_post_usd);
+  let pricing_tip = null;
+  if (payout < 5)  pricing_tip = 'Tip: Under $5 per post gets very low acceptance rates. We recommend at least $10 for micro-creators.';
+  if (payout > 100) pricing_tip = 'Tip: For indie budgets, $10–25 per post across 10–20 micro-creators (under 20k followers) typically outperforms one expensive creator. Higher engagement, more algorithm chances.';
+
   const budget = parseFloat(payout_per_post_usd) * parseInt(max_creators);
   const expires_at = new Date(Date.now() + expires_days * 86400000).toISOString();
 
@@ -79,7 +88,7 @@ router.post('/', requireArtist, async (req, res) => {
     if (offerError) throw offerError;
 
     // Create Stripe PaymentIntent for escrow
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount:   Math.round(budget * 100), // cents
       currency: 'usd',
       metadata: {
@@ -98,11 +107,12 @@ router.post('/', requireArtist, async (req, res) => {
 
     res.json({
       ok: true,
-      offer_id:         offer.id,
-      budget_usd:       budget,
+      offer_id:             offer.id,
+      budget_usd:           budget,
       stripe_client_secret: paymentIntent.client_secret,
-      checkout_message: `Fund $${budget} escrow to activate this offer. Use the client_secret with Stripe.js or the hosted checkout below.`,
-      offer_invite_url: `${BASE_URL}/offer-invite.html?offer=${offer.id}`
+      checkout_message:     `Fund $${budget} escrow to activate this offer.`,
+      offer_invite_url:     `${BASE_URL}/offer-invite.html?offer=${offer.id}`,
+      ...(pricing_tip && { pricing_tip })
     });
 
   } catch (err) {
@@ -202,7 +212,7 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET_OFFERS);
+    event = getStripe().webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET_OFFERS);
   } catch (err) {
     console.error('[offers/webhook] Signature failed:', err.message);
     return res.status(400).send(`Webhook error: ${err.message}`);

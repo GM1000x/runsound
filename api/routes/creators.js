@@ -13,10 +13,13 @@ require('dotenv').config();
 const express  = require('express');
 const router   = express.Router();
 const supabase = require('../db');
-const Stripe   = require('stripe');
-
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const BASE_URL = process.env.BASE_URL || 'https://run-sound.com';
+
+// Lazy Stripe init — avoids crash on startup if key not yet set
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
 
 // ─── Auth middleware (simple email token in header) ───────────────────────────
 async function requireCreator(req, res, next) {
@@ -81,7 +84,7 @@ router.get('/connect-stripe', requireCreator, async (req, res) => {
 
     // Create Express account if not exists
     if (!accountId) {
-      const account = await stripe.accounts.create({
+      const account = await getStripe().accounts.create({
         type: 'express',
         email: creator.email,
         metadata: { creator_id: creator.id, tiktok_handle: creator.tiktok_handle },
@@ -96,7 +99,7 @@ router.get('/connect-stripe', requireCreator, async (req, res) => {
     }
 
     // Create onboarding link
-    const accountLink = await stripe.accountLinks.create({
+    const accountLink = await getStripe().accountLinks.create({
       account: accountId,
       refresh_url: `${BASE_URL}/creator-signup.html?stripe=refresh`,
       return_url:  `${BASE_URL}/api/creators/stripe-return?creator_id=${creator.id}`,
@@ -125,7 +128,7 @@ router.get('/stripe-return', async (req, res) => {
 
     if (!creator?.stripe_account_id) return res.redirect('/creator-signup.html?stripe=error');
 
-    const account = await stripe.accounts.retrieve(creator.stripe_account_id);
+    const account = await getStripe().accounts.retrieve(creator.stripe_account_id);
     const onboarded = account.details_submitted && account.charges_enabled;
 
     await supabase

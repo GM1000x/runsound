@@ -7,8 +7,10 @@
 
 require('dotenv').config();
 const supabase = require('./db');
-const Stripe   = require('stripe');
-const stripe   = Stripe(process.env.STRIPE_SECRET_KEY);
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
 
 /**
  * triggerPayout(tiktok_handle, tiktok_post_url)
@@ -75,7 +77,7 @@ async function triggerPayout(tiktok_handle, tiktok_post_url) {
       // Fire Stripe Connect transfer
       const amountCents = Math.round(parseFloat(deal.payout_usd) * 100);
 
-      const transfer = await stripe.transfers.create({
+      const transfer = await getStripe().transfers.create({
         amount:      amountCents,
         currency:    'usd',
         destination: creator.stripe_account_id,
