@@ -60,6 +60,8 @@ app.use('/auth/tiktok',    require('./routes/tiktok-auth'));
 app.use('/api/tiktok',    require('./routes/tiktok-demo'));
 app.use('/api/outreach',  require('./routes/outreach'));
 app.use('/api/skills',   require('./routes/skills'));
+app.use('/api/creators', require('./routes/creators'));
+app.use('/api/offers',   require('./routes/offers'));
 // /api/credits/* → strips prefix and forwards to /credits/* in skills router
 app.use('/api/credits', (req, res, next) => {
   req.url = '/credits' + req.url;

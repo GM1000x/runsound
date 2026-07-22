@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get paid to post — RunSound</title>
+  <meta name="description" content="Sign up as a TikTok creator on RunSound. Get paid automatically when you post with an artist's sound." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #FAFAF7; --surface: #fff; --border: #E8E8E3; --border2: #D4D4CE;
+      --text: #1a1a18; --muted: #6b6b65; --accent: #7c3aed; --accent-l: #ede9fe;
+      --green: #16a34a; --green-l: #dcfce7; --radius: 10px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%; height: 60px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg); position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+
+    .page {
+      max-width: 480px; margin: 0 auto;
+      padding: 72px 5% 80px;
+    }
+
+    .step-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--accent-l); color: var(--accent);
+      border: 1px solid #c4b5fd; border-radius: 999px;
+      padding: 4px 14px; font-size: 0.78rem; font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 10px; }
+    .page-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 40px; line-height: 1.65; }
+
+    /* HOW IT WORKS */
+    .how {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 36px;
+    }
+    .how-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 16px; }
+    .how-steps { display: flex; flex-direction: column; gap: 14px; }
+    .how-step { display: flex; align-items: flex-start; gap: 12px; }
+    .how-num {
+      width: 22px; height: 22px; background: var(--accent); color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .how-text { font-size: 0.88rem; }
+    .how-text strong { font-weight: 600; }
+    .how-text span { color: var(--muted); display: block; font-size: 0.82rem; }
+
+    /* FORM */
+    .form-section { display: flex; flex-direction: column; gap: 20px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.85rem; font-weight: 600; }
+    input {
+      width: 100%; padding: 11px 14px;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: var(--radius); font-size: 0.95rem;
+      font-family: 'Inter', sans-serif; color: var(--text);
+      transition: border-color .15s; outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    .field-hint { font-size: 0.78rem; color: var(--muted); }
+
+    .submit-btn {
+      width: 100%; padding: 13px;
+      background: var(--text); color: var(--bg);
+      border: none; border-radius: var(--radius);
+      font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: opacity .15s; margin-top: 4px;
+    }
+    .submit-btn:hover { opacity: 0.8; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+      border-radius: var(--radius); padding: 12px 16px;
+      font-size: 0.88rem; display: none;
+    }
+
+    /* STEP 2 — Stripe connect */
+    #step-stripe { display: none; }
+    .stripe-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 32px; text-align: center;
+    }
+    .stripe-card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
+    .stripe-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; line-height: 1.6; }
+    .stripe-btn {
+      display: inline-block; padding: 12px 28px;
+      background: #635bff; color: #fff;
+      border-radius: var(--radius); font-weight: 600; font-size: 0.95rem;
+      cursor: pointer; border: none; font-family: 'Inter', sans-serif;
+      transition: opacity .15s;
+    }
+    .stripe-btn:hover { opacity: 0.88; }
+    .stripe-note { font-size: 0.78rem; color: var(--muted); margin-top: 14px; }
+
+    /* STEP 3 — Success */
+    #step-success { display: none; }
+    .success-card {
+      background: var(--green-l); border: 1px solid #bbf7d0;
+      border-radius: 12px; padding: 40px 32px; text-align: center;
+    }
+    .success-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .success-card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; color: var(--green); }
+    .success-card p { color: #166534; font-size: 0.9rem; line-height: 1.65; }
+
+    /* Stripe return states */
+    #step-stripe-incomplete { display: none; }
+    .warn-card {
+      background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 12px; padding: 24px; text-align: center;
+    }
+    .warn-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #92400e; }
+    .warn-card p { color: #78350f; font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">Run<span>Sound</span></a>
+</nav>
+
+<div class="page">
+
+  <!-- STEP 1: Register -->
+  <div id="step-register">
+    <div class="step-badge">💸 Get paid to post</div>
+    <h1>Earn money for every TikTok you post.</h1>
+    <p class="page-sub">Artists pay you directly when you use their sound. No negotiating, no invoices — payment releases automatically the moment your post goes live.</p>
+
+    <div class="how">
+      <div class="how-title">How it works</div>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <div class="how-text"><strong>You get an offer</strong><span>An artist's DM includes a RunSound link with how much they'll pay per post.</span></div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <div class="how-text"><strong>You sign up and connect your bank</strong><span>Takes 3 minutes. Powered by Stripe — same as Airbnb and Uber payouts.</span></div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <div class="how-text"><strong>You post with the sound</strong><span>Our tracker detects your post and money hits your bank automatically. No chasing needed.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="field">
+        <label for="name">Your name</label>
+        <input type="text" id="name" placeholder="Alex Johnson" autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@email.com" autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="tiktok">TikTok handle</label>
+        <input type="text" id="tiktok" placeholder="@yourhandle" autocomplete="off" />
+        <div class="field-hint">We use this to confirm your post and release payment.</div>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <button class="submit-btn" id="register-btn" onclick="register()">Create account →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Connect Stripe -->
+  <div id="step-stripe">
+    <div class="stripe-card">
+      <h2>Connect your bank account</h2>
+      <p>We use Stripe to send payments directly to your bank. It takes about 3 minutes and your details are secure — Stripe powers payouts for Airbnb, Lyft, and Shopify.</p>
+      <button class="stripe-btn" id="stripe-connect-btn" onclick="connectStripe()">Connect with Stripe →</button>
+      <div class="stripe-note">You'll be redirected to Stripe. Come back here when done.</div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Success -->
+  <div id="step-success">
+    <div class="success-card">
+      <div class="success-icon">🎉</div>
+      <h2>You're all set!</h2>
+      <p>Your account is active and your bank is connected. When an artist's sound goes live with your post, payment hits your bank within 1–2 business days. Check your email for confirmation.</p>
+    </div>
+  </div>
+
+  <!-- Stripe incomplete -->
+  <div id="step-stripe-incomplete">
+    <div class="warn-card">
+      <h2>Almost there</h2>
+      <p>Stripe needs a bit more information to activate your account. Click below to finish.</p>
+      <br>
+      <button class="stripe-btn" id="stripe-retry-btn" onclick="connectStripe()" style="margin-top:8px">Continue Stripe setup →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let creatorToken = null;
+
+  // Check URL params on load (returning from Stripe)
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const stripeStatus = params.get('stripe');
+    const creatorId = params.get('creator_id');
+
+    if (stripeStatus === 'success') {
+      show('step-success');
+      return;
+    }
+    if (stripeStatus === 'incomplete' && creatorId) {
+      creatorToken = creatorId;
+      show('step-stripe-incomplete');
+      return;
+    }
+    if (stripeStatus === 'refresh' && creatorId) {
+      creatorToken = creatorId;
+      show('step-stripe');
+      return;
+    }
+
+    // Check localStorage for existing token (returning user mid-flow)
+    const saved = localStorage.getItem('runsound_creator_token');
+    if (saved) {
+      creatorToken = saved;
+      show('step-stripe');
+    }
+  });
+
+  function show(id) {
+    ['step-register','step-stripe','step-success','step-stripe-incomplete'].forEach(s => {
+      document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function register() {
+    const btn = document.getElementById('register-btn');
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const tiktok = document.getElementById('tiktok').value.trim();
+
+    document.getElementById('error-msg').style.display = 'none';
+
+    if (!name || !email || !tiktok) {
+      showError('Please fill in all fields.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+
+    try {
+      const res = await fetch('/api/creators/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, tiktok_handle: tiktok })
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        showError(data.error || 'Something went wrong.');
+        btn.disabled = false;
+        btn.textContent = 'Create account →';
+        return;
+      }
+
+      creatorToken = data.creator_token;
+      localStorage.setItem('runsound_creator_token', creatorToken);
+      show('step-stripe');
+    } catch (err) {
+      showError('Network error — please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Create account →';
+    }
+  }
+
+  async function connectStripe() {
+    const btn = document.getElementById('stripe-connect-btn') || document.getElementById('stripe-retry-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+
+    try {
+      const res = await fetch('/api/creators/connect-stripe', {
+        headers: { 'x-creator-token': creatorToken }
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        alert(data.error || 'Could not start Stripe onboarding.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Connect with Stripe →'; }
+        return;
+      }
+
+      window.location.href = data.onboarding_url;
+    } catch (err) {
+      alert('Network error — please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Connect with Stripe →'; }
+    }
+  }
+</script>
+
+</body>
+</html>
