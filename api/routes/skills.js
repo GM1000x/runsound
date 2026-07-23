@@ -606,6 +606,7 @@ async function runGigPitcher(input, artist) {
     artist_bio     = '',
     spotify_url    = '',
     soundcloud_url = '',
+    venue_limit    = 10,
   } = input;
 
   if (!city) throw new Error('city is required');
@@ -659,8 +660,9 @@ async function runGigPitcher(input, artist) {
       } catch (e) { /* continue on individual failures */ }
     }
 
-    // Sort by rating descending so best venues come first
+    // Sort by rating descending and cap at venue_limit
     venues.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    venues = venues.slice(0, venue_limit);
 
   } else {
     // Fallback: GPT generates real venue suggestions when no Places key
@@ -676,7 +678,7 @@ Only include real, existing places. Include as many as you know.`
       response_format: { type: 'json_object' },
     });
     const parsed = JSON.parse(fallback.choices[0].message.content);
-    venues = (parsed.venues || []).map(v => ({
+    venues = (parsed.venues || []).slice(0, venue_limit).map(v => ({
       name: v.name, address: v.address || city,
       rating: null, type: v.venue_type, why_fit: v.why_fit
     }));
