@@ -119,13 +119,16 @@ router.post('/', smartUpload, async (req, res) => {
     if (existingArtist) {
       artistRow = existingArtist;
     } else {
+      const apiKey = 'rs_live_' + crypto.randomBytes(24).toString('hex');
       const { data: newArtist, error: artistErr } = await supabase
         .from('artists')
         .insert({
-          email:  email.toLowerCase().trim(),
-          name:   artist,
-          plan:   'starter',
-          status: 'trial',
+          email:       email.toLowerCase().trim(),
+          name:        artist,
+          plan:        'starter',
+          status:      'trial',
+          api_key:     apiKey,
+          credits_usd: 5.0,  // starter credits
         })
         .select()
         .single();
@@ -264,6 +267,7 @@ router.post('/', smartUpload, async (req, res) => {
       dashToken,
       campaignId:   campaign.id,
       artistId:     artistRow.id,
+      api_key:      artistRow.api_key || apiKey || null,
     });
 
   } catch (err) {
