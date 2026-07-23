@@ -144,6 +144,13 @@ if (fs.existsSync(webDir)) {
   app.use(express.static(webDir, { extensions: ['html'] }));
 }
 
+// SKILL.md — served as plain text for AI agent installation
+app.get('/SKILL.md', (req, res) => {
+  const skillPath = path.join(webDir, 'SKILL.md');
+  res.type('text/plain; charset=utf-8');
+  res.sendFile(skillPath);
+});
+
 // Root → landing page
 app.get('/', (req, res) => {
   const indexPath = path.join(webDir, 'index.html');
