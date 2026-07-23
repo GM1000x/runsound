@@ -379,10 +379,11 @@ async function executeSkill(slug, input, artist, runId) {
 }
 
 // ── Spotify genre helper ──────────────────────────────────────────────────────
-async function getSpotifyGenreFromUrl(spotify_url) {
+// Returns ALL genres from Spotify so we can pick the most specific one
+async function getSpotifyGenresFromUrl(spotify_url) {
   const clientId     = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) return [];
 
   const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
     method:  'POST',
@@ -393,7 +394,7 @@ async function getSpotifyGenreFromUrl(spotify_url) {
     body: 'grant_type=client_credentials',
   });
   const { access_token } = await tokenRes.json();
-  if (!access_token) return null;
+  if (!access_token) return [];
 
   const trackMatch  = spotify_url.match(/track\/([A-Za-z0-9]+)/);
   const artistMatch = spotify_url.match(/artist\/([A-Za-z0-9]+)/);
@@ -409,12 +410,41 @@ async function getSpotifyGenreFromUrl(spotify_url) {
     artistId = artistMatch[1];
   }
 
-  if (!artistId) return null;
+  if (!artistId) return [];
   const ar = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
     headers: { Authorization: `Bearer ${access_token}` },
   });
   const artData = await ar.json();
-  return artData.genres?.[0] || null;
+  return artData.genres || [];
+}
+
+// Pick the most specific genre from Spotify's list
+// Spotify often returns ["pop", "swedish house", "dance pop"] — we want "swedish house"
+function pickBestGenre(genres) {
+  if (!genres || !genres.length) return null;
+  // Specific terms ranked by priority — first match wins
+  const priority = [
+    'house', 'techno', 'trance', 'deep', 'progressive',
+    'hip hop', 'hip-hop', 'rap', 'trap', 'drill',
+    'r&b', 'rnb', 'soul', 'funk',
+    'metal', 'hardcore', 'punk',
+    'jazz', 'blues',
+    'classical', 'opera',
+    'reggae', 'dancehall',
+    'afrobeats', 'afropop',
+    'k-pop', 'kpop',
+    'latin', 'reggaeton',
+    'country', 'folk', 'americana',
+    'electronic', 'edm', 'dance',
+    'indie', 'alternative',
+    'lo-fi', 'lofi', 'chill',
+    'rock',
+  ];
+  for (const term of priority) {
+    const match = genres.find(g => g.toLowerCase().includes(term));
+    if (match) return match;
+  }
+  return genres[0]; // fallback to whatever Spotify says first
 }
 
 // ── Genre → TikTok lifestyle hashtag mapping ──────────────────────────────────
@@ -482,29 +512,30 @@ function budgetToFollowerMax(budget_usd) {
 async function runCreatorScout(input, artist) {
   const {
     spotify_url,
-    budget_usd    = null,
-    follower_min  = 0,                                         // no floor — find everyone
-    follower_max  = budgetToFollowerMax(budget_usd),           // ceiling from budget
-    limit         = 20,
+    budget_usd       = null,
+    follower_min     = 0,                                // no floor — small accounts welcome
+    follower_max     = budgetToFollowerMax(budget_usd),  // ceiling from budget
+    limit            = 50,                               // more creators = more reach
     genre: genreInput = null,
   } = input;
 
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
   if (!APIFY_TOKEN) throw new Error('Creator scout is not configured — contact support.');
 
-  // ── 1. Determine genre ───────────────────────────────────────────────────
+  // ── 1. Determine genre — pick most specific from Spotify's full genre list ─
   let genre = genreInput;
   if (!genre && spotify_url) {
-    genre = await getSpotifyGenreFromUrl(spotify_url).catch(() => null);
+    const spotifyGenres = await getSpotifyGenresFromUrl(spotify_url).catch(() => []);
+    genre = pickBestGenre(spotifyGenres);
+    console.log(`[creator-scout] Spotify genres: [${spotifyGenres.join(', ')}] → picked: "${genre}"`);
   }
   genre = (genre || 'pop').toLowerCase();
-  console.log(`[creator-scout] genre="${genre}"`);
 
-  // ── 2. Genre → hashtags (lifestyle categories, not music genres) ─────────
-  const hashtags = genreToHashtags(genre).slice(0, 3); // 3 hashtags keeps run time under 30s
+  // ── 2. Genre → lifestyle hashtags ────────────────────────────────────────
+  const hashtags = genreToHashtags(genre); // use all 5 tags for wider coverage
   console.log(`[creator-scout] hashtags: ${hashtags.join(', ')}`);
 
-  // ── 3. Apify: scrape TikTok posts by hashtag, extract creator metadata ───
+  // ── 3. Apify: scrape TikTok posts by hashtag ─────────────────────────────
   const startRes = await fetch(
     `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
     {
@@ -512,7 +543,7 @@ async function runCreatorScout(input, artist) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         hashtags,
-        resultsPerPage:    12,
+        resultsPerPage:    25,    // 5 hashtags × 25 posts = up to 125 posts → ~50+ unique creators
         maxRequestRetries: 2,
         proxyConfiguration: { useApifyProxy: true },
       }),
@@ -525,9 +556,9 @@ async function runCreatorScout(input, artist) {
   const { data: { id: runId } } = await startRes.json();
   console.log(`[creator-scout] Apify run ${runId} started`);
 
-  // Poll until SUCCEEDED (max 75s = 25 × 3s)
+  // Poll until SUCCEEDED (max 90s = 30 × 3s)
   let items = [];
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 30; i++) {
     await new Promise(r => setTimeout(r, 3000));
     const statusRes = await fetch(
       `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
@@ -535,7 +566,7 @@ async function runCreatorScout(input, artist) {
     const { data: run } = await statusRes.json();
     if (run.status === 'SUCCEEDED') {
       const dataRes = await fetch(
-        `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}&format=json&limit=300`
+        `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}&format=json&limit=500`
       );
       items = await dataRes.json();
       console.log(`[creator-scout] Got ${items.length} posts from Apify`);
@@ -546,7 +577,7 @@ async function runCreatorScout(input, artist) {
     }
   }
 
-  // ── 4. Extract unique creators from post metadata ────────────────────────
+  // ── 4. Extract unique creators, calculate engagement ─────────────────────
   const seen     = new Set();
   const creators = [];
 
@@ -555,34 +586,45 @@ async function runCreatorScout(input, artist) {
     const author    = item.author     || {};
     const username  = meta.name       || author.uniqueId || item.uniqueId;
     const followers = Number(meta.fans ?? author.fans ?? 0);
+    const likes     = Number(meta.heart ?? author.heart ?? 0);
+    const videos    = Number(meta.video ?? author.video ?? 1);
 
-    if (!username || seen.has(username))                    continue;
-    if (followers < follower_min || followers > follower_max) continue;
+    if (!username || seen.has(username))                      continue;
+    if (followers > follower_max)                             continue;
+    if (follower_min > 0 && followers < follower_min)         continue;
 
     seen.add(username);
 
-    // Which niche tag did this post appear under?
+    // Engagement rate = avg likes per video / followers (as %)
+    // High engagement on small account > low engagement on big account
+    const avgLikesPerVideo = likes / Math.max(videos, 1);
+    const engagementRate   = followers > 0
+      ? Math.round((avgLikesPerVideo / followers) * 1000) / 10  // 1 decimal, as %
+      : 0;
+
+    // Which niche did this post appear under?
     const postTags = (item.hashtags || []).map(h => {
       if (typeof h === 'string') return h.toLowerCase();
       if (h && typeof h.name === 'string') return h.name.toLowerCase();
       if (h && typeof h.title === 'string') return h.title.toLowerCase();
       return '';
     }).filter(Boolean);
-    const matched  = hashtags.find(h => postTags.includes(h.toLowerCase())) || hashtags[0];
-    const niche    = matched.replace(/tok$/, '').replace(/check$/, '');
+    const matched = hashtags.find(h => postTags.includes(h.toLowerCase())) || hashtags[0];
+    const niche   = matched.replace(/tok$/, '').replace(/check$/, '');
 
     creators.push({
       username,
       followers,
-      total_likes: Number(meta.heart  ?? author.heart  ?? 0),
-      videos:      Number(meta.video  ?? author.video  ?? 0),
+      engagement_rate: engagementRate,  // % — key signal for reach potential
+      total_likes:     likes,
+      videos,
       niche,
       profile_url: `https://www.tiktok.com/@${username}`,
     });
   }
 
-  // Sort by followers desc, cap at limit
-  creators.sort((a, b) => b.followers - a.followers);
+  // Sort by engagement rate (high engagement = content resonates, worth DM-ing regardless of size)
+  creators.sort((a, b) => b.engagement_rate - a.engagement_rate);
   const selected = creators.slice(0, limit);
   console.log(`[creator-scout] Returning ${selected.length} creators`);
 
