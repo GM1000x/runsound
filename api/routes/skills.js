@@ -208,6 +208,7 @@ router.get('/credits/balance', requireApiKey, async (req, res) => {
     ok:                  true,
     credits:             req.artist.credits_usd,
     currency:            'USD',
+    artist_name:         req.artist.name,
     low_balance_warning: req.artist.credits_usd < req.artist.low_balance_at,
   });
 });

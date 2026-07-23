@@ -2,30 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RunSound — Dashboard</title>
-  <meta name="theme-color" content="#0a0a0f" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:      #0a0a0f;
-      --surface: #13131a;
-      --surface2: #1a1a24;
-      --border:  #1e1e2e;
-      --accent:  #7c3aed;
-      --accent2: #a855f7;
-      --green:   #22c55e;
-      --yellow:  #eab308;
-      --red:     #ef4444;
-      --text:    #f0f0f8;
-      --muted:   #888899;
-      --card-bg: #111118;
+      --bg:       #0a0a0f;
+      --surface:  #111118;
+      --surface2: #16161f;
+      --border:   #1e1e2e;
+      --border2:  #2a2a3d;
+      --accent:   #7c3aed;
+      --accent2:  #a855f7;
+      --green:    #22c55e;
+      --yellow:   #eab308;
+      --red:      #ef4444;
+      --text:     #f0f0f8;
+      --muted:    #6b6b88;
+      --muted2:   #9898b0;
+      --mono:     'JetBrains Mono', monospace;
     }
-
-    html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
@@ -35,884 +34,517 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── TOP NAV ── */
-    .topnav {
+    /* ── NAV ── */
+    nav {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(10,10,15,0.92);
+      background: rgba(10,10,15,0.9);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding: 0 1.25rem;
       height: 56px;
       display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
     }
-    .logo {
-      font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
-      color: var(--text); text-decoration: none;
-    }
+    .logo { font-size: 1rem; font-weight: 800; letter-spacing: -0.03em; text-decoration: none; color: var(--text); }
     .logo span { color: var(--accent2); }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .artist-name { font-size: 0.82rem; color: var(--muted2); }
+    .nav-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 100px; padding: 3px 10px;
+      font-size: 0.75rem; font-weight: 600; color: var(--green);
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 
-    .campaign-badge {
+    /* ── LAYOUT ── */
+    .page { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+    /* ── WELCOME BANNER ── */
+    .welcome {
+      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(168,85,247,0.05));
+      border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 16px; padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    .welcome.show { display: block; }
+    .welcome h2 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .welcome p { font-size: 0.85rem; color: var(--muted2); }
+
+    /* ── GRID ── */
+    .top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    @media (max-width: 600px) { .top-grid { grid-template-columns: 1fr; } }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+    .card-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;
+    }
+
+    /* ── API KEY ── */
+    .key-row {
       display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .key-value {
+      font-family: var(--mono); font-size: 0.78rem;
+      color: var(--muted2); flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .icon-btn {
+      background: none; border: none; cursor: pointer; padding: 2px 4px;
+      color: var(--muted); font-size: 0.8rem;
+      transition: color .15s;
+    }
+    .icon-btn:hover { color: var(--text); }
+
+    .key-hint { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+    .key-hint code {
+      font-family: var(--mono); font-size: 0.72rem;
+      background: var(--bg); padding: 1px 5px; border-radius: 4px;
+      color: var(--accent2);
+    }
+
+    /* ── CREDITS ── */
+    .credits-amount {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.04em;
+      margin-bottom: 4px;
+    }
+    .credits-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; }
+    .topup-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; padding: 8px 14px;
+      font-size: 0.82rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; text-decoration: none; transition: opacity .15s;
+    }
+    .topup-btn:hover { opacity: 0.85; }
+
+    /* ── SECTION HEADERS ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.75rem; margin-top: 2rem;
+    }
+    .section-title { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; }
+    .section-sub { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── SKILLS GRID ── */
+    .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 600px) { .skills-grid { grid-template-columns: 1fr; } }
+
+    .skill-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 0.3rem 0.75rem;
-      font-size: 0.78rem;
-      color: var(--muted);
-      max-width: 200px;
+      border-radius: 12px; padding: 1rem;
+      cursor: pointer; transition: border-color .15s;
+      text-align: left;
     }
-    .campaign-badge strong { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .skill-card:hover { border-color: var(--border2); }
+    .skill-card.expanded { border-color: rgba(168,85,247,0.4); }
 
-    /* ── AMBIENT GLOW ── */
-    .glow {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 70%);
+    .skill-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .skill-name { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+    .skill-desc { font-size: 0.78rem; color: var(--muted2); line-height: 1.4; }
+    .skill-price {
+      font-size: 0.72rem; font-weight: 700; color: var(--accent2);
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 6px; padding: 2px 7px; white-space: nowrap; flex-shrink: 0;
     }
 
-    /* ── MAIN CONTENT ── */
-    .page { position: relative; z-index: 1; max-width: 540px; margin: 0 auto; padding: 1.25rem 1.25rem 6rem; }
-
-    /* ── TODAY'S ACTION ── */
-    .action-card {
-      background: linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(168,85,247,0.08) 100%);
-      border: 1px solid rgba(168,85,247,0.3);
-      border-radius: 18px;
-      padding: 1.5rem;
-      margin-bottom: 1.25rem;
+    .skill-curl {
+      display: none; margin-top: 0.85rem;
     }
-    .action-card.idle {
+    .skill-card.expanded .skill-curl { display: block; }
+    .curl-block {
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 10px 12px;
+      font-family: var(--mono); font-size: 0.7rem;
+      color: #a0a0c0; line-height: 1.6;
+      overflow-x: auto; white-space: pre;
+      position: relative;
+    }
+    .curl-copy {
+      position: absolute; top: 6px; right: 6px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 5px; padding: 2px 8px;
+      font-size: 0.65rem; font-weight: 600; color: var(--muted2);
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: color .15s;
+    }
+    .curl-copy:hover { color: var(--text); }
+
+    /* ── RUN HISTORY ── */
+    .run-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .run-row {
       background: var(--surface);
-      border-color: var(--border);
-    }
-    .action-header {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 1rem;
-    }
-    .action-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--accent2);
-      box-shadow: 0 0 8px rgba(168,85,247,0.8);
-      animation: pulse-dot 2s infinite;
-      flex-shrink: 0;
-    }
-    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
-    .action-dot.green { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.7); }
-    .action-dot.grey  { background: var(--muted); box-shadow: none; animation: none; }
-    .action-label {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--accent2);
-    }
-    .action-label.green { color: var(--green); }
-    .action-label.muted { color: var(--muted); }
-
-    .action-title {
-      font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em;
-      line-height: 1.3; margin-bottom: 0.75rem;
-    }
-
-    .action-steps {
-      list-style: none; display: flex; flex-direction: column; gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-    .action-steps li {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 0.88rem; color: rgba(240,240,248,0.8);
-    }
-    .step-num {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(168,85,247,0.2);
-      border: 1px solid rgba(168,85,247,0.4);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; font-weight: 700; color: var(--accent2);
-      flex-shrink: 0; margin-top: 0.05rem;
-    }
-
-    .action-btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%;
-      background: var(--accent);
-      color: #fff;
-      border: none; border-radius: 12px;
-      padding: 0.85rem 1.25rem;
-      font-size: 0.95rem; font-weight: 700; font-family: inherit;
-      cursor: pointer; text-decoration: none;
-      transition: background .2s, transform .15s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .action-btn:active { transform: scale(0.98); }
-    @media (hover:hover) { .action-btn:hover { background: var(--accent2); } }
-
-    .posts-count-badge {
-      background: rgba(255,255,255,0.2);
-      border-radius: 100px;
-      padding: 0.15rem 0.55rem;
-      font-size: 0.8rem;
-      font-weight: 800;
-    }
-
-    /* ── STATS ROW ── */
-    .stats-row {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 0.75rem; margin-bottom: 1.25rem;
-    }
-    .stat-card {
-      background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem 0.75rem;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 1.5rem; font-weight: 900; letter-spacing: -0.03em;
-      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1.1; margin-bottom: 0.2rem;
-    }
-    .stat-label { font-size: 0.68rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stat-delta {
-      font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem;
-    }
-    .stat-delta.up   { color: var(--green); }
-    .stat-delta.down { color: var(--red); }
-    .stat-delta.flat { color: var(--muted); }
-
-    /* ── AI LEARNING CARD ── */
-    .learning-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.1rem 1.25rem;
-      margin-bottom: 1.25rem;
-      display: flex; align-items: flex-start; gap: 12px;
-    }
-    .learning-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: rgba(124,58,237,0.15);
-      border: 1px solid rgba(124,58,237,0.25);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; flex-shrink: 0;
-    }
-    .learning-text { flex: 1; }
-    .learning-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.25rem; }
-    .learning-body  { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
-    .learning-body strong { color: var(--accent2); font-weight: 600; }
-
-    /* Variant pills */
-    .variant-pills { display: flex; gap: 6px; margin-top: 0.6rem; flex-wrap: wrap; }
-    .variant-pill {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 0.2rem 0.65rem;
-      font-size: 0.72rem; font-weight: 600; color: var(--muted);
-    }
-    .variant-pill.winning {
-      background: rgba(34,197,94,0.12);
-      border-color: rgba(34,197,94,0.3);
-      color: var(--green);
-    }
-    .variant-pill.testing {
-      background: rgba(234,179,8,0.1);
-      border-color: rgba(234,179,8,0.25);
-      color: var(--yellow);
+      border-radius: 10px; padding: 0.85rem 1rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 0.75rem; align-items: center;
     }
 
-    /* ── SECTION HEADER ── */
-    .section-head {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted);
-      margin-bottom: 0.75rem;
+    .run-status-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
     }
+    .run-status-dot.succeeded { background: var(--green); }
+    .run-status-dot.running   { background: var(--yellow); animation: pulse-dot 1.5s infinite; }
+    .run-status-dot.failed    { background: var(--red); }
 
-    /* ── POST LIST ── */
-    .post-list { display: flex; flex-direction: column; gap: 0.65rem; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-    .post-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem;
-      display: flex; align-items: center; gap: 1rem;
-      transition: border-color .2s;
-    }
-    .post-card:hover { border-color: rgba(168,85,247,0.3); }
+    .run-skill { font-size: 0.85rem; font-weight: 600; }
+    .run-time  { font-size: 0.75rem; color: var(--muted); }
+    .run-units { font-size: 0.78rem; color: var(--muted2); text-align: right; }
+    .run-cost  { font-size: 0.78rem; font-weight: 600; color: var(--text); text-align: right; min-width: 48px; }
 
-    .post-thumb {
-      width: 44px; height: 78px; border-radius: 8px;
-      background: linear-gradient(135deg, #1a0a3a 0%, #3b1576 50%, #0d0621 100%);
-      flex-shrink: 0; overflow: hidden;
-    }
-    .post-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-    .post-info { flex: 1; min-width: 0; }
-    .post-hook {
-      font-size: 0.85rem; font-weight: 600;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      margin-bottom: 0.3rem;
-    }
-    .post-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
-
-    .post-stats { display: flex; gap: 0.75rem; }
-    .post-stat  { font-size: 0.75rem; font-weight: 600; }
-    .post-stat span { color: var(--muted); font-weight: 400; }
-
-    .post-status {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
-      flex-shrink: 0;
-    }
-    .status-pill {
-      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
-      padding: 0.2rem 0.55rem; border-radius: 100px;
-    }
-    .status-pill.live     { background: rgba(34,197,94,0.12); color: var(--green); }
-    .status-pill.pending  { background: rgba(168,85,247,0.12); color: var(--accent2); }
-    .status-pill.draft    { background: rgba(136,136,153,0.12); color: var(--muted); }
-    .variant-tag {
-      font-size: 0.65rem; font-weight: 600; color: var(--muted);
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 100px; padding: 0.15rem 0.45rem;
-    }
-
-    /* ── TIER BADGES ── */
-    .tier-badge {
-      font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em;
-      padding: 0.18rem 0.5rem; border-radius: 100px;
-      text-transform: uppercase; white-space: nowrap;
-    }
-    .tier-badge.winner    { background: rgba(34,197,94,0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
-    .tier-badge.promising { background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.25); }
-    .tier-badge.testing   { background: rgba(234,179,8,0.1);   color: #eab308; border: 1px solid rgba(234,179,8,0.2); }
-    .tier-badge.dead      { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
-
-    /* ── LEARNING PROGRESS BAR ── */
-    .learn-progress {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1rem;
-    }
-    .learn-progress-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 0.5rem;
-    }
-    .learn-progress-label { font-size: 0.78rem; font-weight: 600; }
-    .learn-progress-count { font-size: 0.75rem; color: var(--muted); }
-    .learn-progress-bar-bg {
-      background: var(--surface2); border-radius: 6px; height: 6px; overflow: hidden;
-    }
-    .learn-progress-bar {
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      height: 100%; border-radius: 6px; transition: width 1s ease;
-    }
-    .learn-progress-hint {
-      font-size: 0.72rem; color: var(--muted); margin-top: 0.45rem;
-    }
-
-    /* ── EMPTY STATE ── */
     .empty-state {
       text-align: center; padding: 2.5rem 1rem;
-      color: var(--muted); font-size: 0.88rem;
+      color: var(--muted); font-size: 0.85rem;
     }
-    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+    .empty-state strong { display: block; color: var(--muted2); margin-bottom: 4px; font-size: 0.95rem; }
 
-    /* ── SMART LINK CARD ── */
-    .smart-link-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.25rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--text); color: var(--bg);
+      padding: 10px 20px; border-radius: 100px;
+      font-size: 0.82rem; font-weight: 600;
+      opacity: 0; transition: opacity .2s, transform .2s;
+      pointer-events: none; z-index: 999;
     }
-    .smart-link-info { flex: 1; min-width: 0; }
-    .smart-link-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.25rem; }
-    .smart-link-url   { font-size: 0.82rem; color: var(--accent2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .copy-btn {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.4rem 0.75rem;
-      font-size: 0.78rem; font-weight: 600; color: var(--text);
-      cursor: pointer; font-family: inherit; transition: border-color .2s;
-      flex-shrink: 0;
-    }
-    .copy-btn:hover { border-color: var(--accent); color: var(--accent2); }
-    .copy-btn.copied { color: var(--green); border-color: rgba(34,197,94,0.4); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── SKELETON LOADING ── */
+    /* ── LOADING ── */
     .skeleton {
       background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.4s infinite;
-      border-radius: 6px;
+      border-radius: 6px; height: 16px;
     }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-    /* ── BOTTOM NAV ── */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(10,10,15,0.95);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
-      padding: 0.6rem 0 calc(0.6rem + env(safe-area-inset-bottom));
-      display: flex; justify-content: space-around;
+    .glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 60% 30% at 50% 0%, rgba(124,58,237,0.08), transparent 70%);
     }
-    .nav-item {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      font-size: 0.62rem; font-weight: 600; color: var(--muted);
-      text-decoration: none; padding: 0.25rem 1rem;
-      transition: color .2s;
-    }
-    .nav-item.active { color: var(--accent2); }
-    .nav-item svg { width: 22px; height: 22px; }
-
-    /* ── ERROR STATE ── */
-    .error-banner {
-      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 12px; padding: 1rem 1.25rem;
-      font-size: 0.85rem; color: #fca5a5; margin-bottom: 1.25rem;
-    }
+    .page { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
 <div class="glow"></div>
 
-<!-- TOP NAV -->
-<nav class="topnav">
+<nav>
   <a href="/" class="logo">Run<span>Sound</span></a>
-  <div class="campaign-badge" id="campaignBadge">
-    <strong id="campaignTitle">Loading...</strong>
+  <div class="nav-right">
+    <span class="artist-name" id="nav-artist-name"></span>
+    <div class="nav-badge"><div class="dot"></div>API</div>
   </div>
 </nav>
 
-<main class="page">
+<div class="page">
 
-  <!-- TODAY'S ACTION -->
-  <div id="actionCard" class="action-card">
-    <div class="action-header">
-      <div class="action-dot" id="actionDot"></div>
-      <div class="action-label" id="actionLabel">Today's action</div>
-    </div>
-    <div class="action-title" id="actionTitle">
-      <div class="skeleton" style="height:1.5rem;width:80%;border-radius:8px"></div>
-    </div>
-    <ul class="action-steps" id="actionSteps"></ul>
-    <div id="actionCta"></div>
+  <!-- Welcome banner (only on first login) -->
+  <div class="welcome" id="welcome-banner">
+    <h2>You're in. Here's your API key.</h2>
+    <p>Copy it below and paste it into your AI agent or terminal to start running skills.</p>
   </div>
 
-  <!-- STATS ROW -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-value" id="statViews">—</div>
-      <div class="stat-label">Views</div>
-      <div class="stat-delta flat" id="statViewsDelta">this week</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="statClicks">—</div>
-      <div class="stat-label">Stream clicks</div>
-      <div class="stat-delta flat" id="statClicksDelta">this week</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="statCtr">—</div>
-      <div class="stat-label">CTR</div>
-      <div class="stat-delta flat" id="statCtrSub">clicks / views</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="statCpc">—</div>
-      <div class="stat-label">Cost / click</div>
-      <div class="stat-delta flat" id="statCpcSub">vs Meta $0.50–2.00</div>
-    </div>
-  </div>
+  <!-- API key + Credits -->
+  <div class="top-grid">
 
-  <!-- PHASE CARD -->
-  <div id="phaseCard" style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.25rem; margin-bottom:1rem;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
-      <div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);">Current phase</div>
-      <div id="phaseBadge" style="font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(124,58,237,0.15);color:var(--accent2);">Phase 1</div>
-    </div>
-    <div id="phaseTitle" style="font-size:0.95rem;font-weight:700;margin-bottom:0.25rem;">Growing your audience</div>
-    <div id="phaseDesc" style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem;">RunSound is optimising content to get you to 1 000 followers. Once there, the bio link becomes clickable and we shift focus to Spotify clicks.</div>
-    <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:4px;">
-      <span id="followerCount">0 followers</span>
-      <span>1 000</span>
-    </div>
-    <div style="background:var(--surface2);border-radius:6px;height:8px;overflow:hidden;">
-      <div id="followerBar" style="background:var(--accent);height:100%;border-radius:6px;width:0%;transition:width 1s ease;"></div>
-    </div>
-  </div>
-
-  <!-- META BENCHMARK -->
-  <div id="benchmarkCard" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.25rem; margin-bottom:1rem;">
-    <div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:0.75rem;">Cost per Spotify click — vs Meta Ads</div>
-    <div style="display:flex;flex-direction:column;gap:0.5rem;">
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
-          <span style="color:var(--muted)">Meta Ads (typical)</span>
-          <span style="font-weight:600;color:#6e6e73;">$0.50 – $2.00</span>
-        </div>
-        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;">
-          <div style="background:#6e6e73;width:100%;height:100%;border-radius:4px;"></div>
-        </div>
+    <div class="card">
+      <div class="card-label">API Key</div>
+      <div class="key-row">
+        <span class="key-value" id="api-key-display">Loading...</span>
+        <button class="icon-btn" onclick="toggleKey()" id="key-toggle-btn" title="Show/hide">👁</button>
+        <button class="icon-btn" onclick="copyKey()" title="Copy">📋</button>
       </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
-          <span style="color:var(--text)">RunSound (this campaign)</span>
-          <span style="font-weight:700;color:var(--green);" id="benchCpc">collecting data…</span>
-        </div>
-        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;">
-          <div id="benchBar" style="background:var(--green);width:0%;height:100%;border-radius:4px;transition:width 1s ease;"></div>
-        </div>
-      </div>
+      <p class="key-hint">
+        Use as <code>Authorization: Bearer &lt;key&gt;</code> in every request.
+      </p>
     </div>
-    <div id="benchLabel" style="font-size:0.7rem;color:var(--muted);margin-top:0.6rem;"></div>
+
+    <div class="card">
+      <div class="card-label">Credits</div>
+      <div class="credits-amount" id="credits-amount">—</div>
+      <div class="credits-sub" id="credits-sub">Loading balance...</div>
+      <button class="topup-btn" onclick="topup()">+ Add credits</button>
+    </div>
+
   </div>
 
-  <!-- AI LEARNING STATUS -->
-  <div class="learning-card" id="learningCard">
-    <div class="learning-icon">🧠</div>
-    <div class="learning-text">
-      <div class="learning-title">RunSound is learning</div>
-      <div class="learning-body" id="learningBody">
-        Analysing your posts to find what drives streams...
-      </div>
-      <div class="variant-pills" id="variantPills"></div>
-    </div>
+  <!-- Skills catalog -->
+  <div class="section-header">
+    <span class="section-title">Skills</span>
+    <span class="section-sub">Click a skill to see the curl command</span>
+  </div>
+  <div class="skills-grid" id="skills-grid">
+    <div class="card"><div class="skeleton" style="width:60%;margin-bottom:8px"></div><div class="skeleton" style="width:90%"></div></div>
+    <div class="card"><div class="skeleton" style="width:60%;margin-bottom:8px"></div><div class="skeleton" style="width:90%"></div></div>
+    <div class="card"><div class="skeleton" style="width:60%;margin-bottom:8px"></div><div class="skeleton" style="width:90%"></div></div>
+    <div class="card"><div class="skeleton" style="width:60%;margin-bottom:8px"></div><div class="skeleton" style="width:90%"></div></div>
   </div>
 
-  <!-- SMART LINK -->
-  <div class="smart-link-card" id="smartLinkCard" style="display:none">
-    <div class="smart-link-info">
-      <div class="smart-link-label">Your smart link</div>
-      <div class="smart-link-url" id="smartLinkUrl">—</div>
-    </div>
-    <button class="copy-btn" id="copyBtn">Copy</button>
+  <!-- Run history -->
+  <div class="section-header" style="margin-top: 2rem;">
+    <span class="section-title">Run history</span>
+    <span class="section-sub" id="history-sub"></span>
+  </div>
+  <div class="run-list" id="run-list">
+    <div class="card"><div class="skeleton" style="width:40%"></div></div>
+    <div class="card"><div class="skeleton" style="width:55%"></div></div>
   </div>
 
-  <!-- AI LEARNING PROGRESS -->
-  <div class="learn-progress" id="learnProgress">
-    <div class="learn-progress-header">
-      <div class="learn-progress-label">🧠 AI learning progress</div>
-      <div class="learn-progress-count" id="learnCount">0 / 10 posts</div>
-    </div>
-    <div class="learn-progress-bar-bg">
-      <div class="learn-progress-bar" id="learnBar" style="width:0%"></div>
-    </div>
-    <div class="learn-progress-hint" id="learnHint">The AI starts recognising patterns after post 10 — keep publishing daily.</div>
-  </div>
+</div>
 
-  <!-- RECENT POSTS -->
-  <div class="section-head" style="display:flex;justify-content:space-between;align-items:center;">
-    <span>Recent posts</span>
-    <span style="font-size:0.68rem;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;" id="tierLegend">
-      <span class="tier-badge winner" style="margin-right:4px">Winner</span>
-      <span class="tier-badge promising" style="margin-right:4px">Promising</span>
-      <span class="tier-badge testing" style="margin-right:4px">Testing</span>
-      <span class="tier-badge dead">Dead</span>
-    </span>
-  </div>
-  <div class="post-list" id="postList">
-    <!-- skeleton -->
-    <div class="post-card">
-      <div class="post-thumb skeleton"></div>
-      <div class="post-info">
-        <div class="skeleton" style="height:14px;width:75%;margin-bottom:8px;border-radius:4px"></div>
-        <div class="skeleton" style="height:12px;width:50%;border-radius:4px"></div>
-      </div>
-    </div>
-    <div class="post-card">
-      <div class="post-thumb skeleton"></div>
-      <div class="post-info">
-        <div class="skeleton" style="height:14px;width:65%;margin-bottom:8px;border-radius:4px"></div>
-        <div class="skeleton" style="height:12px;width:45%;border-radius:4px"></div>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <a href="#" class="nav-item active">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    Dashboard
-  </a>
-  <a href="#" class="nav-item">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    Campaign
-  </a>
-  <a href="#" class="nav-item" id="smartLinkNavBtn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-    Smart link
-  </a>
-</nav>
+<div class="toast" id="toast"></div>
 
 <script>
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const _p         = new URLSearchParams(location.search);
-const artistId   = _p.get('artist_id')   || localStorage.getItem('rs_artist_id');
-const campaignId = _p.get('campaign_id') || localStorage.getItem('rs_campaign_id');
-// Magic-link token — stored in sessionStorage so it doesn't persist beyond this tab
-const dashToken  = _p.get('token')       || sessionStorage.getItem('rs_token');
+  const API_BASE = '';
+  let apiKey     = localStorage.getItem('runsound_api_key') || '';
+  let keyVisible = false;
 
-if (artistId)  localStorage.setItem('rs_artist_id',   artistId);
-if (campaignId) localStorage.setItem('rs_campaign_id', campaignId);
-if (dashToken)  sessionStorage.setItem('rs_token',     dashToken);
-
-// If no token at all, show a locked state (can still see page structure but data won't load)
-if (!dashToken) {
-  console.warn('[dashboard] No auth token — set ?token= in the URL');
-}
-
-function fmt(n) {
-  if (n === null || n === undefined) return '—';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
-  return String(n);
-}
-
-function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(h / 24);
-  if (d > 0) return `${d}d ago`;
-  if (h > 0) return `${h}h ago`;
-  return 'just now';
-}
-
-// ─── Render today's action card ───────────────────────────────────────────────
-function renderAction(data) {
-  const dot   = document.getElementById('actionDot');
-  const label = document.getElementById('actionLabel');
-  const title = document.getElementById('actionTitle');
-  const steps = document.getElementById('actionSteps');
-  const cta   = document.getElementById('actionCta');
-  const card  = document.getElementById('actionCard');
-
-  const pending = data.pendingPosts || 0;
-
-  if (pending > 0) {
-    // Active state — posts waiting
-    dot.className   = 'action-dot';
-    label.className = 'action-label';
-    label.textContent = "Today's action";
-    title.textContent = pending === 1
-      ? 'You have 1 post ready in your TikTok inbox'
-      : `You have ${pending} posts ready in your TikTok inbox`;
-
-    steps.innerHTML = `
-      <li><span class="step-num">1</span>Open TikTok on your phone</li>
-      <li><span class="step-num">2</span>Go to Inbox → System Notifications</li>
-      <li><span class="step-num">3</span>Tap the post → <strong>Add a trending sound</strong></li>
-      <li><span class="step-num">4</span>Hit Publish — done ✓</li>
-    `;
-
-    cta.innerHTML = `
-      <a href="https://www.tiktok.com" target="_blank" rel="noopener" class="action-btn">
-        Open TikTok
-        <span class="posts-count-badge">${pending}</span>
-      </a>
-    `;
-
-  } else if (data.nextPostIn) {
-    // No post yet today — show countdown
-    dot.className   = 'action-dot grey';
-    label.className = 'action-label muted';
-    label.textContent = 'Next post';
-    title.textContent = `Your next post is being prepared`;
-    card.classList.add('idle');
-
-    steps.innerHTML = `
-      <li><span class="step-num" style="background:rgba(136,136,153,0.15);border-color:rgba(136,136,153,0.25);color:var(--muted)">✓</span>RunSound will generate tonight's post automatically</li>
-      <li><span class="step-num" style="background:rgba(136,136,153,0.15);border-color:rgba(136,136,153,0.25);color:var(--muted)">✓</span>It lands in your TikTok inbox — just add a sound and publish</li>
-    `;
-    cta.innerHTML = '';
-
-  } else {
-    // All done today
-    dot.className   = 'action-dot green';
-    label.className = 'action-label green';
-    label.textContent = "All done today ✓";
-    title.textContent = `Great work — check back tomorrow`;
-    card.classList.add('idle');
-    steps.innerHTML = '';
-    cta.innerHTML = '';
-  }
-}
-
-// ─── Render stats ─────────────────────────────────────────────────────────────
-function renderStats(data) {
-  document.getElementById('statViews').textContent      = fmt(data.weekViews);
-  document.getElementById('statClicks').textContent     = fmt(data.weekClicks);
-  if (document.getElementById('statPosts')) {
-    document.getElementById('statPosts').textContent      = fmt(data.totalPosts);
-    document.getElementById('statPostsDelta').textContent = 'all time';
+  // ── Redirect if no key ────────────────────────────────────────────────────
+  if (!apiKey) {
+    window.location.href = '/signup.html';
   }
 
-  // CTR
-  const ctrEl = document.getElementById('statCtr');
-  if (data.weekViews > 0 && data.weekClicks > 0) {
-    const ctr = (data.weekClicks / data.weekViews * 100).toFixed(2);
-    ctrEl.textContent = ctr + '%';
-    ctrEl.style.color = parseFloat(ctr) >= 1 ? 'var(--green)' : 'var(--text)';
-  } else {
-    ctrEl.textContent = '—';
+  // ── Welcome banner ────────────────────────────────────────────────────────
+  if (new URLSearchParams(location.search).get('welcome') === '1') {
+    document.getElementById('welcome-banner').classList.add('show');
+    history.replaceState({}, '', '/dashboard.html');
   }
 
-  // Cost per click (each post costs ~$0.19 to generate)
-  const COST_PER_POST = 0.19;
-  const totalPosts    = data.totalPosts || 0;
-  const totalClicks   = data.totalClicks || data.weekClicks || 0;
-  const cpcEl  = document.getElementById('statCpc');
-  const cpcSub = document.getElementById('statCpcSub');
-  if (totalClicks > 0 && totalPosts > 0) {
-    const totalCost = totalPosts * COST_PER_POST;
-    const cpc = totalCost / totalClicks;
-    cpcEl.textContent  = '$' + cpc.toFixed(3);
-    cpcEl.style.color  = cpc < 0.50 ? 'var(--green)' : cpc < 2.00 ? 'var(--yellow)' : 'var(--red)';
-    cpcSub.textContent = cpc < 0.50 ? `✓ beating Meta ($0.50–2.00)` : 'vs Meta $0.50–2.00';
-
-    // Benchmark bar
-    const benchCard = document.getElementById('benchmarkCard');
-    if (benchCard) {
-      benchCard.style.display = 'block';
-      document.getElementById('benchCpc').textContent = '$' + cpc.toFixed(3) + ' / click';
-      // Bar width: 100% = $2 (Meta worst), RunSound bar = how much cheaper we are
-      const metaWorst = 2.00;
-      const ourPct    = Math.min(100, (cpc / metaWorst) * 100);
-      setTimeout(() => {
-        document.getElementById('benchBar').style.width = ourPct + '%';
-      }, 300);
-      const saving = ((1 - cpc / 1.00) * 100).toFixed(0); // vs $1 midpoint
-      document.getElementById('benchLabel').textContent =
-        cpc < 1.00
-          ? `RunSound is ${saving}% cheaper than the average Meta Ads campaign for music.`
-          : `Still collecting data — cost per click will drop as AI optimises.`;
-    }
-  } else {
-    cpcEl.textContent  = '—';
-    cpcSub.textContent = 'vs Meta $0.50–2.00';
+  // ── API key display ───────────────────────────────────────────────────────
+  function maskedKey(k) {
+    return k.slice(0, 10) + '••••••••••••••••••••••••••••';
   }
 
-  // Week-over-week deltas
-  function setDelta(elId, val) {
-    const el = document.getElementById(elId);
-    if (val === null || val === undefined) { el.className = 'stat-delta flat'; el.textContent = 'this week'; return; }
-    const pct = Math.round(val * 100);
-    if (pct > 0)  { el.className = 'stat-delta up';   el.textContent = `↑ ${pct}% vs last week`; }
-    else if (pct < 0) { el.className = 'stat-delta down'; el.textContent = `↓ ${Math.abs(pct)}% vs last week`; }
-    else { el.className = 'stat-delta flat'; el.textContent = '= same as last week'; }
+  function renderKey() {
+    document.getElementById('api-key-display').textContent = keyVisible ? apiKey : maskedKey(apiKey);
   }
-  setDelta('statViewsDelta',  data.viewsDelta);
-  setDelta('statClicksDelta', data.clicksDelta);
+  renderKey();
 
-  // Phase card
-  const followers = data.followerCount || 0;
-  const phase     = data.phase || 1;
-  const pct       = Math.min(100, (followers / 1000) * 100);
-
-  document.getElementById('followerCount').textContent = `${followers.toLocaleString()} followers`;
-  document.getElementById('followerBar').style.width   = pct + '%';
-
-  if (phase === 2) {
-    document.getElementById('phaseBadge').textContent  = 'Phase 2';
-    document.getElementById('phaseBadge').style.background = 'rgba(34,197,94,0.15)';
-    document.getElementById('phaseBadge').style.color  = 'var(--green)';
-    document.getElementById('phaseTitle').textContent  = 'Optimising for Spotify clicks';
-    document.getElementById('phaseDesc').textContent   = 'You\'ve hit 1 000 followers — bio link is active. RunSound is now testing content to maximise clicks through to Spotify.';
-    document.getElementById('followerBar').style.background = 'var(--green)';
-  }
-}
-
-// ─── Render AI learning card ──────────────────────────────────────────────────
-function renderLearning(data) {
-  const body  = document.getElementById('learningBody');
-  const pills = document.getElementById('variantPills');
-
-  if (!data.learning) {
-    body.innerHTML = 'RunSound is collecting data. Learning starts after your first posts go live.';
-    return;
+  function toggleKey() {
+    keyVisible = !keyVisible;
+    renderKey();
+    document.getElementById('key-toggle-btn').textContent = keyVisible ? '🙈' : '👁';
   }
 
-  const { testedVariants, winningVariant, winningLift, diagnosis } = data.learning;
-
-  if (diagnosis) {
-    // Show specific diagnosis from last report
-    const diagMap = {
-      'scale':       { icon: '📈', text: `<strong>${winningVariant}</strong> is working — RunSound is scaling it${winningLift ? ` (+${winningLift}% more clicks)` : ''}.` },
-      'fix_cta':     { icon: '🎯', text: `High views but few clicks. RunSound is testing new CTA texts to convert more viewers.` },
-      'fix_hook':    { icon: '🪝', text: `Good click rate, but reach is low. RunSound is testing stronger opening hooks.` },
-      'full_reset':  { icon: '🔄', text: `Trying a fresh direction — RunSound is testing a new format this week.` },
-    };
-    const d = diagMap[diagnosis] || { icon: '🧠', text: `RunSound is actively optimising based on your post data.` };
-    body.innerHTML = `${d.icon} ${d.text}`;
-  } else if (testedVariants > 0) {
-    body.innerHTML = `RunSound has tested <strong>${testedVariants} hook variant${testedVariants > 1 ? 's' : ''}</strong>${winningVariant ? `. <strong>Variant ${winningVariant}</strong> is currently driving the most clicks.` : ` — still collecting data.`}`;
+  function copyKey() {
+    navigator.clipboard.writeText(apiKey).then(() => showToast('API key copied'));
   }
 
-  // Variant pills
-  if (data.learning.variants) {
-    pills.innerHTML = data.learning.variants.map(v => {
-      const cls = v.status === 'winning' ? 'winning' : v.status === 'testing' ? 'testing' : '';
-      return `<span class="variant-pill ${cls}">Variant ${v.name}${v.status === 'winning' ? ' 🏆' : v.status === 'testing' ? ' …' : ''}</span>`;
-    }).join('');
-  }
-}
+  // ── Credits ───────────────────────────────────────────────────────────────
+  async function loadCredits() {
+    try {
+      const r = await fetch('/api/credits/balance', {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error);
 
-// ─── Render smart link ────────────────────────────────────────────────────────
-function renderSmartLink(url) {
-  if (!url) return;
-  const card = document.getElementById('smartLinkCard');
-  const el   = document.getElementById('smartLinkUrl');
-  card.style.display = 'flex';
-  el.textContent = url.replace(/^https?:\/\//, '');
+      document.getElementById('credits-amount').textContent = `$${d.credits.toFixed(2)}`;
+      document.getElementById('credits-sub').textContent =
+        d.low_balance_warning ? 'Low balance — add credits to keep running skills' : 'Available to spend on skills';
 
-  document.getElementById('copyBtn').addEventListener('click', () => {
-    navigator.clipboard.writeText(url).then(() => {
-      const btn = document.getElementById('copyBtn');
-      btn.textContent = 'Copied ✓';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-  });
-
-  document.getElementById('smartLinkNavBtn').href = url;
-}
-
-// ─── Compute tier for a post ──────────────────────────────────────────────────
-function computeTier(p) {
-  const views  = p.views  || 0;
-  const clicks = p.clicks || 0;
-  const ctr    = views > 0 ? clicks / views : 0;
-
-  // Winner: strong reach + converting to clicks
-  if (views >= 5000 && ctr >= 0.01)  return { tier: 'winner',    label: 'Winner 🏆' };
-  // Promising: decent reach or growing CTR
-  if (views >= 1000 || (views >= 500 && ctr >= 0.005)) return { tier: 'promising', label: 'Promising' };
-  // Dead: enough views to judge, zero clicks
-  if (views >= 500  && clicks === 0) return { tier: 'dead',      label: 'Dead' };
-  // Testing: not enough data yet
-  return { tier: 'testing', label: 'Testing' };
-}
-
-// ─── Render posts list ────────────────────────────────────────────────────────
-function renderPosts(posts) {
-  const list  = document.getElementById('postList');
-  const count = posts ? posts.length : 0;
-
-  // Update AI learning progress bar
-  const learnPct   = Math.min(100, (count / 10) * 100);
-  const learnCount = document.getElementById('learnCount');
-  const learnBar   = document.getElementById('learnBar');
-  const learnHint  = document.getElementById('learnHint');
-  if (learnCount) learnCount.textContent = `${count} / 10 posts`;
-  if (learnBar)   setTimeout(() => { learnBar.style.width = learnPct + '%'; }, 300);
-  if (learnHint) {
-    if (count >= 10) {
-      learnHint.textContent = '✓ The AI is actively learning — patterns are being extracted every Sunday.';
-      learnHint.style.color = 'var(--green)';
-    } else {
-      learnHint.textContent = `The AI starts recognising patterns after post 10 — keep publishing daily.`;
+      if (d.artist_name) {
+        document.getElementById('nav-artist-name').textContent = d.artist_name;
+      }
+    } catch (e) {
+      document.getElementById('credits-amount').textContent = '—';
+      document.getElementById('credits-sub').textContent = 'Could not load balance';
     }
   }
 
-  if (!posts || posts.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🎵</div>
-        <p>Your first post will appear here once RunSound sends it to your TikTok inbox.</p>
-        <p style="margin-top:0.5rem;font-size:0.78rem;">Each post gets a tier — Dead, Testing, Promising, or Winner — based on views and Spotify clicks.</p>
-      </div>`;
-    return;
+  async function topup() {
+    const amount = prompt('Add credits ($USD):', '10');
+    if (!amount || isNaN(parseFloat(amount))) return;
+    try {
+      const r = await fetch('/api/credits/topup', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount_usd: parseFloat(amount) })
+      });
+      const d = await r.json();
+      if (d.checkout_url) window.location.href = d.checkout_url;
+      else showToast(d.error || 'Something went wrong');
+    } catch { showToast('Network error'); }
   }
 
-  list.innerHTML = posts.map(p => {
-    const status     = p.status === 'live' ? 'live' : p.status === 'pending' ? 'pending' : 'draft';
-    const statusText = status === 'live' ? 'Live' : status === 'pending' ? 'In inbox' : 'Draft';
-    const { tier, label } = computeTier(p);
-    const ctr = (p.views > 0 && p.clicks > 0)
-      ? ((p.clicks / p.views) * 100).toFixed(2) + '%'
-      : null;
-    return `
-      <div class="post-card">
-        <div class="post-thumb">
-          ${p.thumbUrl ? `<img src="${p.thumbUrl}" alt="" loading="lazy" />` : ''}
-        </div>
-        <div class="post-info">
-          <div class="post-hook">${p.hook || 'Post'}</div>
-          <div class="post-meta">${timeAgo(p.createdAt)}</div>
-          <div class="post-stats">
-            <div class="post-stat">${fmt(p.views)} <span>views</span></div>
-            ${p.clicks > 0 ? `<div class="post-stat" style="color:var(--green)">${fmt(p.clicks)} <span>clicks</span></div>` : ''}
-            ${ctr ? `<div class="post-stat" style="color:var(--accent2)">${ctr} <span>CTR</span></div>` : ''}
+  // ── Skills ────────────────────────────────────────────────────────────────
+  // curl examples per skill
+  const curlExamples = {
+    'creator-scout': `curl -X POST https://run-sound.com/api/skills/run \\
+  -H "Authorization: Bearer ${apiKey || 'YOUR_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "skill": "creator-scout",
+    "spotify_url": "https://open.spotify.com/artist/...",
+    "budget_usd": 150
+  }'`,
+    'gig-pitcher': `curl -X POST https://run-sound.com/api/skills/run \\
+  -H "Authorization: Bearer ${apiKey || 'YOUR_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "skill": "gig-pitcher",
+    "city": "Stockholm",
+    "genre": "indie",
+    "artist_name": "Your Name",
+    "artist_bio": "Short bio...",
+    "spotify_url": "https://open.spotify.com/artist/..."
+  }'`,
+    'hook-generator': `curl -X POST https://run-sound.com/api/skills/run \\
+  -H "Authorization: Bearer ${apiKey || 'YOUR_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "skill": "hook-generator",
+    "spotify_url": "https://open.spotify.com/track/...",
+    "count": 5
+  }'`,
+    'release-kit': `curl -X POST https://run-sound.com/api/skills/run \\
+  -H "Authorization: Bearer ${apiKey || 'YOUR_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "skill": "release-kit",
+    "spotify_url": "https://open.spotify.com/track/...",
+    "artist_name": "Your Name",
+    "release_date": "2025-09-01",
+    "artist_bio": "Short bio..."
+  }'`,
+  };
+
+  function getCurl(slug) {
+    return curlExamples[slug] || `curl -X POST https://run-sound.com/api/skills/run \\
+  -H "Authorization: Bearer ${apiKey || 'YOUR_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "skill": "${slug}" }'`;
+  }
+
+  async function loadSkills() {
+    try {
+      const r = await fetch('/api/skills');
+      const d = await r.json();
+      if (!d.ok || !d.skills.length) return;
+
+      const grid = document.getElementById('skills-grid');
+      grid.innerHTML = '';
+
+      d.skills.forEach(skill => {
+        const card = document.createElement('div');
+        card.className = 'skill-card';
+        card.innerHTML = `
+          <div class="skill-top">
+            <div>
+              <div class="skill-name">${skill.name}</div>
+              <div class="skill-desc">${skill.description || ''}</div>
+            </div>
+            <span class="skill-price">$${skill.price_per_unit}/${skill.unit_label}</span>
           </div>
-        </div>
-        <div class="post-status">
-          <span class="tier-badge ${tier}">${label}</span>
-          <span class="status-pill ${status}">${statusText}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ─── Load dashboard data ──────────────────────────────────────────────────────
-async function loadDashboard() {
-  if (!artistId && !campaignId) {
-    // No ID — show generic empty state
-    renderAction({ pendingPosts: 0 });
-    renderStats({ weekViews: 0, weekClicks: 0, totalPosts: 0 });
-    renderLearning({});
-    renderPosts([]);
-    document.getElementById('campaignTitle').textContent = 'No campaign';
-    return;
-  }
-
-  const id = campaignId || artistId;
-  const qs = dashToken ? `?token=${dashToken}` : '';
-  const endpoint = campaignId
-    ? `/api/dashboard/campaign/${id}${qs}`
-    : `/api/dashboard/artist/${id}${qs}`;
-
-  try {
-    const res  = await fetch(endpoint);
-    const data = await res.json();
-
-    if (res.status === 401 || res.status === 403) {
-      document.getElementById('campaignTitle').textContent = 'Access denied';
-      renderAction({ pendingPosts: 0 });
-      renderStats({ weekViews: 0, weekClicks: 0, totalPosts: 0 });
-      renderLearning({});
-      renderPosts([]);
-      return;
+          <div class="skill-curl">
+            <div class="curl-block"><button class="curl-copy" onclick="copyCurl(this, event)">Copy</button>${escHtml(getCurl(skill.slug))}</div>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          const wasExpanded = card.classList.contains('expanded');
+          document.querySelectorAll('.skill-card').forEach(c => c.classList.remove('expanded'));
+          if (!wasExpanded) card.classList.add('expanded');
+        });
+        grid.appendChild(card);
+      });
+    } catch (e) {
+      document.getElementById('skills-grid').innerHTML =
+        '<div class="empty-state">Could not load skills</div>';
     }
-
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load');
-
-    // Campaign badge
-    document.getElementById('campaignTitle').textContent =
-      `${data.artistName} — ${data.songTitle}`;
-
-    renderAction(data);
-    renderStats(data);
-    renderLearning(data);
-    renderSmartLink(data.smartLinkUrl);
-    renderPosts(data.posts || []);
-
-  } catch (err) {
-    console.error('Dashboard load failed:', err);
-    // Show error but keep UI usable
-    const list = document.getElementById('postList');
-    list.innerHTML = `<div class="error-banner">Couldn't load your data. We'll retry automatically. (${err.message})</div>`;
-    renderAction({ pendingPosts: 0 });
-    renderStats({ weekViews: 0, weekClicks: 0, totalPosts: 0 });
-    renderLearning({});
   }
-}
 
-loadDashboard();
+  function copyCurl(btn, e) {
+    e.stopPropagation();
+    const block = btn.parentElement;
+    const text  = block.textContent.replace('Copy', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+  }
 
-// Refresh every 5 minutes while page is open
-setInterval(loadDashboard, 5 * 60 * 1000);
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Run history ───────────────────────────────────────────────────────────
+  function timeAgo(iso) {
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (s < 60)   return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+    return `${Math.floor(s/86400)}d ago`;
+  }
+
+  async function loadRuns() {
+    try {
+      const r = await fetch('/api/skills/runs?limit=10', {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error();
+
+      const list = document.getElementById('run-list');
+      list.innerHTML = '';
+
+      if (!d.runs.length) {
+        list.innerHTML = `<div class="empty-state">
+          <strong>No runs yet</strong>
+          Copy a curl command from a skill above and run it in your terminal.
+        </div>`;
+        return;
+      }
+
+      document.getElementById('history-sub').textContent = `${d.runs.length} recent`;
+
+      d.runs.forEach(run => {
+        const row = document.createElement('div');
+        row.className = 'run-row';
+        const statusClass = run.status === 'succeeded' ? 'succeeded' : run.status === 'running' ? 'running' : 'failed';
+        row.innerHTML = `
+          <div class="run-status-dot ${statusClass}"></div>
+          <div>
+            <div class="run-skill">${run.skill_slug}</div>
+            <div class="run-time">${timeAgo(run.started_at)}</div>
+          </div>
+          <div class="run-units">${run.units_consumed != null ? `${run.units_consumed} units` : ''}</div>
+          <div class="run-cost">${run.cost_usd != null ? `$${run.cost_usd.toFixed(4)}` : '—'}</div>
+        `;
+        list.appendChild(row);
+      });
+    } catch {
+      document.getElementById('run-list').innerHTML =
+        '<div class="empty-state">Could not load run history</div>';
+    }
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  loadCredits();
+  loadSkills();
+  loadRuns();
 </script>
 </body>
 </html>
