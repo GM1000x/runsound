@@ -87,7 +87,6 @@ app.post('/api/artists/register', async (req, res) => {
     status:      'trial',
     api_key:     apiKey,
     credits_usd: 5.0,
-    spotify_url: spotify_url || null,
   }).select().single();
 
   if (error) return res.status(500).json({ ok: false, error: error.message });
