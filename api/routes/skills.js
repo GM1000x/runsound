@@ -370,6 +370,7 @@ async function executeSkill(slug, input, artist, runId) {
     case 'playlist-pitcher':return runPlaylistPitcher(input, artist);
     case 'press-pitcher':   return runPressPitcher(input, artist);
     case 'full-campaign':   return runFullCampaign(input, artist, runId);
+    case 'gig-pitcher':     return runGigPitcher(input, artist);
     default:
       // Third-party skill — call their webhook
       return runThirdPartySkill(slug, input, artist, runId);
@@ -590,6 +591,149 @@ async function runFullCampaign(input, artist, runId) {
         'Creators will receive personalized DMs within 24h',
         'Sound tracking activates automatically after DMs are sent',
         `Check progress: runsound.ai/outreach`,
+      ],
+    },
+  };
+}
+
+// ── gig-pitcher ───────────────────────────────────────────────────────────────
+async function runGigPitcher(input, artist) {
+  const {
+    city,
+    country        = 'Sweden',
+    genre          = 'indie',
+    artist_name    = artist.name || 'Artist',
+    artist_bio     = '',
+    spotify_url    = '',
+    soundcloud_url = '',
+  } = input;
+
+  if (!city) throw new Error('city is required');
+
+  // 1. Derive venue types from genre so searches are relevant
+  const venueTypeMap = {
+    jazz:        ['jazz club', 'jazz bar', 'live music bar'],
+    blues:       ['blues bar', 'live music bar', 'rock bar'],
+    classical:   ['concert hall', 'music hall', 'cultural center'],
+    opera:       ['opera house', 'concert hall', 'cultural center'],
+    folk:        ['folk club', 'acoustic bar', 'café concert'],
+    acoustic:    ['acoustic bar', 'café concert', 'intimate venue'],
+    punk:        ['rock bar', 'dive bar', 'underground club'],
+    metal:       ['rock club', 'metal bar', 'underground venue'],
+    electronic:  ['club', 'electronic music venue', 'bar with DJ'],
+    hip_hop:     ['hip-hop club', 'urban bar', 'open mic venue'],
+    rnb:         ['r&b bar', 'soul club', 'live music lounge'],
+    pop:         ['bar with live music', 'concert venue', 'music club'],
+    indie:       ['indie bar', 'live music bar', 'music venue'],
+    rock:        ['rock bar', 'live music venue', 'concert hall'],
+    country:     ['country bar', 'americana venue', 'acoustic bar'],
+    reggae:      ['reggae bar', 'world music venue', 'tropical bar'],
+  };
+
+  const genreKey   = Object.keys(venueTypeMap).find(k => genre.toLowerCase().includes(k)) || 'indie';
+  const venueTypes = venueTypeMap[genreKey];
+
+  // 2. Search Google Places for each venue type — collect all unique results
+  const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+  let venues      = [];
+
+  if (googleKey) {
+    for (const type of venueTypes) {
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${type} in ${city}`)}&key=${googleKey}`;
+        const r   = await fetch(url);
+        const d   = await r.json();
+        if (d.results) {
+          d.results.forEach(p => {
+            if (!venues.find(v => v.place_id === p.place_id)) {
+              venues.push({
+                place_id: p.place_id,
+                name:     p.name,
+                address:  p.formatted_address || city,
+                rating:   p.rating || null,
+                type,
+              });
+            }
+          });
+        }
+      } catch (e) { /* continue on individual failures */ }
+    }
+
+    // Sort by rating descending so best venues come first
+    venues.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+  } else {
+    // Fallback: GPT generates real venue suggestions when no Places key
+    const fallback = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{
+        role: 'user',
+        content: `List real live music venues in ${city}, ${country} that would be a good fit for a ${genre} artist.
+Include bars, clubs, concert halls, cafés — any place that books live acts.
+Return JSON: { "venues": [{ "name": string, "address": string, "venue_type": string, "why_fit": string }] }
+Only include real, existing places. Include as many as you know.`
+      }],
+      response_format: { type: 'json_object' },
+    });
+    const parsed = JSON.parse(fallback.choices[0].message.content);
+    venues = (parsed.venues || []).map(v => ({
+      name: v.name, address: v.address || city,
+      rating: null, type: v.venue_type, why_fit: v.why_fit
+    }));
+  }
+
+  if (!venues.length) throw new Error(`No venues found in ${city} for ${genre} — try a larger nearby city`);
+
+  // 3. GPT writes a personalized pitch for every venue found
+  const pitches = await Promise.all(venues.map(async venue => {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{
+        role: 'system',
+        content: `You write concise, professional booking pitch emails for musicians. Under 150 words. Warm but direct. Each email must feel personally written for that specific venue.`
+      }, {
+        role: 'user',
+        content: `Write a booking inquiry email from "${artist_name}" to "${venue.name}" (${venue.type || 'music venue'}) in ${city}.
+
+Genre: ${genre}
+Bio: ${artist_bio || `${artist_name} is a ${genre} artist based near ${city}.`}
+${spotify_url    ? `Spotify: ${spotify_url}` : ''}
+${soundcloud_url ? `SoundCloud: ${soundcloud_url}` : ''}
+${venue.why_fit  ? `Why this venue fits: ${venue.why_fit}` : ''}
+
+Requirements:
+- Mention the venue by name and reference its vibe or reputation
+- Explain why this artist fits their stage
+- Clear ask: availability to discuss a booking
+- Do NOT sound like a mass email`
+      }],
+    });
+
+    return {
+      venue:         venue.name,
+      address:       venue.address,
+      venue_type:    venue.type || null,
+      rating:        venue.rating || null,
+      email_subject: `Booking inquiry — ${artist_name} (${genre})`,
+      email_body:    completion.choices[0].message.content.trim(),
+      status:        'ready',
+    };
+  }));
+
+  return {
+    units_consumed: pitches.length,
+    output: {
+      city,
+      genre,
+      artist:            artist_name,
+      venues_found:      venues.length,
+      pitches_generated: pitches.length,
+      pitches,
+      next_steps: [
+        `Find each venue's booking email on their website or Instagram bio`,
+        `Send each pitch from your own email — they're ready to copy-paste`,
+        `Follow up after 5–7 days if no reply`,
+        `Venues typically book 4–8 weeks ahead — send early before your target date`,
       ],
     },
   };

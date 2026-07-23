@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create creator offer — RunSound</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #FAFAF7; --surface: #fff; --border: #E8E8E3; --border2: #D4D4CE;
+      --text: #1a1a18; --muted: #6b6b65; --accent: #7c3aed; --accent-l: #ede9fe;
+      --green: #16a34a; --green-l: #dcfce7; --radius: 10px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%; height: 60px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg); position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .nav-back { font-size: 0.85rem; color: var(--muted); }
+
+    .page { max-width: 560px; margin: 0 auto; padding: 60px 5% 80px; }
+    h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+    .page-sub { color: var(--muted); font-size: 0.92rem; margin-bottom: 36px; }
+
+    /* FORM */
+    .form-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; margin-bottom: 24px;
+    }
+    .card-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 20px; }
+    .form-section { display: flex; flex-direction: column; gap: 20px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { font-size: 0.85rem; font-weight: 600; }
+    input, select {
+      width: 100%; padding: 11px 14px;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--radius); font-size: 0.95rem;
+      font-family: 'Inter', sans-serif; color: var(--text);
+      transition: border-color .15s; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); background: var(--surface); }
+    .field-hint { font-size: 0.78rem; color: var(--muted); }
+
+    /* BUDGET PREVIEW */
+    .budget-card {
+      background: var(--accent-l); border: 1px solid #c4b5fd;
+      border-radius: 12px; padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 4px;
+    }
+    .budget-label { font-size: 0.85rem; color: var(--accent); font-weight: 500; }
+    .budget-amount { font-size: 1.8rem; font-weight: 700; color: var(--accent); letter-spacing: -0.03em; }
+
+    /* PRICING TIP */
+    .tip-card {
+      background: var(--green-l); border: 1px solid #bbf7d0;
+      border-radius: 10px; padding: 14px 18px;
+      font-size: 0.82rem; color: #166534; line-height: 1.6;
+    }
+    .tip-card strong { font-weight: 600; }
+
+    /* SUBMIT */
+    .submit-btn {
+      width: 100%; padding: 14px;
+      background: var(--text); color: var(--bg);
+      border: none; border-radius: var(--radius);
+      font-size: 1rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: opacity .15s;
+    }
+    .submit-btn:hover { opacity: 0.8; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .fine-print { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 14px; line-height: 1.6; }
+
+    .error-msg {
+      background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+      border-radius: var(--radius); padding: 12px 16px; font-size: 0.88rem; display: none;
+    }
+
+    /* SUCCESS */
+    #state-success { display: none; }
+    .success-card {
+      background: var(--green-l); border: 1px solid #bbf7d0;
+      border-radius: 16px; padding: 40px 32px; text-align: center;
+    }
+    .success-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .success-card h2 { font-size: 1.3rem; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+    .success-card p { color: #166534; font-size: 0.9rem; line-height: 1.65; margin-bottom: 24px; }
+    .success-link {
+      display: inline-block; background: var(--green); color: #fff;
+      padding: 10px 24px; border-radius: var(--radius);
+      font-weight: 600; font-size: 0.9rem;
+    }
+
+    @media (max-width: 500px) { .field-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">Run<span>Sound</span></a>
+  <a href="/dashboard.html" class="nav-back">← Dashboard</a>
+</nav>
+
+<div class="page">
+
+  <!-- FORM -->
+  <div id="state-form">
+    <h1>Pay creators to post your sound.</h1>
+    <p class="page-sub">Set your budget and we handle everything — finding creators, sending offers, and paying them automatically when they post.</p>
+
+    <div class="form-card">
+      <div class="card-title">Your track</div>
+      <div class="form-section">
+        <div class="field">
+          <label for="track_name">Track name</label>
+          <input type="text" id="track_name" placeholder="e.g. Summer Rain" />
+        </div>
+        <div class="field">
+          <label for="spotify_url">Spotify track URL</label>
+          <input type="url" id="spotify_url" placeholder="https://open.spotify.com/track/..." />
+          <div class="field-hint">We use this to match creators to your sound's genre and mood.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Creator offer</div>
+      <div class="form-section">
+
+        <div class="tip-card">
+          <strong>💡 Recommended:</strong> $10–25 per post for creators with 5k–20k followers. You get more algorithm chances and better engagement than paying one big creator.
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="payout">Pay per post ($)</label>
+            <input type="number" id="payout" value="15" min="5" max="500" step="5" oninput="updateBudget()" />
+            <div class="field-hint">Minimum $5</div>
+          </div>
+          <div class="field">
+            <label for="max_creators">Number of creators</label>
+            <input type="number" id="max_creators" value="10" min="1" max="100" oninput="updateBudget()" />
+            <div class="field-hint">We'll recruit up to this many</div>
+          </div>
+        </div>
+
+        <div class="budget-card">
+          <div class="budget-label">Total escrow budget</div>
+          <div class="budget-amount" id="budget-display">$150</div>
+        </div>
+
+        <div class="field">
+          <label for="expires">Offer expires in</label>
+          <select id="expires">
+            <option value="14">14 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="60">60 days</option>
+          </select>
+          <div class="field-hint">Unused escrow is refunded after expiry.</div>
+        </div>
+
+        <div class="error-msg" id="error-msg"></div>
+
+        <button class="submit-btn" id="submit-btn" onclick="createOffer()">Fund escrow &amp; activate offer →</button>
+        <div class="fine-print">Your budget is held securely by Stripe and only released when a creator posts. Unused funds are refunded.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="state-success">
+    <div class="success-card">
+      <div class="success-icon">🚀</div>
+      <h2>Offer activated!</h2>
+      <p>Your budget is locked in. We're already recruiting creators and sending offers. You'll get notified as creators accept and post with your sound — payments go out automatically.</p>
+      <a href="/dashboard.html" class="success-link">View campaign dashboard →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const apiKey = localStorage.getItem('runsound_api_key') || '';
+
+  function updateBudget() {
+    const payout  = parseFloat(document.getElementById('payout').value) || 0;
+    const count   = parseInt(document.getElementById('max_creators').value) || 0;
+    const total   = (payout * count).toFixed(0);
+    document.getElementById('budget-display').textContent = `$${total}`;
+  }
+
+  async function createOffer() {
+    const btn         = document.getElementById('submit-btn');
+    const errorEl     = document.getElementById('error-msg');
+    const track_name  = document.getElementById('track_name').value.trim();
+    const spotify_url = document.getElementById('spotify_url').value.trim();
+    const payout      = parseFloat(document.getElementById('payout').value);
+    const max_creators = parseInt(document.getElementById('max_creators').value);
+    const expires_days = parseInt(document.getElementById('expires').value);
+
+    errorEl.style.display = 'none';
+
+    if (!track_name || !spotify_url) {
+      errorEl.textContent = 'Please fill in your track name and Spotify URL.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (payout < 5) {
+      errorEl.textContent = 'Minimum payout is $5 per post.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating offer…';
+
+    try {
+      const res = await fetch('/api/offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({ track_name, spotify_url, payout_per_post_usd: payout, max_creators, expires_days })
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        errorEl.textContent = data.error || 'Something went wrong.';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Fund escrow & activate offer →';
+        return;
+      }
+
+      // Show pricing tip if one was returned
+      if (data.pricing_tip) console.info('[RunSound tip]', data.pricing_tip);
+
+      // In real flow: redirect to Stripe Checkout with data.stripe_client_secret
+      // For now show success
+      document.getElementById('state-form').style.display    = 'none';
+      document.getElementById('state-success').style.display = 'block';
+
+    } catch (err) {
+      errorEl.textContent = 'Network error — please try again.';
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Fund escrow & activate offer →';
+    }
+  }
+</script>
+
+</body>
+</html>

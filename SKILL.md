@@ -64,6 +64,28 @@ Run a complete music promotion campaign end-to-end in a single call. Generates h
 
 ---
 
+### 💸 creator-offers ⭐ NEW
+Pay TikTok creators directly — no middleman, no platform cut. Set a budget, and creators get paid automatically the moment they post with your sound.
+
+**Recommended pricing:** $10–25 per post for micro-creators (5k–20k followers). This gives you 10–20 algorithm chances for the same budget as one mid-size creator — and micro-creators have higher engagement rates.
+
+**Input:**
+```json
+{
+  "skill": "creator-offers",
+  "track_name": "My Song",
+  "spotify_url": "https://open.spotify.com/track/...",
+  "payout_per_post_usd": 15,
+  "max_creators": 10
+}
+```
+**Output:** Offer created, escrow funded, invite link ready to send in DMs. Payment releases automatically when sound-tracker confirms each post.
+**Cost:** $0.05 per offer created (API fee only — 100% of your creator budget goes to creators)
+
+**Example agent prompt:** *"Create a $150 creator offer for my track — $15 per post, 10 micro-creators"*
+
+---
+
 ### 🎯 creator-scout
 Find TikTok creators whose content matches your song's energy, genre and mood.
 
@@ -205,6 +227,28 @@ Generate a complete release marketing package: press release, bio, social captio
 ```
 **Output:** Press release (markdown), short bio, 10 social captions, email pitch template.
 **Cost:** $0.25 per kit
+
+---
+
+### 🎤 gig-pitcher
+Scans your city for live music venues that fit your genre and vibe — then writes a personalized booking pitch for every one it finds. You get as many pitches as there are relevant venues.
+
+**Input:**
+```json
+{
+  "skill": "gig-pitcher",
+  "city": "Stockholm",
+  "country": "Sweden",
+  "genre": "indie pop",
+  "artist_name": "My Artist",
+  "artist_bio": "Indie pop artist with 3 EPs and 50k monthly Spotify listeners.",
+  "spotify_url": "https://open.spotify.com/artist/..."
+}
+```
+**Output:** All relevant venues found in your city, each with a personalized booking pitch email ready to send. Number of pitches depends on how many fitting venues exist.
+**Cost:** $0.25 per pitch generated
+
+**Example agent prompt:** *"Find gig opportunities for me in Gothenburg, I play jazz"*
 
 ---
 

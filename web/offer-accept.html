@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accept offer — RunSound</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #FAFAF7; --surface: #fff; --border: #E8E8E3; --border2: #D4D4CE;
+      --text: #1a1a18; --muted: #6b6b65; --accent: #7c3aed; --accent-l: #ede9fe;
+      --green: #16a34a; --green-l: #dcfce7; --radius: 10px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%; height: 60px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg); position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+
+    .page { max-width: 480px; margin: 0 auto; padding: 72px 5% 80px; }
+
+    .offer-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; margin-bottom: 28px;
+    }
+    .offer-header {
+      background: var(--accent); color: #fff;
+      padding: 28px 28px 24px;
+    }
+    .offer-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; margin-bottom: 8px; }
+    .offer-track { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+    .offer-artist { font-size: 0.9rem; opacity: 0.8; }
+
+    .offer-body { padding: 24px 28px; }
+    .payout-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; border-bottom: 1px solid var(--border);
+    }
+    .payout-row:last-child { border-bottom: none; }
+    .payout-label { font-size: 0.88rem; color: var(--muted); }
+    .payout-value { font-size: 0.95rem; font-weight: 600; }
+    .payout-amount { font-size: 1.6rem; font-weight: 700; color: var(--green); }
+
+    .how {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; margin-bottom: 28px;
+    }
+    .how-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 14px; }
+    .how-step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .how-step:last-child { margin-bottom: 0; }
+    .how-num {
+      width: 20px; height: 20px; background: var(--accent); color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .how-text { font-size: 0.85rem; color: var(--muted); }
+    .how-text strong { color: var(--text); font-weight: 600; }
+
+    .accept-btn {
+      width: 100%; padding: 14px;
+      background: var(--green); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: opacity .15s; margin-bottom: 12px;
+    }
+    .accept-btn:hover { opacity: 0.88; }
+    .accept-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .decline-btn {
+      width: 100%; padding: 12px;
+      background: none; color: var(--muted);
+      border: 1px solid var(--border2); border-radius: var(--radius);
+      font-size: 0.88rem; font-weight: 500;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all .15s;
+    }
+    .decline-btn:hover { border-color: var(--border2); color: var(--text); }
+
+    .fine-print { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 16px; line-height: 1.6; }
+
+    /* States */
+    #state-loading { text-align: center; padding: 60px 0; color: var(--muted); }
+    #state-accepted, #state-declined, #state-error { display: none; }
+
+    .result-card {
+      border-radius: 16px; padding: 40px 32px; text-align: center;
+    }
+    .result-card.success { background: var(--green-l); border: 1px solid #bbf7d0; }
+    .result-card.neutral { background: var(--surface); border: 1px solid var(--border); }
+    .result-card.error   { background: #fef2f2; border: 1px solid #fecaca; }
+    .result-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .result-card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
+    .result-card.success h2 { color: var(--green); }
+    .result-card.error h2 { color: #b91c1c; }
+    .result-card p { font-size: 0.9rem; line-height: 1.65; }
+    .result-card.success p { color: #166534; }
+    .result-card.neutral p { color: var(--muted); }
+    .result-card.error p { color: #b91c1c; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">Run<span>Sound</span></a>
+</nav>
+
+<div class="page">
+
+  <!-- Loading -->
+  <div id="state-loading">Loading offer…</div>
+
+  <!-- Main offer view -->
+  <div id="state-offer" style="display:none">
+    <div class="offer-card">
+      <div class="offer-header">
+        <div class="offer-label">Payment offer</div>
+        <div class="offer-track" id="track-name">—</div>
+        <div class="offer-artist" id="artist-name"></div>
+      </div>
+      <div class="offer-body">
+        <div class="payout-row">
+          <span class="payout-label">You earn per post</span>
+          <span class="payout-amount" id="payout-amount">$—</span>
+        </div>
+        <div class="payout-row">
+          <span class="payout-label">When you get paid</span>
+          <span class="payout-value">Automatically when you post</span>
+        </div>
+        <div class="payout-row">
+          <span class="payout-label">Paid via</span>
+          <span class="payout-value">Bank transfer (Stripe)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="how">
+      <div class="how-title">What happens next</div>
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <div class="how-text"><strong>Accept this offer</strong> — takes one click</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <div class="how-text"><strong>Post a TikTok</strong> using the artist's sound</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <div class="how-text"><strong>Get paid automatically</strong> — RunSound detects your post and money hits your bank within 1–2 business days</div>
+      </div>
+    </div>
+
+    <button class="accept-btn" id="accept-btn" onclick="acceptDeal()">Accept — I'll post with this sound →</button>
+    <button class="decline-btn" onclick="showDeclined()">No thanks</button>
+    <div class="fine-print">By accepting you agree to post at least one TikTok using the artist's sound within 14 days. Payment releases automatically once our tracker confirms your post.</div>
+  </div>
+
+  <!-- Accepted -->
+  <div id="state-accepted">
+    <div class="result-card success">
+      <div class="result-icon">🎉</div>
+      <h2>You're in!</h2>
+      <p>Post a TikTok with the sound and payment hits your bank automatically. No need to message anyone — RunSound handles it all.</p>
+    </div>
+  </div>
+
+  <!-- Declined -->
+  <div id="state-declined">
+    <div class="result-card neutral">
+      <div class="result-icon">👋</div>
+      <h2>No worries</h2>
+      <p>You've declined this offer. If you change your mind, use the original link from the artist's DM.</p>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="state-error">
+    <div class="result-card error">
+      <div class="result-icon">⚠️</div>
+      <h2 id="error-title">Offer unavailable</h2>
+      <p id="error-msg">This offer may have expired or already reached its creator limit.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const params      = new URLSearchParams(window.location.search);
+  const offerId     = params.get('offer');
+  const creatorId   = params.get('creator');
+  const payout      = params.get('payout');
+  const trackName   = params.get('track');
+
+  // Fill in from URL params immediately (no extra API call needed)
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!offerId || !creatorId) {
+      showError('Invalid link', 'This offer link is missing required parameters.');
+      return;
+    }
+
+    document.getElementById('track-name').textContent   = trackName   ? decodeURIComponent(trackName) : 'Unknown track';
+    document.getElementById('payout-amount').textContent = payout ? `$${parseFloat(payout).toFixed(2)}` : '$—';
+
+    show('state-offer');
+  });
+
+  function show(id) {
+    ['state-loading','state-offer','state-accepted','state-declined','state-error'].forEach(s => {
+      document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+  }
+
+  function showError(title, msg) {
+    document.getElementById('error-title').textContent = title;
+    document.getElementById('error-msg').textContent   = msg;
+    show('state-error');
+  }
+
+  function showDeclined() {
+    show('state-declined');
+  }
+
+  async function acceptDeal() {
+    const btn = document.getElementById('accept-btn');
+    btn.disabled    = true;
+    btn.textContent = 'Accepting…';
+
+    try {
+      // Find the deal ID for this creator + offer
+      const res = await fetch(`/api/creators/deals`, {
+        headers: { 'x-creator-token': creatorId }
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        showError('Error', data.error || 'Could not load your deals.');
+        return;
+      }
+
+      const deal = data.deals?.find(d => d.creator_offers && d.creator_offers.track_name === decodeURIComponent(trackName || ''));
+
+      if (!deal) {
+        showError('Deal not found', 'We could not find this offer linked to your account. Try the original link again.');
+        return;
+      }
+
+      const acceptRes = await fetch(`/api/creators/deals/${deal.id}/accept`, {
+        method: 'POST',
+        headers: { 'x-creator-token': creatorId }
+      });
+      const acceptData = await acceptRes.json();
+
+      if (!acceptData.ok) {
+        showError('Could not accept', acceptData.error || 'Something went wrong.');
+        return;
+      }
+
+      show('state-accepted');
+    } catch (err) {
+      showError('Network error', 'Please check your connection and try again.');
+      btn.disabled    = false;
+      btn.textContent = 'Accept — I\'ll post with this sound →';
+    }
+  }
+</script>
+
+</body>
+</html>
