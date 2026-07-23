@@ -68,6 +68,32 @@ app.use('/api/credits', (req, res, next) => {
   require('./routes/skills')(req, res, next);
 });
 
+// ─── Artist registration (skills platform signup) ─────────────────────────────
+app.post('/api/artists/register', async (req, res) => {
+  const crypto   = require('crypto');
+  const supabase = require('./db');
+  const { name, email, spotify_url } = req.body;
+  if (!name || !email) return res.status(400).json({ ok: false, error: 'name and email are required' });
+
+  // Check existing
+  const { data: existing } = await supabase.from('artists').select('id, api_key').eq('email', email.toLowerCase().trim()).maybeSingle();
+  if (existing) return res.json({ ok: true, artist_id: existing.id, api_key: existing.api_key, existed: true });
+
+  const apiKey = 'rs_live_' + crypto.randomBytes(24).toString('hex');
+  const { data: artist, error } = await supabase.from('artists').insert({
+    name,
+    email:       email.toLowerCase().trim(),
+    plan:        'starter',
+    status:      'trial',
+    api_key:     apiKey,
+    credits_usd: 5.0,
+    spotify_url: spotify_url || null,
+  }).select().single();
+
+  if (error) return res.status(500).json({ ok: false, error: error.message });
+  res.json({ ok: true, artist_id: artist.id, api_key: apiKey });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });

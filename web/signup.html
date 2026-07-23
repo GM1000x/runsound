@@ -181,10 +181,10 @@
     btn.textContent = 'Creating account…';
 
     try {
-      const res = await fetch('/api/signup', {
+      const res = await fetch('/api/artists/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artist_name: name, email, spotify_url: spotify || null })
+        body: JSON.stringify({ name, email, spotify_url: spotify || null })
       });
       const data = await res.json();
 
