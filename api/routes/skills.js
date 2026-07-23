@@ -377,24 +377,216 @@ async function executeSkill(slug, input, artist, runId) {
   }
 }
 
-// ── creator-scout ─────────────────────────────────────────────────────────────
-async function runCreatorScout(input, artist) {
-  const { spotify_url, follower_min = 1000, follower_max = 50000, limit = 50 } = input;
+// ── Spotify genre helper ──────────────────────────────────────────────────────
+async function getSpotifyGenreFromUrl(spotify_url) {
+  const clientId     = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
 
-  // Reuse existing outreach discovery logic via internal API call
-  // In production, this would call the same Apify logic as outreach.js
-  const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/outreach/campaigns`, {
+  const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'x-internal': 'true' },
-    body:    JSON.stringify({ artist_id: artist.id, spotify_url, follower_min, follower_max }),
+    headers: {
+      'Content-Type':  'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+    },
+    body: 'grant_type=client_credentials',
   });
+  const { access_token } = await tokenRes.json();
+  if (!access_token) return null;
 
-  // Return placeholder output (real implementation calls Apify)
+  const trackMatch  = spotify_url.match(/track\/([A-Za-z0-9]+)/);
+  const artistMatch = spotify_url.match(/artist\/([A-Za-z0-9]+)/);
+
+  let artistId = null;
+  if (trackMatch) {
+    const r = await fetch(`https://api.spotify.com/v1/tracks/${trackMatch[1]}`, {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    const t = await r.json();
+    artistId = t.artists?.[0]?.id;
+  } else if (artistMatch) {
+    artistId = artistMatch[1];
+  }
+
+  if (!artistId) return null;
+  const ar = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  const artData = await ar.json();
+  return artData.genres?.[0] || null;
+}
+
+// ── Genre → TikTok lifestyle hashtag mapping ──────────────────────────────────
+// Maps music genre → content categories that audience actually scrolls
+// e.g. house fans are on #gymtok and #nightlife — not "house music" search
+function genreToHashtags(genre) {
+  const g = (genre || '').toLowerCase();
+
+  const rules = [
+    { match: ['house', 'techno', 'trance', 'electronic', 'edm', 'dance', 'deep', 'progressive'],
+      tags: ['gymtok', 'fittok', 'gettingready', 'clubnight', 'nightlife'] },
+    { match: ['hip hop', 'hip-hop', 'rap', 'trap', 'drill', 'boom bap'],
+      tags: ['streetwear', 'sneakerhead', 'hypecheck', 'streetstyle', 'fashiontok'] },
+    { match: ['r&b', 'rnb', 'soul', 'neo soul', 'funk'],
+      tags: ['selfcare', 'grwm', 'glowup', 'vibecheck', 'relationshiptok'] },
+    { match: ['indie', 'alternative', 'alt-rock', 'shoegaze', 'dream pop'],
+      tags: ['indievibes', 'coffeeshop', 'aestheticroom', 'bookish', 'vintagefit'] },
+    { match: ['pop'],
+      tags: ['grwm', 'aestheticcheck', 'currentlyobsessed', 'girlytok', 'fashiontok'] },
+    { match: ['country', 'americana', 'bluegrass', 'folk'],
+      tags: ['countrylife', 'westernstyle', 'cottagecore', 'southernliving', 'farmtok'] },
+    { match: ['jazz', 'blues', 'swing', 'bebop'],
+      tags: ['jazzvibes', 'cocktailhour', 'lounge', 'midnightvibes', 'soulcheck'] },
+    { match: ['classical', 'orchestral', 'chamber', 'opera', 'baroque'],
+      tags: ['studywithme', 'pianocheck', 'classicalmusic', 'productivitycheck', 'aestheticvibes'] },
+    { match: ['metal', 'heavy metal', 'thrash', 'death metal', 'metalcore'],
+      tags: ['metalhead', 'concertcheck', 'altcheck', 'tattootok', 'darkfashion'] },
+    { match: ['punk', 'hardcore', 'post-punk'],
+      tags: ['altcheck', 'punkstyle', 'vinylcheck', 'concertcheck', 'diyculture'] },
+    { match: ['reggae', 'dancehall', 'ska'],
+      tags: ['summervibes', 'tropicalcheck', 'beachcheck', 'islandvibes', 'vibetok'] },
+    { match: ['afrobeats', 'afropop', 'afro'],
+      tags: ['afrobeats', 'africanfashion', 'partycheck', 'dancechallenge', 'melanin'] },
+    { match: ['lo-fi', 'lofi', 'chillhop', 'ambient', 'chill'],
+      tags: ['lofi', 'studycheck', 'cozycheck', 'nightowl', 'aestheticroom'] },
+    { match: ['latin', 'salsa', 'reggaeton', 'cumbia', 'bachata'],
+      tags: ['latincheck', 'latinvibes', 'salsacheck', 'bailando', 'latinbeauty'] },
+    { match: ['k-pop', 'kpop', 'j-pop', 'jpop', 'korean'],
+      tags: ['kpop', 'kpopcheck', 'kdrama', 'koreacheck', 'asianfashion'] },
+    { match: ['rock'],
+      tags: ['rockcheck', 'concertcheck', 'guitartok', 'altcheck', 'bandcheck'] },
+  ];
+
+  for (const rule of rules) {
+    if (rule.match.some(m => g.includes(m))) return rule.tags;
+  }
+  return ['vibecheck', 'musiccheck', 'newmusic', 'musiclover', 'musictok'];
+}
+
+// ── creator-scout ─────────────────────────────────────────────────────────────
+// Budget → follower ceiling for music promotion (2026 market rates)
+// Source: Dynamoi, Influencer Marketing Hub, Collabstr
+//   Nano  (1K–10K):    avg $100/video  → $50–200 range
+//   Micro (10K–100K):  avg $350/video  → $150–800 range
+//   Mid   (100K–500K): avg $1200/video → $500–2500 range
+//   Macro (500K–1M):   avg $3500/video → $2000–5000 range
+function budgetToFollowerMax(budget_usd) {
+  if (!budget_usd || budget_usd < 30)  return 5000;    // < $30:  a few nano creators gratis/cheap
+  if (budget_usd < 100)                return 10000;   // $30–100:  1 nano at avg $100
+  if (budget_usd < 300)                return 50000;   // $100–300: 1–3 low-micro ($150–350 each)
+  if (budget_usd < 800)                return 100000;  // $300–800: 1–2 mid-micro ($350–800 each)
+  return 500000;                                        // $800+: can reach mid-tier ($500–2500/video)
+}
+
+async function runCreatorScout(input, artist) {
+  const {
+    spotify_url,
+    budget_usd    = null,
+    follower_min  = 0,                                         // no floor — find everyone
+    follower_max  = budgetToFollowerMax(budget_usd),           // ceiling from budget
+    limit         = 20,
+    genre: genreInput = null,
+  } = input;
+
+  const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+  if (!APIFY_TOKEN) throw new Error('Creator scout is not configured — contact support.');
+
+  // ── 1. Determine genre ───────────────────────────────────────────────────
+  let genre = genreInput;
+  if (!genre && spotify_url) {
+    genre = await getSpotifyGenreFromUrl(spotify_url).catch(() => null);
+  }
+  genre = (genre || 'pop').toLowerCase();
+  console.log(`[creator-scout] genre="${genre}"`);
+
+  // ── 2. Genre → hashtags (lifestyle categories, not music genres) ─────────
+  const hashtags = genreToHashtags(genre).slice(0, 3); // 3 hashtags keeps run time under 30s
+  console.log(`[creator-scout] hashtags: ${hashtags.join(', ')}`);
+
+  // ── 3. Apify: scrape TikTok posts by hashtag, extract creator metadata ───
+  const startRes = await fetch(
+    `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        hashtags,
+        resultsPerPage:    12,
+        maxRequestRetries: 2,
+        proxyConfiguration: { useApifyProxy: true },
+      }),
+    }
+  );
+  if (!startRes.ok) {
+    const txt = await startRes.text();
+    throw new Error(`Apify start failed: ${startRes.status} — ${txt.slice(0, 200)}`);
+  }
+  const { data: { id: runId } } = await startRes.json();
+  console.log(`[creator-scout] Apify run ${runId} started`);
+
+  // Poll until SUCCEEDED (max 75s = 25 × 3s)
+  let items = [];
+  for (let i = 0; i < 25; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const statusRes = await fetch(
+      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
+    );
+    const { data: run } = await statusRes.json();
+    if (run.status === 'SUCCEEDED') {
+      const dataRes = await fetch(
+        `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}&format=json&limit=300`
+      );
+      items = await dataRes.json();
+      console.log(`[creator-scout] Got ${items.length} posts from Apify`);
+      break;
+    }
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(run.status)) {
+      throw new Error(`Apify run ${run.status.toLowerCase()} — please try again`);
+    }
+  }
+
+  // ── 4. Extract unique creators from post metadata ────────────────────────
+  const seen     = new Set();
+  const creators = [];
+
+  for (const item of items) {
+    const meta      = item.authorMeta || {};
+    const author    = item.author     || {};
+    const username  = meta.name       || author.uniqueId || item.uniqueId;
+    const followers = Number(meta.fans ?? author.fans ?? 0);
+
+    if (!username || seen.has(username))                    continue;
+    if (followers < follower_min || followers > follower_max) continue;
+
+    seen.add(username);
+
+    // Which niche tag did this post appear under?
+    const postTags = (item.hashtags || []).map(h => (h.name || h || '').toLowerCase());
+    const matched  = hashtags.find(h => postTags.includes(h)) || hashtags[0];
+    const niche    = matched.replace(/tok$/, '').replace(/check$/, '');
+
+    creators.push({
+      username,
+      followers,
+      total_likes: Number(meta.heart  ?? author.heart  ?? 0),
+      videos:      Number(meta.video  ?? author.video  ?? 0),
+      niche,
+      profile_url: `https://www.tiktok.com/@${username}`,
+    });
+  }
+
+  // Sort by followers desc, cap at limit
+  creators.sort((a, b) => b.followers - a.followers);
+  const selected = creators.slice(0, limit);
+  console.log(`[creator-scout] Returning ${selected.length} creators`);
+
   return {
-    units_consumed: Math.min(limit, 50),
+    units_consumed: selected.length || 1,
     output: {
-      message:  `Creator scout queued for ${spotify_url}`,
-      hint:     'Creators will appear in your outreach dashboard at runsound.ai/outreach',
+      genre,
+      hashtags_searched: hashtags,
+      creators_found:    selected.length,
+      creators:          selected,
     },
   };
 }
