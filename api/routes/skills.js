@@ -562,8 +562,13 @@ async function runCreatorScout(input, artist) {
     seen.add(username);
 
     // Which niche tag did this post appear under?
-    const postTags = (item.hashtags || []).map(h => (h.name || h || '').toLowerCase());
-    const matched  = hashtags.find(h => postTags.includes(h)) || hashtags[0];
+    const postTags = (item.hashtags || []).map(h => {
+      if (typeof h === 'string') return h.toLowerCase();
+      if (h && typeof h.name === 'string') return h.name.toLowerCase();
+      if (h && typeof h.title === 'string') return h.title.toLowerCase();
+      return '';
+    }).filter(Boolean);
+    const matched  = hashtags.find(h => postTags.includes(h.toLowerCase())) || hashtags[0];
     const niche    = matched.replace(/tok$/, '').replace(/check$/, '');
 
     creators.push({
