@@ -594,24 +594,36 @@ function detectCreatorNiche(postTags) {
 }
 
 async function runCreatorScout(input, artist) {
+  // Country → country-specific TikTok hashtags (used alongside genre hashtags)
+  const COUNTRY_HASHTAGS = {
+    SE: ['sverigetok', 'swedishtiktok'],
+    NO: ['norgetok',   'norgeskreatorer'],
+    DK: ['danmarktok', 'dansktiktok'],
+    FI: ['suomitok',   'finlandtok'],
+    GB: ['uktok',      'britishtiktok'],
+    US: ['usatok',     'americantiktok'],
+    DE: ['deutschlandtok', 'germantiktok'],
+    NL: ['nederlandtok',   'dutchtiktok'],
+    AU: ['australiatiktok','aussietok'],
+    CA: ['canadatok',      'canadiantiktok'],
+  };
+
   const {
     spotify_url,
     budget_usd       = null,
-    follower_min     = 0,                                // no floor — small accounts welcome
-    follower_max     = budgetToFollowerMax(budget_usd),  // ceiling from budget
-    limit            = 50,                               // more creators = more reach
+    follower_min     = 0,
+    follower_max     = budgetToFollowerMax(budget_usd),
+    limit            = 50,
     genre: genreInput = null,
-    countries        = [],                               // e.g. ["SE","US","GB"] — empty = all regions
-    music_only       = true,                             // default: only return creators who used music (not original sound/talking)
+    country          = null,   // single ISO-3166-1 alpha-2 code e.g. "SE" — routes Apify proxy + adds country hashtags
+    music_only       = true,
   } = input;
 
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
   if (!APIFY_TOKEN) throw new Error('Creator scout is not configured — contact support.');
 
   // ── 1. Determine genre — priority: explicit input > artist profile > Spotify ─
-  let genre = genreInput                    // passed in request
-           || artist.genre                  // saved at signup
-           || null;
+  let genre = genreInput || artist.genre || null;
 
   if (!genre && spotify_url) {
     const spotifyGenres = await getSpotifyGenresFromUrl(spotify_url).catch(() => []);
@@ -619,13 +631,25 @@ async function runCreatorScout(input, artist) {
     console.log(`[creator-scout] Spotify genres: [${spotifyGenres.join(', ')}] → picked: "${genre}"`);
   }
   genre = (genre || 'pop').toLowerCase();
-  console.log(`[creator-scout] genre="${genre}"`);
+  console.log(`[creator-scout] genre="${genre}" country="${country || 'global'}"`);
 
-  // ── 2. Genre → lifestyle hashtags ────────────────────────────────────────
-  const hashtags = genreToHashtags(genre); // use all 5 tags for wider coverage
+  // ── 2. Build hashtag list: genre hashtags + country-specific hashtags ─────
+  const genreHashtags   = genreToHashtags(genre);           // 5 genre/lifestyle tags
+  const countryCode     = (country || '').toUpperCase();
+  const countryHashtags = COUNTRY_HASHTAGS[countryCode] || [];
+  // Mix: 4 genre tags + 2 country tags (or all genre if no country selected)
+  const hashtags = countryHashtags.length
+    ? [...genreHashtags.slice(0, 4), ...countryHashtags]    // 4 genre + 2 country = 6 tags
+    : genreHashtags;
   console.log(`[creator-scout] hashtags: ${hashtags.join(', ')}`);
 
   // ── 3. Apify: scrape TikTok posts by hashtag ─────────────────────────────
+  // Route via country proxy when a country is selected — TikTok then serves
+  // that country's algorithm/content, giving us local creators reliably.
+  const proxyConfiguration = countryCode
+    ? { useApifyProxy: true, apifyProxyCountry: countryCode }
+    : { useApifyProxy: true };
+
   const startRes = await fetch(
     `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
     {
@@ -633,9 +657,9 @@ async function runCreatorScout(input, artist) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         hashtags,
-        resultsPerPage:    25,    // 5 hashtags × 25 posts = up to 125 posts → ~50+ unique creators
+        resultsPerPage:    25,
         maxRequestRetries: 2,
-        proxyConfiguration: { useApifyProxy: true },
+        proxyConfiguration,
       }),
     }
   );
@@ -670,7 +694,6 @@ async function runCreatorScout(input, artist) {
   // ── 4. Extract unique creators, calculate engagement ─────────────────────
   const seen     = new Set();
   const creators = [];
-  const countryFilter = countries.map(c => c.toUpperCase());
 
   for (const item of items) {
     const meta      = item.authorMeta || {};
@@ -690,13 +713,6 @@ async function runCreatorScout(input, artist) {
     if (followers > follower_max)                     continue;
     if (follower_min > 0 && followers < follower_min) continue;
     if (videos < 3)                                   continue; // need posting history
-
-    // Country filter — check locationCreated (post) or authorMeta.region (profile)
-    if (countryFilter.length > 0) {
-      const region = (item.locationCreated || meta.region || '').toUpperCase();
-      if (region && !countryFilter.includes(region)) continue;
-      // If region is empty, include the creator (can't determine location)
-    }
 
     seen.add(username);
 
@@ -755,7 +771,8 @@ async function runCreatorScout(input, artist) {
     units_consumed: selected.length || 1,
     output: {
       genre,
-      hashtags,           // matches dashboard key
+      country:        countryCode || 'global',
+      hashtags,
       creators_found: selected.length,
       creators:       selected,
     },

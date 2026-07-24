@@ -441,8 +441,9 @@
       </div>
     </div>
     <div class="scout-field" style="margin-bottom:1rem">
-      <label>Countries <span style="font-weight:400;color:var(--muted)">— leave empty for global</span></label>
+      <label>Country <span style="font-weight:400;color:var(--muted)">— routes search through that country's TikTok</span></label>
       <div class="country-chips" id="country-chips">
+        <div class="country-chip selected" data-code="">🌍 Global</div>
         <div class="country-chip" data-code="SE">🇸🇪 Sweden</div>
         <div class="country-chip" data-code="NO">🇳🇴 Norway</div>
         <div class="country-chip" data-code="DK">🇩🇰 Denmark</div>
@@ -701,9 +702,10 @@
     document.getElementById('creators-sub').textContent =
       `${creators.length} found · ${timeAgo(run.started_at)}`;
 
-    // Scout meta — genre + hashtags used
+    // Scout meta — genre + country + hashtags used
     const parts = [];
     if (output.genre)    parts.push(`Genre: <strong>${output.genre}</strong>`);
+    if (output.country && output.country !== 'global') parts.push(`Country: <strong>${output.country}</strong>`);
     if (output.hashtags && output.hashtags.length) parts.push(`Tags: <strong>${output.hashtags.map(h=>'#'+h).join(', ')}</strong>`);
     document.getElementById('scout-meta').innerHTML = parts.join(' &nbsp;·&nbsp; ');
 
@@ -785,29 +787,23 @@
     setTimeout(() => el.classList.remove('show'), 2200);
   }
 
-  // ── Country chips ─────────────────────────────────────────────────────────
-  const selectedCountries = new Set();
+  // ── Country chips (single-select) ────────────────────────────────────────
+  let selectedCountry = ''; // empty string = global
 
   document.querySelectorAll('.country-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      const code = chip.dataset.code;
-      if (selectedCountries.has(code)) {
-        selectedCountries.delete(code);
-        chip.classList.remove('selected');
-      } else {
-        selectedCountries.add(code);
-        chip.classList.add('selected');
-      }
+      document.querySelectorAll('.country-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedCountry = chip.dataset.code;
     });
   });
 
   // ── Run Scout ─────────────────────────────────────────────────────────────
   async function runScout() {
-    const btn      = document.getElementById('scout-run-btn');
-    const errEl    = document.getElementById('scout-error');
-    const budget   = parseFloat(document.getElementById('scout-budget').value) || null;
-    const spotify  = document.getElementById('scout-spotify').value.trim() || null;
-    const countries = [...selectedCountries];
+    const btn    = document.getElementById('scout-run-btn');
+    const errEl  = document.getElementById('scout-error');
+    const budget = parseFloat(document.getElementById('scout-budget').value) || null;
+    const spotify = document.getElementById('scout-spotify').value.trim() || null;
 
     errEl.style.display = 'none';
     btn.disabled = true;
@@ -815,9 +811,9 @@
 
     try {
       const body = { skill: 'creator-scout' };
-      if (budget)           body.budget_usd   = budget;
-      if (spotify)          body.spotify_url  = spotify;
-      if (countries.length) body.countries    = countries;
+      if (budget)           body.budget_usd  = budget;
+      if (spotify)          body.spotify_url = spotify;
+      if (selectedCountry)  body.country     = selectedCountry;
 
       const r = await fetch('/api/skills/run', {
         method:  'POST',
@@ -828,7 +824,6 @@
 
       if (!d.ok) throw new Error(d.error || 'Something went wrong');
 
-      // Refresh run history + creator results
       await loadRuns();
       await loadCredits();
       toast(`Found ${d.output?.creators_found || 0} creators`);
