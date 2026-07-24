@@ -72,7 +72,7 @@ app.use('/api/credits', (req, res, next) => {
 app.post('/api/artists/register', async (req, res) => {
   const crypto   = require('crypto');
   const supabase = require('./db');
-  const { name, email, genre, spotify_url } = req.body;
+  const { name, email, genre, target_country, spotify_url } = req.body;
   if (!name || !email) return res.status(400).json({ ok: false, error: 'name and email are required' });
 
   // Check existing
@@ -82,9 +82,10 @@ app.post('/api/artists/register', async (req, res) => {
   const apiKey = 'rs_live_' + crypto.randomBytes(24).toString('hex');
   const { data: artist, error } = await supabase.from('artists').insert({
     name,
-    email:       email.toLowerCase().trim(),
-    genre:       genre || null,
-    plan:        'starter',
+    email:          email.toLowerCase().trim(),
+    genre:          genre || null,
+    target_country: target_country || null,
+    plan:           'starter',
     status:      'trial',
     api_key:     apiKey,
     credits_usd: 5.0,

@@ -33,7 +33,7 @@ async function requireApiKey(req, res, next) {
 
   const { data: artist } = await supabase
     .from('artists')
-    .select('id, name, genre, credits_usd, low_balance_at, api_key')
+    .select('id, name, genre, target_country, credits_usd, low_balance_at, api_key')
     .eq('api_key', key)
     .single();
 
@@ -594,20 +594,6 @@ function detectCreatorNiche(postTags) {
 }
 
 async function runCreatorScout(input, artist) {
-  // Country → country-specific TikTok hashtags (used alongside genre hashtags)
-  const COUNTRY_HASHTAGS = {
-    SE: ['sverigetok', 'swedishtiktok'],
-    NO: ['norgetok',   'norgeskreatorer'],
-    DK: ['danmarktok', 'dansktiktok'],
-    FI: ['suomitok',   'finlandtok'],
-    GB: ['uktok',      'britishtiktok'],
-    US: ['usatok',     'americantiktok'],
-    DE: ['deutschlandtok', 'germantiktok'],
-    NL: ['nederlandtok',   'dutchtiktok'],
-    AU: ['australiatiktok','aussietok'],
-    CA: ['canadatok',      'canadiantiktok'],
-  };
-
   const {
     spotify_url,
     budget_usd       = null,
@@ -615,7 +601,7 @@ async function runCreatorScout(input, artist) {
     follower_max     = budgetToFollowerMax(budget_usd),
     limit            = 50,
     genre: genreInput = null,
-    country          = null,   // single ISO-3166-1 alpha-2 code e.g. "SE" — routes Apify proxy + adds country hashtags
+    country          = artist.target_country || null,  // default from artist profile; override per-call
     music_only       = true,
   } = input;
 
@@ -633,14 +619,9 @@ async function runCreatorScout(input, artist) {
   genre = (genre || 'pop').toLowerCase();
   console.log(`[creator-scout] genre="${genre}" country="${country || 'global'}"`);
 
-  // ── 2. Build hashtag list: genre hashtags + country-specific hashtags ─────
-  const genreHashtags   = genreToHashtags(genre);           // 5 genre/lifestyle tags
-  const countryCode     = (country || '').toUpperCase();
-  const countryHashtags = COUNTRY_HASHTAGS[countryCode] || [];
-  // Mix: 4 genre tags + 2 country tags (or all genre if no country selected)
-  const hashtags = countryHashtags.length
-    ? [...genreHashtags.slice(0, 4), ...countryHashtags]    // 4 genre + 2 country = 6 tags
-    : genreHashtags;
+  // ── 2. Genre hashtags (country targeting is handled by proxy, not hashtags) ─
+  const countryCode = (country || '').toUpperCase();
+  const hashtags    = genreToHashtags(genre);
   console.log(`[creator-scout] hashtags: ${hashtags.join(', ')}`);
 
   // ── 3. Apify: scrape TikTok posts by hashtag ─────────────────────────────

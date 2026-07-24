@@ -129,6 +129,27 @@
         <div class="field-hint">The more specific, the better we can match you with the right TikTok creators.</div>
       </div>
       <div class="field">
+        <label for="target_country">Target country <span style="font-weight:400;color:var(--muted)">(where is your audience?)</span></label>
+        <select id="target_country" style="width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);font-size:0.95rem;font-family:'Inter',sans-serif;color:var(--text);outline:none;">
+          <option value="">🌍 Global — all countries</option>
+          <option value="SE">🇸🇪 Sweden</option>
+          <option value="NO">🇳🇴 Norway</option>
+          <option value="DK">🇩🇰 Denmark</option>
+          <option value="FI">🇫🇮 Finland</option>
+          <option value="GB">🇬🇧 United Kingdom</option>
+          <option value="US">🇺🇸 United States</option>
+          <option value="DE">🇩🇪 Germany</option>
+          <option value="NL">🇳🇱 Netherlands</option>
+          <option value="FR">🇫🇷 France</option>
+          <option value="ES">🇪🇸 Spain</option>
+          <option value="IT">🇮🇹 Italy</option>
+          <option value="AU">🇦🇺 Australia</option>
+          <option value="CA">🇨🇦 Canada</option>
+          <option value="BR">🇧🇷 Brazil</option>
+        </select>
+        <div class="field-hint">Creator Scout will automatically target creators from this country.</div>
+      </div>
+      <div class="field">
         <label for="spotify_url">Spotify artist URL <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
         <input type="url" id="spotify_url" placeholder="https://open.spotify.com/artist/..." />
       </div>
@@ -168,10 +189,11 @@
 <script>
   async function signup() {
     const btn       = document.getElementById('submit-btn');
-    const name      = document.getElementById('artist_name').value.trim();
-    const email     = document.getElementById('email').value.trim();
-    const genre     = document.getElementById('genre').value.trim();
-    const spotify   = document.getElementById('spotify_url').value.trim();
+    const name           = document.getElementById('artist_name').value.trim();
+    const email          = document.getElementById('email').value.trim();
+    const genre          = document.getElementById('genre').value.trim();
+    const target_country = document.getElementById('target_country').value || null;
+    const spotify        = document.getElementById('spotify_url').value.trim();
     const errorEl   = document.getElementById('error-msg');
 
     errorEl.style.display = 'none';
@@ -189,7 +211,7 @@
       const res = await fetch('/api/artists/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, genre: genre || null, spotify_url: spotify || null })
+        body: JSON.stringify({ name, email, genre: genre || null, target_country, spotify_url: spotify || null })
       });
       const data = await res.json();
 
