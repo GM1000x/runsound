@@ -496,7 +496,8 @@
     "skill": "creator-scout",
     "spotify_url": "https://open.spotify.com/artist/...",
     "budget_usd": 150,
-    "countries": ["SE","NO","DK","FI"]
+    "countries": ["SE","NO","DK","FI"],
+    "music_only": true
   }'`,
     'gig-pitcher': `curl -X POST https://run-sound.com/api/skills/run \\
   -H "Authorization: Bearer ${apiKey}" \\
@@ -626,6 +627,7 @@
         <div class="creator-user">
           <a href="${profileUrl}" target="_blank" rel="noopener">@${c.username}</a>
           ${c.niche ? `<span class="niche-tag">${c.niche}</span>` : ''}
+          ${c.uses_music ? `<span class="niche-tag" title="${c.music_track ? c.music_track + (c.music_artist ? ' — ' + c.music_artist : '') : 'Uses music'}" style="background:#fef3c7;color:#92400e">🎵</span>` : ''}
         </div>
         <div class="creator-num" style="text-align:right">${fmtNum(c.followers)}</div>
         <div class="creator-eng ${engClass}" style="text-align:right">${eng.toFixed(1)}%</div>

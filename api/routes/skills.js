@@ -602,6 +602,7 @@ async function runCreatorScout(input, artist) {
     limit            = 50,                               // more creators = more reach
     genre: genreInput = null,
     countries        = [],                               // e.g. ["SE","US","GB"] — empty = all regions
+    music_only       = false,                            // only return creators who used music (not original sound)
   } = input;
 
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
@@ -718,6 +719,18 @@ async function runCreatorScout(input, artist) {
     // Country for display
     const country = (item.locationCreated || meta.region || '').toUpperCase() || null;
 
+    // Music detection: does this post use an actual song, or is it the creator's own voice/sound?
+    // musicOriginal: true  → creator recorded their own audio (talking, voiceover, interview)
+    // musicOriginal: false → creator used a real music track (ideal for music promotion)
+    const musicMeta     = item.musicMeta || item.music || {};
+    const isOriginal    = musicMeta.musicOriginal ?? musicMeta.original ?? true; // default: assume original if unknown
+    const usesMusic     = !isOriginal;
+    const musicTrack    = usesMusic ? (musicMeta.musicName || musicMeta.title || null) : null;
+    const musicArtist   = usesMusic ? (musicMeta.musicAuthor || musicMeta.authorName || null) : null;
+
+    // Apply music_only filter — skip creators who used their own voice/sound
+    if (music_only && !usesMusic) continue;
+
     creators.push({
       username,
       followers,
@@ -726,6 +739,9 @@ async function runCreatorScout(input, artist) {
       videos,
       niche,
       country,
+      uses_music:   usesMusic,
+      music_track:  musicTrack,
+      music_artist: musicArtist,
       profile_url: `https://www.tiktok.com/@${username}`,
     });
   }
