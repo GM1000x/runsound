@@ -566,6 +566,84 @@ function budgetToFollowerMax(budget_usd) {
   return 500000;                                        // $800+: can reach mid-tier ($500–2500/video)
 }
 
+// Language detection by caption text — no external deps, uses stopwords + diacritics
+// Returns true if text matches target language (or if we can't tell → include)
+const LANG_SIGNALS = {
+  SE: {
+    words: ['och','att','det','är','jag','vi','du','han','hon','de','sig','kan','till','men','om','hur','vad','när','var','har','ska','lite','bara','inte','också','eller','med','för','som','på','den','ett','en','av','sin','sina','sin','dig','mig','oss','dem','nu','då','så','ut','in','upp','ner','här','där','ja','nej','tack','hej','kul','bra','dålig','ny','gammal','stor','liten'],
+    chars: ['å'],       // å is uniquely Scandinavian — strong signal
+    skipChars: [],
+  },
+  NO: {
+    words: ['og','er','jeg','det','vi','du','han','hun','de','seg','kan','til','men','om','hvordan','hva','når','var','har','skal','litt','bare','ikke','også','eller','med','for','som','på','den','ett','en','av','nå','så','ut','inn','opp','ned','her','der','ja','nei','takk','hei','bra','ny'],
+    chars: ['ø'],
+    skipChars: [],
+  },
+  DK: {
+    words: ['og','er','jeg','det','vi','du','han','hun','de','sig','kan','til','men','om','hvordan','hvad','når','var','har','skal','lidt','bare','ikke','også','eller','med','for','som','på','den','et','en','af','nu','så','ud','ind','op','ned','her','der','ja','nej','tak','hej','god','ny'],
+    chars: ['ø'],
+    skipChars: [],
+  },
+  FI: {
+    words: ['ja','on','se','ei','en','hän','me','te','he','olla','olen','olet','minä','sinä','tämä','tuo','kun','jos','että','mutta','tai','myös','vain','kyllä','ei','hei','kiitos','hyvä','uusi','iso','pieni'],
+    chars: ['ä','ö'],
+    skipChars: [],
+  },
+  DE: {
+    words: ['und','die','der','das','ist','ich','nicht','mit','auf','dass','für','auch','sich','eine','aber','werden','haben','hat','bin','bist','wir','ihr','sie','zu','von','im','am','an','bei','nach','aus','über','unter','vor','hinter','neben','zwischen'],
+    chars: ['ü','ß'],
+    skipChars: [],
+  },
+  NL: {
+    words: ['en','de','het','een','is','ik','niet','met','op','dat','voor','ook','zich','maar','aan','bij','na','uit','over','als','naar','van','je','jij','hij','zij','we','wij','ze','dit','dit','er'],
+    chars: ['ij'],
+    skipChars: [],
+  },
+  FR: {
+    words: ['et','le','la','les','de','du','un','une','je','tu','il','elle','nous','vous','ils','que','qui','dans','est','avec','pour','mais','pas','plus','tout','bien','très','avoir','être','faire','aller','voir','vouloir','pouvoir'],
+    chars: ['é','è','ê','ç','à'],
+    skipChars: [],
+  },
+  ES: {
+    words: ['y','el','la','los','las','que','por','con','una','para','pero','como','más','este','esto','hay','muy','todo','cuando','ser','estar','tener','hacer','ir','ver','querer','poder','saber','hola','gracias','bueno','nuevo'],
+    chars: ['ñ','á','ó'],
+    skipChars: [],
+  },
+  IT: {
+    words: ['e','il','la','i','le','di','del','della','un','una','che','per','con','una','ma','come','più','tutto','quando','essere','avere','fare','andare','vedere','volere','potere','ciao','grazie','buono','nuovo','grande','piccolo'],
+    chars: ['à','è','ì','ò','ù'],
+    skipChars: [],
+  },
+  BR: {
+    words: ['e','o','a','os','as','de','do','da','um','uma','que','por','com','para','mas','como','mais','esse','isso','muito','quando','ser','estar','ter','fazer','ir','ver','querer','poder','saber','oi','olá','obrigado','bom','novo'],
+    chars: ['ã','õ','ç','é','ê'],
+    skipChars: [],
+  },
+};
+
+// Countries where English dominates — skip language filter (English is global)
+const ENGLISH_COUNTRIES = new Set(['US','GB','AU','CA','NZ','IE','ZA']);
+
+function isTargetLanguage(text, countryCode) {
+  if (!countryCode || ENGLISH_COUNTRIES.has(countryCode)) return true; // no filter
+  if (!text || text.trim().length < 8) return true;                    // too short to judge
+
+  const signals = LANG_SIGNALS[countryCode];
+  if (!signals) return true; // unknown country → include
+
+  const lower = text.toLowerCase();
+  const tokens = lower.split(/[\s,!?.:;()\-"']+/).filter(Boolean);
+
+  // Count matching stopwords
+  const wordMatches = tokens.filter(w => signals.words.includes(w)).length;
+
+  // Check for characteristic characters
+  const charMatch = signals.chars.some(c => lower.includes(c));
+
+  // Pass if: 2+ word matches, OR 1 word match + characteristic char
+  return wordMatches >= 2 || (wordMatches >= 1 && charMatch) || (charMatch && lower.length > 20 && tokens.length > 3);
+}
+
 // Detect creator niche from their post's own hashtags (not the search hashtag)
 function detectCreatorNiche(postTags) {
   const niches = [
@@ -694,6 +772,10 @@ async function runCreatorScout(input, artist) {
     if (followers > follower_max)                     continue;
     if (follower_min > 0 && followers < follower_min) continue;
     if (videos < 3)                                   continue; // need posting history
+
+    // Language filter — check caption text for target language
+    const caption = item.text || item.desc || item.description || '';
+    if (!isTargetLanguage(caption, countryCode)) continue;
 
     seen.add(username);
 
