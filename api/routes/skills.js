@@ -651,8 +651,10 @@ async function runCreatorScout(input, artist) {
     const videos    = Number(meta.video ?? author.video ?? 1);
 
     if (!username || seen.has(username))                      continue;
+    if (followers < 100)                                      continue; // filter ghost/empty accounts
     if (followers > follower_max)                             continue;
     if (follower_min > 0 && followers < follower_min)         continue;
+    if (videos < 3)                                           continue; // need posting history
 
     seen.add(username);
 
@@ -660,7 +662,7 @@ async function runCreatorScout(input, artist) {
     // High engagement on small account > low engagement on big account
     const avgLikesPerVideo = likes / Math.max(videos, 1);
     const engagementRate   = followers > 0
-      ? Math.round((avgLikesPerVideo / followers) * 1000) / 10  // 1 decimal, as %
+      ? Math.min(Math.round((avgLikesPerVideo / followers) * 1000) / 10, 500) // cap at 500%
       : 0;
 
     // Which niche did this post appear under?
