@@ -224,8 +224,70 @@
     .run-status-badge.failed    { background: var(--red-l);   color: var(--red);   }
     .run-status-badge.running   { background: #fef3c7; color: #92400e; }
 
+    /* ── SCOUT PANEL ── */
+    .scout-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem;
+    }
+    .scout-panel-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+    }
+    .scout-fields {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 560px) { .scout-fields { grid-template-columns: 1fr; } }
+    .scout-field label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .scout-field input, .scout-field select {
+      width: 100%; padding: 9px 12px;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--radius); font-size: 0.88rem;
+      font-family: 'Inter', sans-serif; color: var(--text);
+      outline: none; transition: border-color .15s;
+    }
+    .scout-field input:focus, .scout-field select:focus { border-color: var(--accent); }
+    .scout-field-hint { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+    .country-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+    }
+    .country-chip {
+      padding: 4px 12px; border-radius: 999px;
+      border: 1px solid var(--border2);
+      font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: all .12s;
+      background: var(--bg); color: var(--muted);
+      user-select: none;
+    }
+    .country-chip.selected {
+      background: var(--accent); color: #fff;
+      border-color: var(--accent);
+    }
+    .country-chip:hover:not(.selected) { border-color: var(--text); color: var(--text); }
+
+    .scout-run-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;
+    }
+    .scout-cost-hint { font-size: 0.78rem; color: var(--muted); }
+    .scout-cost-hint strong { color: var(--text); }
+
+    .btn-accent {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius);
+      padding: 9px 20px; font-size: 0.88rem; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: opacity .15s; white-space: nowrap;
+    }
+    .btn-accent:hover { opacity: 0.85; }
+    .btn-accent:disabled { opacity: 0.45; cursor: not-allowed; }
+
     /* ── CREATOR TABLE ── */
-    .creators-section { margin-top: 2rem; }
+    .creators-section { margin-top: 0; }
 
     .creator-table-wrap {
       background: var(--surface); border: 1px solid var(--border);
@@ -264,12 +326,8 @@
       padding: 1px 7px; border-radius: 999px; margin-left: 6px;
       vertical-align: middle;
     }
-    .creator-num {
-      font-size: 0.8rem; color: var(--text); text-align: right;
-    }
-    .creator-eng {
-      font-size: 0.8rem; font-weight: 600; text-align: right;
-    }
+    .creator-num { font-size: 0.8rem; color: var(--text); text-align: right; }
+    .creator-eng { font-size: 0.8rem; font-weight: 600; text-align: right; }
     .creator-eng.high   { color: var(--green); }
     .creator-eng.medium { color: #d97706; }
     .creator-eng.low    { color: var(--muted); }
@@ -278,8 +336,7 @@
       font-size: 0.72rem; font-weight: 600;
       color: var(--accent); text-decoration: none;
       background: var(--accent-l);
-      padding: 3px 10px; border-radius: 999px;
-      white-space: nowrap;
+      padding: 3px 10px; border-radius: 999px; white-space: nowrap;
     }
     .creator-link a:hover { opacity: 0.8; }
 
@@ -290,10 +347,7 @@
 
     @media (max-width: 640px) {
       .creator-table-head,
-      .creator-row {
-        grid-template-columns: 28px 1fr 70px 70px;
-      }
-      /* Hide Videos + Country on mobile */
+      .creator-row { grid-template-columns: 28px 1fr 70px 70px; }
       .creator-table-head > *:nth-child(5),
       .creator-table-head > *:nth-child(6),
       .creator-row > *:nth-child(5),
@@ -368,9 +422,49 @@
     </div>
   </div>
 
-  <!-- Skills -->
+  <!-- Creator Scout Panel -->
   <div class="section-header">
-    <span class="section-title">Skills</span>
+    <span class="section-title">Creator Scout</span>
+    <span class="section-sub">Find TikTok creators matched to your sound</span>
+  </div>
+  <div class="scout-panel">
+    <div class="scout-fields">
+      <div class="scout-field">
+        <label>Budget (USD)</label>
+        <input type="number" id="scout-budget" min="0" placeholder="e.g. 150" value="" />
+        <div class="scout-field-hint">Sets the max follower count we target</div>
+      </div>
+      <div class="scout-field">
+        <label>Spotify artist URL <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <input type="url" id="scout-spotify" placeholder="https://open.spotify.com/artist/…" />
+        <div class="scout-field-hint">Auto-detects genre if not set in your profile</div>
+      </div>
+    </div>
+    <div class="scout-field" style="margin-bottom:1rem">
+      <label>Countries <span style="font-weight:400;color:var(--muted)">— leave empty for global</span></label>
+      <div class="country-chips" id="country-chips">
+        <div class="country-chip" data-code="SE">🇸🇪 Sweden</div>
+        <div class="country-chip" data-code="NO">🇳🇴 Norway</div>
+        <div class="country-chip" data-code="DK">🇩🇰 Denmark</div>
+        <div class="country-chip" data-code="FI">🇫🇮 Finland</div>
+        <div class="country-chip" data-code="GB">🇬🇧 UK</div>
+        <div class="country-chip" data-code="US">🇺🇸 USA</div>
+        <div class="country-chip" data-code="DE">🇩🇪 Germany</div>
+        <div class="country-chip" data-code="NL">🇳🇱 Netherlands</div>
+        <div class="country-chip" data-code="AU">🇦🇺 Australia</div>
+        <div class="country-chip" data-code="CA">🇨🇦 Canada</div>
+      </div>
+    </div>
+    <div class="scout-run-row">
+      <div class="scout-cost-hint">~<strong>$2.50</strong> per run · results appear below</div>
+      <button class="btn-accent" id="scout-run-btn" onclick="runScout()">Find creators →</button>
+    </div>
+    <div id="scout-error" style="display:none;margin-top:10px;font-size:0.82rem;color:var(--red)"></div>
+  </div>
+
+  <!-- Skills (for devs/agents) -->
+  <div class="section-header">
+    <span class="section-title">All skills</span>
     <span class="section-sub">Click to see the curl command</span>
   </div>
   <div class="skills-grid" id="skills-grid">
@@ -406,7 +500,7 @@
         <div style="text-align:right">Followers</div>
         <div style="text-align:right">Engagement</div>
         <div style="text-align:right">Videos</div>
-        <div style="text-align:center">Country</div>
+        <div></div>
       </div>
       <div id="creator-rows"></div>
     </div>
@@ -630,7 +724,7 @@
         <div class="creator-num" style="text-align:right">${fmtNum(c.followers)}</div>
         <div class="creator-eng ${engClass}" style="text-align:right">${eng.toFixed(1)}%</div>
         <div class="creator-num" style="text-align:right">${c.videos != null ? fmtNum(c.videos) : '—'}</div>
-        <div style="text-align:center;font-size:0.8rem;color:var(--muted)">${c.country || '—'}</div>`;
+        <div class="creator-link"><a href="${profileUrl}" target="_blank" rel="noopener">TikTok ↗</a></div>`;
       rowsEl.appendChild(row);
     });
   }
@@ -689,6 +783,62 @@
     el.textContent = msg;
     el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // ── Country chips ─────────────────────────────────────────────────────────
+  const selectedCountries = new Set();
+
+  document.querySelectorAll('.country-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const code = chip.dataset.code;
+      if (selectedCountries.has(code)) {
+        selectedCountries.delete(code);
+        chip.classList.remove('selected');
+      } else {
+        selectedCountries.add(code);
+        chip.classList.add('selected');
+      }
+    });
+  });
+
+  // ── Run Scout ─────────────────────────────────────────────────────────────
+  async function runScout() {
+    const btn      = document.getElementById('scout-run-btn');
+    const errEl    = document.getElementById('scout-error');
+    const budget   = parseFloat(document.getElementById('scout-budget').value) || null;
+    const spotify  = document.getElementById('scout-spotify').value.trim() || null;
+    const countries = [...selectedCountries];
+
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Finding creators…';
+
+    try {
+      const body = { skill: 'creator-scout' };
+      if (budget)           body.budget_usd   = budget;
+      if (spotify)          body.spotify_url  = spotify;
+      if (countries.length) body.countries    = countries;
+
+      const r = await fetch('/api/skills/run', {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+      const d = await r.json();
+
+      if (!d.ok) throw new Error(d.error || 'Something went wrong');
+
+      // Refresh run history + creator results
+      await loadRuns();
+      await loadCredits();
+      toast(`Found ${d.output?.creators_found || 0} creators`);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Find creators →';
+    }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
