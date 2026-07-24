@@ -602,7 +602,7 @@ async function runCreatorScout(input, artist) {
     limit            = 50,                               // more creators = more reach
     genre: genreInput = null,
     countries        = [],                               // e.g. ["SE","US","GB"] — empty = all regions
-    music_only       = false,                            // only return creators who used music (not original sound)
+    music_only       = true,                             // default: only return creators who used music (not original sound/talking)
   } = input;
 
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
