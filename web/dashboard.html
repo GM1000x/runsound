@@ -293,6 +293,7 @@
       .creator-row {
         grid-template-columns: 28px 1fr 70px 70px;
       }
+      /* Hide Videos + Country on mobile */
       .creator-table-head > *:nth-child(5),
       .creator-table-head > *:nth-child(6),
       .creator-row > *:nth-child(5),
@@ -405,7 +406,7 @@
         <div style="text-align:right">Followers</div>
         <div style="text-align:right">Engagement</div>
         <div style="text-align:right">Videos</div>
-        <div></div>
+        <div style="text-align:center">Country</div>
       </div>
       <div id="creator-rows"></div>
     </div>
@@ -494,7 +495,8 @@
   -d '{
     "skill": "creator-scout",
     "spotify_url": "https://open.spotify.com/artist/...",
-    "budget_usd": 150
+    "budget_usd": 150,
+    "countries": ["SE","NO","DK","FI"]
   }'`,
     'gig-pitcher': `curl -X POST https://run-sound.com/api/skills/run \\
   -H "Authorization: Bearer ${apiKey}" \\
@@ -616,20 +618,19 @@
     creators.forEach((c, i) => {
       const eng = c.engagement_rate || 0;
       const engClass = eng >= 5 ? 'high' : eng >= 2 ? 'medium' : 'low';
+      const profileUrl = c.profile_url || `https://tiktok.com/@${c.username}`;
       const row = document.createElement('div');
       row.className = 'creator-row';
       row.innerHTML = `
         <div class="creator-rank">${i + 1}</div>
         <div class="creator-user">
-          <a href="${c.profile_url || `https://tiktok.com/@${c.username}`}" target="_blank" rel="noopener">@${c.username}</a>
+          <a href="${profileUrl}" target="_blank" rel="noopener">@${c.username}</a>
           ${c.niche ? `<span class="niche-tag">${c.niche}</span>` : ''}
         </div>
         <div class="creator-num" style="text-align:right">${fmtNum(c.followers)}</div>
         <div class="creator-eng ${engClass}" style="text-align:right">${eng.toFixed(1)}%</div>
         <div class="creator-num" style="text-align:right">${c.videos != null ? fmtNum(c.videos) : '—'}</div>
-        <div class="creator-link">
-          <a href="${c.profile_url || `https://tiktok.com/@${c.username}`}" target="_blank" rel="noopener">TikTok ↗</a>
-        </div>`;
+        <div style="text-align:center;font-size:0.8rem;color:var(--muted)">${c.country || '—'}</div>`;
       rowsEl.appendChild(row);
     });
   }

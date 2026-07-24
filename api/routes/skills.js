@@ -566,6 +566,33 @@ function budgetToFollowerMax(budget_usd) {
   return 500000;                                        // $800+: can reach mid-tier ($500–2500/video)
 }
 
+// Detect creator niche from their post's own hashtags (not the search hashtag)
+function detectCreatorNiche(postTags) {
+  const niches = [
+    ['fitness',   ['gym', 'gymtok', 'workout', 'fitness', 'gains', 'lifting', 'cardio', 'bodybuilding', 'calisthenics', 'crossfit', 'weightlifting', 'fitcheck', 'fitnessmotivation', 'gymmotivation']],
+    ['dance',     ['dance', 'dancing', 'choreography', 'dancer', 'dancechallenge', 'dancetok']],
+    ['beauty',    ['makeup', 'beauty', 'skincare', 'glow', 'glam', 'beautytok', 'makeupartist', 'beautyofinstagram']],
+    ['fashion',   ['fashion', 'ootd', 'style', 'outfit', 'streetwear', 'aesthetic', 'fashiontok', 'outfitoftheday']],
+    ['food',      ['food', 'foodtok', 'cooking', 'recipe', 'eat', 'restaurant', 'mukbang', 'baking', 'foodie', 'asmrfood']],
+    ['travel',    ['travel', 'traveltok', 'explore', 'wanderlust', 'adventure', 'trip', 'vacation', 'traveling']],
+    ['gaming',    ['gaming', 'gamer', 'games', 'twitch', 'playstation', 'xbox', 'minecraft', 'fortnite', 'gamers']],
+    ['comedy',    ['comedy', 'funny', 'meme', 'humor', 'skits', 'relatable', 'skit', 'comedytok', 'jokes']],
+    ['music',     ['music', 'musician', 'singer', 'songwriter', 'newmusic', 'musicproducer', 'guitar', 'piano', 'rap', 'hiphop', 'edm', 'house']],
+    ['film',      ['film', 'movie', 'cinema', 'filmtok', 'review', 'actor', 'director', 'series', 'tvshow', 'filmreview']],
+    ['mindset',   ['motivation', 'mindset', 'success', 'selfimprovement', 'hustle', 'goals', 'positivity', 'grind', 'entrepreneur']],
+    ['nature',    ['nature', 'outdoor', 'hiking', 'forest', 'mountain', 'beach', 'camping', 'sunset', 'naturetok']],
+    ['nightlife', ['party', 'nightlife', 'club', 'bar', 'drinks', 'friends', 'pregame', 'nightout', 'barlife']],
+    ['art',       ['art', 'artist', 'drawing', 'painting', 'creative', 'design', 'illustration', 'digitalart']],
+    ['lifestyle', ['lifestyle', 'dayinmylife', 'vlog', 'daily', 'diml', 'life', 'mylife', 'dayinthelife']],
+    ['sports',    ['sports', 'football', 'soccer', 'basketball', 'tennis', 'sport', 'athlete', 'nba', 'nfl']],
+  ];
+
+  for (const [niche, keywords] of niches) {
+    if (postTags.some(t => keywords.some(k => t === k || t.startsWith(k)))) return niche;
+  }
+  return 'lifestyle'; // default if no match
+}
+
 async function runCreatorScout(input, artist) {
   const {
     spotify_url,
@@ -574,6 +601,7 @@ async function runCreatorScout(input, artist) {
     follower_max     = budgetToFollowerMax(budget_usd),  // ceiling from budget
     limit            = 50,                               // more creators = more reach
     genre: genreInput = null,
+    countries        = [],                               // e.g. ["SE","US","GB"] — empty = all regions
   } = input;
 
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
@@ -641,52 +669,68 @@ async function runCreatorScout(input, artist) {
   // ── 4. Extract unique creators, calculate engagement ─────────────────────
   const seen     = new Set();
   const creators = [];
+  const countryFilter = countries.map(c => c.toUpperCase());
 
   for (const item of items) {
     const meta      = item.authorMeta || {};
     const author    = item.author     || {};
-    const username  = meta.name       || author.uniqueId || item.uniqueId;
-    const followers = Number(meta.fans ?? author.fans ?? 0);
-    const likes     = Number(meta.heart ?? author.heart ?? 0);
-    const videos    = Number(meta.video ?? author.video ?? 1);
+    const username  = meta.name || meta.uniqueId || author.uniqueId || item.uniqueId;
 
-    if (!username || seen.has(username))                      continue;
-    if (followers < 100)                                      continue; // filter ghost/empty accounts
-    if (followers > follower_max)                             continue;
-    if (follower_min > 0 && followers < follower_min)         continue;
-    if (videos < 3)                                           continue; // need posting history
+    // Strict followers: require fans field to be a real number, not undefined/null
+    const rawFans = meta.fans ?? author.fans;
+    if (rawFans == null || typeof rawFans === 'undefined') continue; // Apify couldn't load profile
+    const followers = Number(rawFans);
+    if (!Number.isFinite(followers) || followers < 100) continue;   // ghost/empty/unloaded accounts
+
+    const likes  = Number(meta.heart ?? author.heart ?? 0);
+    const videos = Number(meta.video ?? author.video ?? 1);
+
+    if (!username || seen.has(username))              continue;
+    if (followers > follower_max)                     continue;
+    if (follower_min > 0 && followers < follower_min) continue;
+    if (videos < 3)                                   continue; // need posting history
+
+    // Country filter — check locationCreated (post) or authorMeta.region (profile)
+    if (countryFilter.length > 0) {
+      const region = (item.locationCreated || meta.region || '').toUpperCase();
+      if (region && !countryFilter.includes(region)) continue;
+      // If region is empty, include the creator (can't determine location)
+    }
 
     seen.add(username);
 
     // Engagement rate = avg likes per video / followers (as %)
-    // High engagement on small account > low engagement on big account
     const avgLikesPerVideo = likes / Math.max(videos, 1);
-    const engagementRate   = followers > 0
-      ? Math.min(Math.round((avgLikesPerVideo / followers) * 1000) / 10, 500) // cap at 500%
-      : 0;
+    const engagementRate   = Math.min(
+      Math.round((avgLikesPerVideo / followers) * 1000) / 10,
+      500 // cap at 500% to prevent outliers
+    );
 
-    // Which niche did this post appear under?
+    // Niche: detect from creator's own post hashtags (not the search hashtag we used)
     const postTags = (item.hashtags || []).map(h => {
       if (typeof h === 'string') return h.toLowerCase();
-      if (h && typeof h.name === 'string') return h.name.toLowerCase();
+      if (h && typeof h.name  === 'string') return h.name.toLowerCase();
       if (h && typeof h.title === 'string') return h.title.toLowerCase();
       return '';
     }).filter(Boolean);
-    const matched = hashtags.find(h => postTags.includes(h.toLowerCase())) || hashtags[0];
-    const niche   = matched.replace(/tok$/, '').replace(/check$/, '');
+    const niche = detectCreatorNiche(postTags);
+
+    // Country for display
+    const country = (item.locationCreated || meta.region || '').toUpperCase() || null;
 
     creators.push({
       username,
       followers,
-      engagement_rate: engagementRate,  // % — key signal for reach potential
+      engagement_rate: engagementRate,
       total_likes:     likes,
       videos,
       niche,
+      country,
       profile_url: `https://www.tiktok.com/@${username}`,
     });
   }
 
-  // Sort by engagement rate (high engagement = content resonates, worth DM-ing regardless of size)
+  // Sort by engagement rate (high engagement = content resonates)
   creators.sort((a, b) => b.engagement_rate - a.engagement_rate);
   const selected = creators.slice(0, limit);
   console.log(`[creator-scout] Returning ${selected.length} creators`);
@@ -695,9 +739,9 @@ async function runCreatorScout(input, artist) {
     units_consumed: selected.length || 1,
     output: {
       genre,
-      hashtags_searched: hashtags,
-      creators_found:    selected.length,
-      creators:          selected,
+      hashtags,           // matches dashboard key
+      creators_found: selected.length,
+      creators:       selected,
     },
   };
 }
