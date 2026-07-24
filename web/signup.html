@@ -124,9 +124,13 @@
         <input type="email" id="email" placeholder="you@email.com" autocomplete="email" />
       </div>
       <div class="field">
+        <label for="genre">Your genre <span style="font-weight:400;color:var(--muted)">(be specific)</span></label>
+        <input type="text" id="genre" placeholder="e.g. deep house, tropical house, indie pop, melodic techno…" autocomplete="off" />
+        <div class="field-hint">The more specific, the better we can match you with the right TikTok creators.</div>
+      </div>
+      <div class="field">
         <label for="spotify_url">Spotify artist URL <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
         <input type="url" id="spotify_url" placeholder="https://open.spotify.com/artist/..." />
-        <div class="field-hint">We use this to match your songs with the right TikTok creators.</div>
       </div>
 
       <hr class="divider" />
@@ -166,6 +170,7 @@
     const btn       = document.getElementById('submit-btn');
     const name      = document.getElementById('artist_name').value.trim();
     const email     = document.getElementById('email').value.trim();
+    const genre     = document.getElementById('genre').value.trim();
     const spotify   = document.getElementById('spotify_url').value.trim();
     const errorEl   = document.getElementById('error-msg');
 
@@ -184,7 +189,7 @@
       const res = await fetch('/api/artists/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, spotify_url: spotify || null })
+        body: JSON.stringify({ name, email, genre: genre || null, spotify_url: spotify || null })
       });
       const data = await res.json();
 

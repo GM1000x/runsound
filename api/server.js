@@ -72,7 +72,7 @@ app.use('/api/credits', (req, res, next) => {
 app.post('/api/artists/register', async (req, res) => {
   const crypto   = require('crypto');
   const supabase = require('./db');
-  const { name, email, spotify_url } = req.body;
+  const { name, email, genre, spotify_url } = req.body;
   if (!name || !email) return res.status(400).json({ ok: false, error: 'name and email are required' });
 
   // Check existing
@@ -83,6 +83,7 @@ app.post('/api/artists/register', async (req, res) => {
   const { data: artist, error } = await supabase.from('artists').insert({
     name,
     email:       email.toLowerCase().trim(),
+    genre:       genre || null,
     plan:        'starter',
     status:      'trial',
     api_key:     apiKey,

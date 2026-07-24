@@ -33,7 +33,7 @@ async function requireApiKey(req, res, next) {
 
   const { data: artist } = await supabase
     .from('artists')
-    .select('id, name, credits_usd, low_balance_at, api_key')
+    .select('id, name, genre, credits_usd, low_balance_at, api_key')
     .eq('api_key', key)
     .single();
 
@@ -448,50 +448,107 @@ function pickBestGenre(genres) {
 }
 
 // ── Genre → TikTok lifestyle hashtag mapping ──────────────────────────────────
-// Maps music genre → content categories that audience actually scrolls
-// e.g. house fans are on #gymtok and #nightlife — not "house music" search
+// Maps to content creators actually scroll — NOT music genre hashtags.
+// Rules are checked in order, most specific subgenres first.
 function genreToHashtags(genre) {
   const g = (genre || '').toLowerCase();
 
   const rules = [
-    { match: ['house', 'techno', 'trance', 'electronic', 'edm', 'dance', 'deep', 'progressive'],
+    // ── Electronic subgenres (most specific first) ──
+    { match: ['tropical house', 'tropical'],
+      tags: ['beachcheck', 'summervibes', 'poolcheck', 'vacationcheck', 'sunsetcheck'] },
+    { match: ['deep house', 'deep tech'],
+      tags: ['morningvibes', 'coffeeaesthetic', 'sunrisecheck', 'gymcheck', 'travelvlog'] },
+    { match: ['melodic techno', 'melodic house', 'melodic dubstep'],
+      tags: ['nightdrive', 'moodcheck', 'aestheticroom', 'latenightvibes', 'cinemagraph'] },
+    { match: ['future house', 'future bass'],
+      tags: ['gymtok', 'fittok', 'gettingready', 'hypecheck', 'energycheck'] },
+    { match: ['afro house', 'afrotech'],
+      tags: ['afrobeats', 'dancechallenge', 'partycheck', 'summervibes', 'africanfashion'] },
+    { match: ['tech house'],
+      tags: ['gymtok', 'clubnight', 'fittok', 'nightlife', 'morningrun'] },
+    { match: ['house', 'techno', 'trance', 'edm', 'dance', 'progressive', 'electronic'],
       tags: ['gymtok', 'fittok', 'gettingready', 'clubnight', 'nightlife'] },
-    { match: ['hip hop', 'hip-hop', 'rap', 'trap', 'drill', 'boom bap'],
+
+    // ── Hip-hop subgenres ──
+    { match: ['lo-fi hip hop', 'chillhop'],
+      tags: ['studycheck', 'lofi', 'cozycheck', 'desksetup', 'nightowl'] },
+    { match: ['drill', 'uk drill'],
+      tags: ['streetwear', 'sneakerhead', 'hypecheck', 'fitcheck', 'urbancheck'] },
+    { match: ['trap', 'mumble rap'],
+      tags: ['streetwear', 'hypecheck', 'gymtok', 'fitcheck', 'carcheck'] },
+    { match: ['hip hop', 'hip-hop', 'rap', 'boom bap'],
       tags: ['streetwear', 'sneakerhead', 'hypecheck', 'streetstyle', 'fashiontok'] },
-    { match: ['r&b', 'rnb', 'soul', 'neo soul', 'funk'],
-      tags: ['selfcare', 'grwm', 'glowup', 'vibecheck', 'relationshiptok'] },
-    { match: ['indie', 'alternative', 'alt-rock', 'shoegaze', 'dream pop'],
-      tags: ['indievibes', 'coffeeshop', 'aestheticroom', 'bookish', 'vintagefit'] },
+
+    // ── R&B / Soul ──
+    { match: ['neo soul', 'conscious'],
+      tags: ['selfcare', 'journaling', 'morningvibes', 'glowup', 'mindsetcheck'] },
+    { match: ['r&b', 'rnb', 'soul', 'funk'],
+      tags: ['grwm', 'selfcare', 'glowup', 'vibecheck', 'relationshiptok'] },
+
+    // ── Indie / Alternative subgenres ──
+    { match: ['bedroom pop', 'dream pop', 'shoegaze'],
+      tags: ['aestheticroom', 'filmphoto', 'coffeeshop', 'indievibes', 'sunsetcheck'] },
+    { match: ['indie pop'],
+      tags: ['coffeeshop', 'indievibes', 'bookish', 'aestheticcheck', 'dayinmylife'] },
+    { match: ['indie', 'alternative', 'alt-rock'],
+      tags: ['indievibes', 'coffeeshop', 'vintagefit', 'concertcheck', 'aestheticroom'] },
+
+    // ── Pop (broad — lifestyle creators, not pop-genre creators) ──
+    { match: ['synth pop', 'electropop', 'hyperpop'],
+      tags: ['aestheticcheck', 'grwm', 'fashiontok', 'girlytok', 'y2kaesthetic'] },
     { match: ['pop'],
-      tags: ['grwm', 'aestheticcheck', 'currentlyobsessed', 'girlytok', 'fashiontok'] },
-    { match: ['country', 'americana', 'bluegrass', 'folk'],
-      tags: ['countrylife', 'westernstyle', 'cottagecore', 'southernliving', 'farmtok'] },
+      tags: ['dayinmylife', 'grwm', 'summercheck', 'friendshipcheck', 'aestheticvlog'] },
+
+    // ── Rock ──
+    { match: ['metal', 'metalcore', 'deathcore', 'heavy metal'],
+      tags: ['metalhead', 'concertcheck', 'tattootok', 'darkfashion', 'altcheck'] },
+    { match: ['punk', 'pop punk', 'emo', 'post-punk'],
+      tags: ['altcheck', 'punkstyle', 'concertcheck', 'thriftcheck', 'altfashion'] },
+    { match: ['rock', 'classic rock', 'hard rock'],
+      tags: ['gymcheck', 'workout', 'adventure', 'roadtrip', 'concertcheck'] },
+
+    // ── Acoustic / Folk ──
+    { match: ['nordic folk', 'scandinavian folk', 'celtic', 'viking'],
+      tags: ['cottagecore', 'naturecheck', 'hikingcheck', 'cozyhome', 'scandinavianstyle'] },
+    { match: ['folk', 'acoustic', 'americana', 'bluegrass', 'country'],
+      tags: ['cottagecore', 'countrylife', 'farmtok', 'cozyhome', 'naturecheck'] },
+
+    // ── Jazz / Blues ──
     { match: ['jazz', 'blues', 'swing', 'bebop'],
-      tags: ['jazzvibes', 'cocktailhour', 'lounge', 'midnightvibes', 'soulcheck'] },
+      tags: ['jazzvibes', 'cocktailhour', 'lounge', 'midnightvibes', 'aestheticroom'] },
+
+    // ── Classical ──
     { match: ['classical', 'orchestral', 'chamber', 'opera', 'baroque'],
-      tags: ['studywithme', 'pianocheck', 'classicalmusic', 'productivitycheck', 'aestheticvibes'] },
-    { match: ['metal', 'heavy metal', 'thrash', 'death metal', 'metalcore'],
-      tags: ['metalhead', 'concertcheck', 'altcheck', 'tattootok', 'darkfashion'] },
-    { match: ['punk', 'hardcore', 'post-punk'],
-      tags: ['altcheck', 'punkstyle', 'vinylcheck', 'concertcheck', 'diyculture'] },
+      tags: ['studywithme', 'pianocheck', 'productivitycheck', 'aestheticvibes', 'cozycheck'] },
+
+    // ── Reggae / Caribbean ──
     { match: ['reggae', 'dancehall', 'ska'],
-      tags: ['summervibes', 'tropicalcheck', 'beachcheck', 'islandvibes', 'vibetok'] },
+      tags: ['summervibes', 'beachcheck', 'islandvibes', 'vibetok', 'tropicalcheck'] },
+
+    // ── Afrobeats ──
     { match: ['afrobeats', 'afropop', 'afro'],
-      tags: ['afrobeats', 'africanfashion', 'partycheck', 'dancechallenge', 'melanin'] },
-    { match: ['lo-fi', 'lofi', 'chillhop', 'ambient', 'chill'],
+      tags: ['afrobeats', 'dancechallenge', 'partycheck', 'melanin', 'africanfashion'] },
+
+    // ── Ambient / Lo-fi ──
+    { match: ['lo-fi', 'lofi', 'ambient', 'chill'],
       tags: ['lofi', 'studycheck', 'cozycheck', 'nightowl', 'aestheticroom'] },
+
+    // ── Latin ──
     { match: ['latin', 'salsa', 'reggaeton', 'cumbia', 'bachata'],
-      tags: ['latincheck', 'latinvibes', 'salsacheck', 'bailando', 'latinbeauty'] },
+      tags: ['latinvibes', 'salsacheck', 'bailando', 'latinbeauty', 'partycheck'] },
+
+    // ── K-pop / J-pop ──
     { match: ['k-pop', 'kpop', 'j-pop', 'jpop', 'korean'],
       tags: ['kpop', 'kpopcheck', 'kdrama', 'koreacheck', 'asianfashion'] },
-    { match: ['rock'],
-      tags: ['rockcheck', 'concertcheck', 'guitartok', 'altcheck', 'bandcheck'] },
   ];
 
   for (const rule of rules) {
     if (rule.match.some(m => g.includes(m))) return rule.tags;
   }
-  return ['vibecheck', 'musiccheck', 'newmusic', 'musiclover', 'musictok'];
+
+  // Fallback: broad lifestyle (not genre-specific)
+  return ['dayinmylife', 'vibecheck', 'aestheticcheck', 'summervibes', 'musictok'];
 }
 
 // ── creator-scout ─────────────────────────────────────────────────────────────
@@ -522,14 +579,18 @@ async function runCreatorScout(input, artist) {
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
   if (!APIFY_TOKEN) throw new Error('Creator scout is not configured — contact support.');
 
-  // ── 1. Determine genre — pick most specific from Spotify's full genre list ─
-  let genre = genreInput;
+  // ── 1. Determine genre — priority: explicit input > artist profile > Spotify ─
+  let genre = genreInput                    // passed in request
+           || artist.genre                  // saved at signup
+           || null;
+
   if (!genre && spotify_url) {
     const spotifyGenres = await getSpotifyGenresFromUrl(spotify_url).catch(() => []);
     genre = pickBestGenre(spotifyGenres);
     console.log(`[creator-scout] Spotify genres: [${spotifyGenres.join(', ')}] → picked: "${genre}"`);
   }
   genre = (genre || 'pop').toLowerCase();
+  console.log(`[creator-scout] genre="${genre}"`);
 
   // ── 2. Genre → lifestyle hashtags ────────────────────────────────────────
   const hashtags = genreToHashtags(genre); // use all 5 tags for wider coverage
