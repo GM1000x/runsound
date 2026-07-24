@@ -224,6 +224,81 @@
     .run-status-badge.failed    { background: var(--red-l);   color: var(--red);   }
     .run-status-badge.running   { background: #fef3c7; color: #92400e; }
 
+    /* ── CREATOR TABLE ── */
+    .creators-section { margin-top: 2rem; }
+
+    .creator-table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+
+    .creator-table-head {
+      display: grid;
+      grid-template-columns: 32px 1fr 90px 90px 90px 80px;
+      gap: 0.5rem; align-items: center;
+      padding: 0.6rem 1rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted);
+    }
+
+    .creator-row {
+      display: grid;
+      grid-template-columns: 32px 1fr 90px 90px 90px 80px;
+      gap: 0.5rem; align-items: center;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .creator-row:last-child { border-bottom: none; }
+    .creator-row:hover { background: var(--bg); }
+
+    .creator-rank { font-size: 0.72rem; color: var(--muted); text-align: center; }
+    .creator-user { font-size: 0.85rem; font-weight: 600; }
+    .creator-user a { color: var(--accent); text-decoration: none; }
+    .creator-user a:hover { text-decoration: underline; }
+    .creator-user .niche-tag {
+      display: inline-block; font-size: 0.65rem; font-weight: 600;
+      background: var(--accent-l); color: var(--accent);
+      padding: 1px 7px; border-radius: 999px; margin-left: 6px;
+      vertical-align: middle;
+    }
+    .creator-num {
+      font-size: 0.8rem; color: var(--text); text-align: right;
+    }
+    .creator-eng {
+      font-size: 0.8rem; font-weight: 600; text-align: right;
+    }
+    .creator-eng.high   { color: var(--green); }
+    .creator-eng.medium { color: #d97706; }
+    .creator-eng.low    { color: var(--muted); }
+
+    .creator-link a {
+      font-size: 0.72rem; font-weight: 600;
+      color: var(--accent); text-decoration: none;
+      background: var(--accent-l);
+      padding: 3px 10px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .creator-link a:hover { opacity: 0.8; }
+
+    .scout-meta {
+      font-size: 0.78rem; color: var(--muted); margin-bottom: 0.75rem;
+    }
+    .scout-meta strong { color: var(--text); font-weight: 600; }
+
+    @media (max-width: 640px) {
+      .creator-table-head,
+      .creator-row {
+        grid-template-columns: 28px 1fr 70px 70px;
+      }
+      .creator-table-head > *:nth-child(5),
+      .creator-table-head > *:nth-child(6),
+      .creator-row > *:nth-child(5),
+      .creator-row > *:nth-child(6) { display: none; }
+    }
+
     /* ── EMPTY / SKELETON ── */
     .empty-state {
       text-align: center; padding: 2.5rem 1rem;
@@ -313,6 +388,26 @@
     <div class="run-table" style="padding:1rem">
       <div class="skeleton-block" style="height:14px;width:40%;margin-bottom:10px"></div>
       <div class="skeleton-block" style="height:14px;width:60%"></div>
+    </div>
+  </div>
+
+  <!-- Creator Scout Results (shown when latest run has creators) -->
+  <div class="creators-section" id="creators-section" style="display:none">
+    <div class="section-header">
+      <span class="section-title">Discovered creators</span>
+      <span class="section-sub" id="creators-sub"></span>
+    </div>
+    <div class="scout-meta" id="scout-meta"></div>
+    <div class="creator-table-wrap">
+      <div class="creator-table-head">
+        <div>#</div>
+        <div>Creator</div>
+        <div style="text-align:right">Followers</div>
+        <div style="text-align:right">Engagement</div>
+        <div style="text-align:right">Videos</div>
+        <div></div>
+      </div>
+      <div id="creator-rows"></div>
     </div>
   </div>
 
@@ -486,13 +581,57 @@
     });
   }
 
-  // ── Run history ───────────────────────────────────────────────────────────
+  // ── Run history + Creator results ─────────────────────────────────────────
   function timeAgo(iso) {
     const s = Math.floor((Date.now() - new Date(iso)) / 1000);
     if (s < 60)    return `${s}s ago`;
     if (s < 3600)  return `${Math.floor(s/60)}m ago`;
     if (s < 86400) return `${Math.floor(s/3600)}h ago`;
     return `${Math.floor(s/86400)}d ago`;
+  }
+
+  function fmtNum(n) {
+    if (n >= 1_000_000) return (n/1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000)     return (n/1_000).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  function renderCreators(run) {
+    const output = run.output;
+    if (!output || !output.creators || !output.creators.length) return;
+
+    const creators = output.creators;
+    document.getElementById('creators-section').style.display = '';
+    document.getElementById('creators-sub').textContent =
+      `${creators.length} found · ${timeAgo(run.started_at)}`;
+
+    // Scout meta — genre + hashtags used
+    const parts = [];
+    if (output.genre)    parts.push(`Genre: <strong>${output.genre}</strong>`);
+    if (output.hashtags && output.hashtags.length) parts.push(`Tags: <strong>${output.hashtags.map(h=>'#'+h).join(', ')}</strong>`);
+    document.getElementById('scout-meta').innerHTML = parts.join(' &nbsp;·&nbsp; ');
+
+    const rowsEl = document.getElementById('creator-rows');
+    rowsEl.innerHTML = '';
+    creators.forEach((c, i) => {
+      const eng = c.engagement_rate || 0;
+      const engClass = eng >= 5 ? 'high' : eng >= 2 ? 'medium' : 'low';
+      const row = document.createElement('div');
+      row.className = 'creator-row';
+      row.innerHTML = `
+        <div class="creator-rank">${i + 1}</div>
+        <div class="creator-user">
+          <a href="${c.profile_url || `https://tiktok.com/@${c.username}`}" target="_blank" rel="noopener">@${c.username}</a>
+          ${c.niche ? `<span class="niche-tag">${c.niche}</span>` : ''}
+        </div>
+        <div class="creator-num" style="text-align:right">${fmtNum(c.followers)}</div>
+        <div class="creator-eng ${engClass}" style="text-align:right">${eng.toFixed(1)}%</div>
+        <div class="creator-num" style="text-align:right">${c.videos != null ? fmtNum(c.videos) : '—'}</div>
+        <div class="creator-link">
+          <a href="${c.profile_url || `https://tiktok.com/@${c.username}`}" target="_blank" rel="noopener">TikTok ↗</a>
+        </div>`;
+      rowsEl.appendChild(row);
+    });
   }
 
   async function loadRuns() {
@@ -532,6 +671,11 @@
       });
       container.innerHTML = '';
       container.appendChild(table);
+
+      // Show creators from the most recent succeeded creator-scout run
+      const scoutRun = d.runs.find(r => r.skill_slug === 'creator-scout' && r.status === 'succeeded' && r.output);
+      if (scoutRun) renderCreators(scoutRun);
+
     } catch {
       document.getElementById('run-container').innerHTML =
         '<div class="empty-state">Could not load run history</div>';

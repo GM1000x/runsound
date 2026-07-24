@@ -288,7 +288,7 @@ router.get('/runs', requireApiKey, async (req, res) => {
   const limit = parseInt(req.query.limit || '20');
   const { data, error } = await supabase
     .from('skill_runs')
-    .select('id, skill_slug, status, units_consumed, cost_usd, started_at, finished_at')
+    .select('id, skill_slug, status, units_consumed, cost_usd, started_at, finished_at, output')
     .eq('artist_id', req.artist.id)
     .order('started_at', { ascending: false })
     .limit(limit);
