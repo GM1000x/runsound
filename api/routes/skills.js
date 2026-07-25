@@ -551,6 +551,7 @@ function genreToHashtags(genre) {
   return ['dayinmylife', 'vibecheck', 'aestheticcheck', 'summervibes', 'musictok'];
 }
 
+
 // ── creator-scout ─────────────────────────────────────────────────────────────
 // Budget → follower ceiling for music promotion (2026 market rates)
 // Source: Dynamoi, Influencer Marketing Hub, Collabstr
@@ -566,12 +567,19 @@ function budgetToFollowerMax(budget_usd) {
   return 500000;                                        // $800+: can reach mid-tier ($500–2500/video)
 }
 
-// Language detection by caption text — no external deps, uses stopwords + diacritics
-// Returns true if text matches target language (or if we can't tell → include)
+// Language detection by caption text — no external deps, uses stopwords + diacritics.
+// For country-specific searches this is THE sole qualifying criterion — if the caption
+// is not in the target language, the creator is excluded regardless of genre or niche.
+// Global (no country) = no filter. English countries = must write in English.
+// Returns true = include, false = exclude.
 const LANG_SIGNALS = {
+  EN: {
+    words: ['the','and','is','it','i','you','that','this','with','for','are','was','but','not','have','to','be','at','or','an','my','we','he','she','they','do','so','if','me','no','up','out','can','who','just','all','your','how','when','there','their','what','get','like','more','than','then','them','some','will','one','has','his','her','from','by','as','im','its','dont','got','let','go','gonna','wanna','hey','omg','lol'],
+    chars: [], // English has no distinctive diacritics — rely on stopwords only
+  },
   SE: {
-    words: ['och','att','det','är','jag','vi','du','han','hon','de','sig','kan','till','men','om','hur','vad','när','var','har','ska','lite','bara','inte','också','eller','med','för','som','på','den','ett','en','av','sin','sina','sin','dig','mig','oss','dem','nu','då','så','ut','in','upp','ner','här','där','ja','nej','tack','hej','kul','bra','dålig','ny','gammal','stor','liten'],
-    chars: ['å'],       // å is uniquely Scandinavian — strong signal
+    words: ['och','att','det','är','jag','vi','du','han','hon','de','sig','kan','till','men','om','hur','vad','när','var','har','ska','lite','bara','inte','också','eller','med','för','som','på','den','ett','en','av','sin','sina','dig','mig','oss','dem','nu','då','så','ut','in','upp','ner','här','där','ja','nej','tack','hej','kul','bra','dålig','ny','gammal','stor','liten'],
+    chars: ['å','ä','ö'],   // å/ä/ö are characteristic Swedish chars — single match is strong signal
     skipChars: [],
   },
   NO: {
@@ -625,23 +633,25 @@ const LANG_SIGNALS = {
 const ENGLISH_COUNTRIES = new Set(['US','GB','AU','CA','NZ','IE','ZA']);
 
 function isTargetLanguage(text, countryCode) {
-  if (!countryCode || ENGLISH_COUNTRIES.has(countryCode)) return true; // no filter
-  if (!text || text.trim().length < 8) return true;                    // too short to judge
+  if (!countryCode) return true; // global → any language welcome, no filter
 
-  const signals = LANG_SIGNALS[countryCode];
-  if (!signals) return true; // unknown country → include
+  // English-speaking countries get an English language filter (not "no filter")
+  const signalKey = ENGLISH_COUNTRIES.has(countryCode) ? 'EN' : countryCode;
+  const signals   = LANG_SIGNALS[signalKey];
+  if (!signals) return true; // country not in our signal table → include
 
-  const lower = text.toLowerCase();
-  const tokens = lower.split(/[\s,!?.:;()\-"']+/).filter(Boolean);
+  if (!text || text.trim().length < 8) return true; // too short to judge → include
 
-  // Count matching stopwords
-  const wordMatches = tokens.filter(w => signals.words.includes(w)).length;
+  const lower  = text.toLowerCase();
+  const tokens = lower.split(/[\s,!?.:;()\-"'#@]+/).filter(t => t.length >= 2);
 
-  // Check for characteristic characters
+  // Distinctive character — single occurrence is a reliable signal (å, ä, ö, ñ, ü etc.)
   const charMatch = signals.chars.some(c => lower.includes(c));
 
-  // Pass if: 2+ word matches, OR 1 word match + characteristic char
-  return wordMatches >= 2 || (wordMatches >= 1 && charMatch) || (charMatch && lower.length > 20 && tokens.length > 3);
+  // Stopword count — 2+ matches avoids false positives from short shared words
+  const wordMatches = tokens.filter(w => signals.words.includes(w)).length;
+
+  return charMatch || wordMatches >= 2;
 }
 
 // Detect creator niche from their post's own hashtags (not the search hashtag)
@@ -697,29 +707,31 @@ async function runCreatorScout(input, artist) {
   genre = (genre || 'pop').toLowerCase();
   console.log(`[creator-scout] genre="${genre}" country="${country || 'global'}"`);
 
-  // ── 2. Genre hashtags (country targeting is handled by proxy, not hashtags) ─
+  // ── 2. Build Apify input ──────────────────────────────────────────────────
+  // Hashtag search is the only reliably supported mode in clockworks~tiktok-scraper.
+  // Country proxy routes the requests through the target country's IP.
+  // Language filter (isTargetLanguage) is then the sole criterion for country targeting.
   const countryCode = (country || '').toUpperCase();
   const hashtags    = genreToHashtags(genre);
-  console.log(`[creator-scout] hashtags: ${hashtags.join(', ')}`);
-
-  // ── 3. Apify: scrape TikTok posts by hashtag ─────────────────────────────
-  // Route via country proxy when a country is selected — TikTok then serves
-  // that country's algorithm/content, giving us local creators reliably.
-  const proxyConfiguration = countryCode
+  const proxyConf   = countryCode
     ? { useApifyProxy: true, apifyProxyCountry: countryCode }
     : { useApifyProxy: true };
 
+  console.log(`[creator-scout] hashtags: ${hashtags.join(', ')} country=${countryCode || 'global'}`);
+  const apifyInput = {
+    hashtags,
+    resultsPerPage:    100,   // bigger pool → more chances of catching target-language posts
+    maxRequestRetries: 2,
+    proxyConfiguration: proxyConf,
+  };
+
+  // ── 3. Apify: scrape TikTok posts ─────────────────────────────────────────
   const startRes = await fetch(
     `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        hashtags,
-        resultsPerPage:    25,
-        maxRequestRetries: 2,
-        proxyConfiguration,
-      }),
+      body:    JSON.stringify(apifyInput),
     }
   );
   if (!startRes.ok) {
@@ -836,6 +848,7 @@ async function runCreatorScout(input, artist) {
       genre,
       country:        countryCode || 'global',
       hashtags,
+      items_scraped:  items.length,   // debug: total posts Apify returned before filtering
       creators_found: selected.length,
       creators:       selected,
     },
