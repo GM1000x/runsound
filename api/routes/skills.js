@@ -708,36 +708,34 @@ async function runCreatorScout(input, artist) {
   console.log(`[creator-scout] genre="${genre}" country="${country || 'global'}"`);
 
   // ── 2. Build Apify input ──────────────────────────────────────────────────
-  // Country mode:  keyword search (/video) via proxyCountryCode → location-influenced results.
-  //                Language filter is then the sole qualifying criterion.
-  // Global mode:   hashtag search, no language restriction.
-  const countryCode     = (country || '').toUpperCase();
-  const useKeywordSearch = countryCode && !ENGLISH_COUNTRIES.has(countryCode);
-  const hashtags        = genreToHashtags(genre);
+  // Both modes use apidojo/tiktok-scraper which has a native `location` parameter.
+  // Country mode: keywords + location → TikTok surfaces regional content natively.
+  //               Language filter is then the sole qualifying criterion.
+  // Global mode:  keywords only — no location restriction, any language welcome.
+  const countryCode = (country || '').toUpperCase();
+  const hashtags    = genreToHashtags(genre);
 
   let apifyInput;
-  if (useKeywordSearch) {
-    console.log(`[creator-scout] mode=keyword/video country=${countryCode} terms: ${hashtags.join(', ')}`);
+  if (countryCode) {
+    console.log(`[creator-scout] mode=location country=${countryCode} keywords: ${hashtags.join(', ')}`);
     apifyInput = {
-      searchQueries:     hashtags,
-      searchSection:     '/video',        // correct value per actor schema
-      resultsPerPage:    100,
-      maxRequestRetries: 2,
-      proxyCountryCode:  countryCode,     // actor-native country proxy field
+      keywords: hashtags,
+      location: countryCode,
+      maxItems: 500,
+      sortType: 'RELEVANCE',
     };
   } else {
-    console.log(`[creator-scout] mode=hashtag hashtags: ${hashtags.join(', ')}`);
+    console.log(`[creator-scout] mode=global keywords: ${hashtags.join(', ')}`);
     apifyInput = {
-      hashtags,
-      resultsPerPage:    100,
-      maxRequestRetries: 2,
-      proxyConfiguration: { useApifyProxy: true },
+      keywords: hashtags,
+      maxItems: 500,
+      sortType: 'RELEVANCE',
     };
   }
 
   // ── 3. Apify: scrape TikTok posts ─────────────────────────────────────────
   const startRes = await fetch(
-    `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
+    `https://api.apify.com/v2/acts/apidojo~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
