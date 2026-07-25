@@ -24,7 +24,7 @@
  *   npm run dev            — development with nodemon
  */
 
-require('dotenv').config();
+require('dotenv').config({ override: true, path: require('path').resolve(__dirname, '../.env') });
 
 const express    = require('express');
 const cors       = require('cors');

@@ -12,6 +12,9 @@
  * Auth: Authorization: Bearer rs_live_xxxx  (api_key on artists table)
  */
 
+// Ensure env vars are loaded regardless of working directory
+require('dotenv').config({ override: true, path: require('path').resolve(__dirname, '../../.env') });
+
 const express  = require('express');
 const router   = express.Router();
 const supabase = require('../db');
