@@ -708,22 +708,32 @@ async function runCreatorScout(input, artist) {
   console.log(`[creator-scout] genre="${genre}" country="${country || 'global'}"`);
 
   // ── 2. Build Apify input ──────────────────────────────────────────────────
-  // Hashtag search is the only reliably supported mode in clockworks~tiktok-scraper.
-  // Country proxy routes the requests through the target country's IP.
-  // Language filter (isTargetLanguage) is then the sole criterion for country targeting.
-  const countryCode = (country || '').toUpperCase();
-  const hashtags    = genreToHashtags(genre);
-  const proxyConf   = countryCode
-    ? { useApifyProxy: true, apifyProxyCountry: countryCode }
-    : { useApifyProxy: true };
+  // Country mode:  keyword search (/video) via proxyCountryCode → location-influenced results.
+  //                Language filter is then the sole qualifying criterion.
+  // Global mode:   hashtag search, no language restriction.
+  const countryCode     = (country || '').toUpperCase();
+  const useKeywordSearch = countryCode && !ENGLISH_COUNTRIES.has(countryCode);
+  const hashtags        = genreToHashtags(genre);
 
-  console.log(`[creator-scout] hashtags: ${hashtags.join(', ')} country=${countryCode || 'global'}`);
-  const apifyInput = {
-    hashtags,
-    resultsPerPage:    100,   // bigger pool → more chances of catching target-language posts
-    maxRequestRetries: 2,
-    proxyConfiguration: proxyConf,
-  };
+  let apifyInput;
+  if (useKeywordSearch) {
+    console.log(`[creator-scout] mode=keyword/video country=${countryCode} terms: ${hashtags.join(', ')}`);
+    apifyInput = {
+      searchQueries:     hashtags,
+      searchSection:     '/video',        // correct value per actor schema
+      resultsPerPage:    100,
+      maxRequestRetries: 2,
+      proxyCountryCode:  countryCode,     // actor-native country proxy field
+    };
+  } else {
+    console.log(`[creator-scout] mode=hashtag hashtags: ${hashtags.join(', ')}`);
+    apifyInput = {
+      hashtags,
+      resultsPerPage:    100,
+      maxRequestRetries: 2,
+      proxyConfiguration: { useApifyProxy: true },
+    };
+  }
 
   // ── 3. Apify: scrape TikTok posts ─────────────────────────────────────────
   const startRes = await fetch(
