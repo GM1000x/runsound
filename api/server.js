@@ -97,7 +97,7 @@ app.post('/api/artists/register', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  const known = ['APIFY_API_TOKEN','OPENAI_API_KEY','SUPABASE_URL','PORT','NODE_ENV'];
+  const known = ['APIFY_API_TOKEN','APIFY_TOKEN','OPENAI_API_KEY','SUPABASE_URL','PORT','NODE_ENV'];
   const envStatus = {};
   for (const k of known) envStatus[k] = (process.env[k] || '').length > 0;
   res.json({ ok: true, ts: new Date().toISOString(), env: envStatus });

@@ -696,7 +696,7 @@ async function runCreatorScout(input, artist) {
     music_only       = true,
   } = input;
 
-  const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+  const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN;
   if (!APIFY_TOKEN) throw new Error('Creator scout is not configured — contact support.');
 
   // ── 1. Determine genre — priority: explicit input > artist profile > Spotify ─
