@@ -346,9 +346,9 @@ router.post('/submit', requireApiKey, async (req, res) => {
 // ─── Direct creator-scout endpoint (no API key required) ─────────────────────
 router.post('/creator-scout', async (req, res) => {
   try {
-    const { genre, country, spotify_url } = req.body;
-    const fakeArtist = { id: null, name: 'test', genre: genre || null, target_country: country || null };
-    const result = await runCreatorScout({ genre, country, spotify_url }, fakeArtist);
+    const { genre, spotify_url } = req.body;
+    const fakeArtist = { id: null, name: 'test', genre: genre || null };
+    const result = await runCreatorScout({ genre, spotify_url }, fakeArtist);
     res.json({ ok: true, ...result.output });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -701,167 +701,240 @@ function detectCreatorNiche(postTags) {
   return 'lifestyle'; // default if no match
 }
 
+// ── Apify runner helper ───────────────────────────────────────────────────────
+// Starts an Apify actor run, polls until done, returns dataset items.
+async function runApifyActor(actorId, input, token, maxWaitSecs = 180) {
+  const startRes = await fetch(
+    `https://api.apify.com/v2/acts/${actorId}/runs?token=${token}`,
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(input),
+    }
+  );
+  if (!startRes.ok) {
+    const txt = await startRes.text();
+    throw new Error(`Apify start failed (${actorId}): ${startRes.status} — ${txt.slice(0, 200)}`);
+  }
+  const { data: { id: runId } } = await startRes.json();
+  console.log(`[apify] ${actorId} → run ${runId} started`);
+
+  const polls = Math.ceil(maxWaitSecs / 4);
+  for (let i = 0; i < polls; i++) {
+    await new Promise(r => setTimeout(r, 4000));
+    const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
+    const { data: run } = await statusRes.json();
+    if (run.status === 'SUCCEEDED') {
+      const dataRes = await fetch(
+        `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${token}&format=json&limit=1000`
+      );
+      const result = await dataRes.json();
+      console.log(`[apify] ${actorId} → ${result.length} items`);
+      return result;
+    }
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(run.status)) {
+      throw new Error(`Apify run ${run.status.toLowerCase()} (${actorId})`);
+    }
+  }
+  throw new Error(`Apify timed out after ${maxWaitSecs}s (${actorId})`);
+}
+
 async function runCreatorScout(input, artist) {
   const {
     spotify_url,
-    budget_usd       = null,
-    follower_min     = 0,
-    follower_max     = budgetToFollowerMax(budget_usd),
-    limit            = 50,
+    budget_usd        = null,
+    follower_min      = 0,
+    follower_max      = budgetToFollowerMax(budget_usd),
+    limit             = 50,
     genre: genreInput = null,
-    country          = artist.target_country || null,  // default from artist profile; override per-call
-    music_only       = true,
+    music_only        = true,
   } = input;
 
   const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN ||
     ['apify', '_api_', '7DqTHNLjlzk2J7Fw', 'EVC50ml2OnKKE34Ah0kf'].join('');
   if (!APIFY_TOKEN) throw new Error('Creator scout is not configured — contact support.');
 
-  // ── 1. Determine genre — priority: explicit input > artist profile > Spotify ─
-  let genre = genreInput || artist.genre || null;
+  // ── 1. Spotify: genre + 3 similar tracks ─────────────────────────────────
+  let genre         = genreInput || artist.genre || null;
+  let similarTracks = []; // [{ name, artist }]
 
-  if (!genre && spotify_url) {
-    const spotifyGenres = await getSpotifyGenresFromUrl(spotify_url).catch(() => []);
-    genre = pickBestGenre(spotifyGenres);
-    console.log(`[creator-scout] Spotify genres: [${spotifyGenres.join(', ')}] → picked: "${genre}"`);
+  const spotifyUrl = spotify_url || artist.spotify_url;
+  if (spotifyUrl) {
+    try {
+      const clientId     = process.env.SPOTIFY_CLIENT_ID;
+      const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+      if (clientId && clientSecret) {
+        const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+          },
+          body: 'grant_type=client_credentials',
+        });
+        const { access_token } = await tokenRes.json();
+
+        if (access_token) {
+          // Resolve artist ID from track or artist URL
+          let artistId = null;
+          const trackMatch  = spotifyUrl.match(/track\/([A-Za-z0-9]+)/);
+          const artistMatch = spotifyUrl.match(/artist\/([A-Za-z0-9]+)/);
+          if (trackMatch) {
+            const t = await (await fetch(`https://api.spotify.com/v1/tracks/${trackMatch[1]}`,
+              { headers: { Authorization: `Bearer ${access_token}` } })).json();
+            artistId = t.artists?.[0]?.id;
+          } else if (artistMatch) {
+            artistId = artistMatch[1];
+          }
+
+          if (artistId) {
+            // Get genre if not already set
+            if (!genre) {
+              const ar = await (await fetch(`https://api.spotify.com/v1/artists/${artistId}`,
+                { headers: { Authorization: `Bearer ${access_token}` } })).json();
+              genre = pickBestGenre(ar.genres || []);
+            }
+
+            // Get 3 similar tracks via recommendations
+            const recData = await (await fetch(
+              `https://api.spotify.com/v1/recommendations?seed_artists=${artistId}&limit=3`,
+              { headers: { Authorization: `Bearer ${access_token}` } }
+            )).json();
+
+            similarTracks = (recData.tracks || []).map(t => ({
+              name:   t.name,
+              artist: t.artists?.[0]?.name || '',
+            }));
+            console.log(`[creator-scout] Similar tracks: ${
+              similarTracks.map(t => `"${t.name}" – ${t.artist}`).join(', ')
+            }`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[creator-scout] Spotify lookup failed:', e.message);
+    }
   }
+
   genre = (genre || 'pop').toLowerCase();
-  console.log(`[creator-scout] genre="${genre}" country="${country || 'global'}"`);
+  console.log(`[creator-scout] genre="${genre}" similar_tracks=${similarTracks.length}`);
 
-  // ── 2. Build Apify input ──────────────────────────────────────────────────
-  // Both modes use apidojo/tiktok-scraper which has a native `location` parameter.
-  // Country mode: keywords + location → TikTok surfaces regional content natively.
-  //               Language filter is then the sole qualifying criterion.
-  // Global mode:  keywords only — no location restriction, any language welcome.
-  const countryCode = (country || '').toUpperCase();
-  const hashtags    = genreToHashtags(genre);
+  // ── 2. Find TikTok sound URLs for those tracks ────────────────────────────
+  // Search TikTok for each "Song Title Artist Name" → extract musicMeta.musicId
+  // → construct TikTok sound URL from id + name slug
+  let soundUrls = [];
 
-  // Broad seed words in each language — no genre, just common native words so
-  // TikTok search + location proxy surfaces that language's content.
-  const SEED_WORDS = {
-    SE: ['och', 'det'],   // svenska: "and", "it/that"
-    NO: ['og', 'det'],
-    DK: ['og', 'det'],
-    FI: ['ja', 'on'],
-    DE: ['und', 'ich'],
-    FR: ['et', 'je'],
-    ES: ['y', 'el'],
-    IT: ['e', 'io'],
-    NL: ['en', 'ik'],
-    PT: ['e', 'eu'],
-    PL: ['i', 'to'],
-    RU: ['и', 'я'],
-    JP: ['の', 'は'],
-    KR: ['이', '나'],
-  };
+  if (similarTracks.length > 0) {
+    const queries = similarTracks.map(t => `${t.name} ${t.artist}`);
+    console.log(`[creator-scout] Searching TikTok for sounds: ${queries.join(' | ')}`);
 
-  let apifyInput;
-  if (countryCode) {
-    const seedWords = SEED_WORDS[countryCode] || ['and', 'my'];
-    console.log(`[creator-scout] mode=language-seed country=${countryCode} seeds: ${seedWords.join(', ')}`);
-    apifyInput = {
-      keywords: seedWords,
-      location: countryCode,
-      maxItems: 500,
-    };
-  } else {
-    console.log(`[creator-scout] mode=global keywords: ${hashtags.join(', ')}`);
-    apifyInput = {
-      keywords: hashtags,
-      maxItems: 500,
-      sortType: 'RELEVANCE',
-    };
-  }
-
-  // ── 3. Apify: scrape TikTok posts ─────────────────────────────────────────
-  const startRes = await fetch(
-    `https://api.apify.com/v2/acts/apidojo~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
-    {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(apifyInput),
-    }
-  );
-  if (!startRes.ok) {
-    const txt = await startRes.text();
-    throw new Error(`Apify start failed: ${startRes.status} — ${txt.slice(0, 200)}`);
-  }
-  const { data: { id: runId } } = await startRes.json();
-  console.log(`[creator-scout] Apify run ${runId} started`);
-
-  // Poll until SUCCEEDED (max 240s = 60 × 4s — apidojo can take ~100s for 500 items)
-  let items = [];
-  for (let i = 0; i < 60; i++) {
-    await new Promise(r => setTimeout(r, 4000));
-    const statusRes = await fetch(
-      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
-    );
-    const { data: run } = await statusRes.json();
-    if (run.status === 'SUCCEEDED') {
-      const dataRes = await fetch(
-        `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}&format=json&limit=500`
+    try {
+      const searchItems = await runApifyActor(
+        'OtzYfK1ndEGdwWFKQ',  // clockworks/free-tiktok-scraper
+        { search: queries, resultsPerPage: 20 },
+        APIFY_TOKEN,
+        90
       );
-      items = await dataRes.json();
-      console.log(`[creator-scout] Got ${items.length} posts from Apify`);
-      break;
-    }
-    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(run.status)) {
-      throw new Error(`Apify run ${run.status.toLowerCase()} — please try again`);
+
+      const soundMap = new Map(); // musicId → url (deduplicate)
+      for (const item of searchItems) {
+        if (soundMap.size >= 3) break;
+        const m = item.musicMeta || {};
+        if (m.musicOriginal || !m.musicId) continue;
+        const slug = (m.musicName || 'sound').toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '-');
+        soundMap.set(m.musicId, `https://www.tiktok.com/music/${slug}-${m.musicId}`);
+      }
+      soundUrls = [...soundMap.values()];
+      console.log(`[creator-scout] Found ${soundUrls.length} TikTok sound URLs`);
+    } catch (e) {
+      console.warn('[creator-scout] Sound URL search failed:', e.message);
     }
   }
 
-  // ── 4. Extract unique creators, calculate engagement ─────────────────────
-  // apidojo field mapping (differs from clockworks):
-  //   channel.username  → creator handle
-  //   channel.followers → follower count
-  //   item.title        → caption text
-  //   item.likes        → post-level likes (for engagement rate)
-  //   item.hashtags[]   → plain strings (may contain nulls)
-  //   song.title        → music track ("original sound - user" = own audio)
+  // ── 3. Scrape creators who used those sounds ──────────────────────────────
+  let rawItems   = [];
+  let scrapeMode = 'sound';
+
+  if (soundUrls.length > 0) {
+    try {
+      rawItems = await runApifyActor(
+        'JVisUAY6oGn2dBn99',  // clockworks/tiktok-sound-scraper
+        { musics: soundUrls, shouldDownloadCovers: false, shouldDownloadVideos: false, resultsPerPage: 100 },
+        APIFY_TOKEN,
+        180
+      );
+    } catch (e) {
+      console.warn('[creator-scout] Sound scraper failed:', e.message);
+    }
+  }
+
+  // Fallback: hashtag search via apidojo if sound pipeline returned nothing
+  if (rawItems.length === 0) {
+    console.log('[creator-scout] Falling back to genre hashtag search');
+    scrapeMode = 'hashtag';
+    const hashtags = genreToHashtags(genre);
+    rawItems = await runApifyActor(
+      'apidojo~tiktok-scraper',
+      { keywords: hashtags, maxItems: 500, sortType: 'RELEVANCE' },
+      APIFY_TOKEN,
+      240
+    );
+  }
+
+  // ── 4. Parse, filter, rank creators ──────────────────────────────────────
   const seen     = new Set();
   const creators = [];
 
-  for (const item of items) {
-    const channel  = item.channel || {};
-    const username = channel.username || channel.name;
+  for (const item of rawItems) {
+    let username, followers, postLikes, musicOriginal, musicName, musicArtist, locationCreated;
+
+    if (scrapeMode === 'sound') {
+      // clockworks/tiktok-sound-scraper field mapping
+      const a   = item.authorMeta || {};
+      username  = a.name || a.uniqueId;
+      followers = Number(a.fans ?? a.following ?? 0);
+      postLikes = Number(item.diggCount ?? 0);
+      const m   = item.musicMeta || {};
+      musicOriginal   = !!m.musicOriginal;
+      musicName       = m.musicName   || null;
+      musicArtist     = m.musicAuthor || null;
+      locationCreated = (item.locationCreated || '').toUpperCase() || null;
+    } else {
+      // apidojo/tiktok-scraper field mapping (fallback)
+      const channel = item.channel || {};
+      username  = channel.username || channel.name;
+      followers = Number(channel.followers ?? 0);
+      postLikes = Number(item.likes ?? 0);
+      const song      = item.song || {};
+      const songTitle = (song.title  || '').toLowerCase();
+      const songArt   = (song.artist || '').toLowerCase();
+      const uLC       = (username || '').toLowerCase();
+      musicOriginal   = songTitle.startsWith('original sound') || songArt === uLC ||
+                        songArt.replace(/[^a-z0-9]/g,'').includes(uLC.replace(/[^a-z0-9]/g,''));
+      musicName       = song.title  || null;
+      musicArtist     = song.artist || null;
+      locationCreated = (channel.region || '').toUpperCase() || null;
+    }
+
     if (!username || seen.has(username)) continue;
-
-    const followers = Number(channel.followers ?? 0);
     if (!Number.isFinite(followers) || followers < 100) continue;
-    if (followers > follower_max)                       continue;
-    if (follower_min > 0 && followers < follower_min)   continue;
-
-    // Language filter — caption is in item.title for apidojo
-    const caption = item.title || item.text || '';
-    if (!isTargetLanguage(caption, countryCode)) continue;
-
-    // Music detection: "original sound - username" = creator's own voice
-    const song        = item.song || {};
-    const songTitle   = (song.title  || '').toLowerCase();
-    const songArtist  = (song.artist || '').toLowerCase();
-    const usernameLC  = username.toLowerCase();
-    const isOriginal  = songTitle.startsWith('original sound') ||
-                        songArtist === usernameLC ||
-                        songArtist.replace(/[^a-z0-9]/g, '').includes(usernameLC.replace(/[^a-z0-9]/g, ''));
-    const usesMusic   = !isOriginal;
-    if (music_only && !usesMusic) continue;
+    if (followers > follower_max) continue;
+    if (follower_min > 0 && followers < follower_min) continue;
+    if (music_only && musicOriginal) continue;
 
     seen.add(username);
 
-    // Engagement rate: post likes / followers (recent post signal)
-    const postLikes     = Number(item.likes ?? 0);
     const engagementRate = Math.min(
       Math.round((postLikes / Math.max(followers, 1)) * 1000) / 10,
       500
     );
 
-    // Hashtags — filter null entries, plain strings in apidojo
     const postTags = (item.hashtags || [])
-      .filter(h => h && typeof h === 'string')
+      .map(h => typeof h === 'string' ? h : h?.name)
+      .filter(Boolean)
       .map(h => h.toLowerCase());
     const niche = detectCreatorNiche(postTags);
-
-    const postCountry = (channel.region || '').toUpperCase() || null;
 
     creators.push({
       username,
@@ -869,29 +942,28 @@ async function runCreatorScout(input, artist) {
       engagement_rate: engagementRate,
       total_likes:     postLikes,
       niche,
-      country:         postCountry,
-      uses_music:      usesMusic,
-      music_track:     usesMusic ? (song.title  || null) : null,
-      music_artist:    usesMusic ? (song.artist || null) : null,
+      country:         locationCreated || null,
+      uses_music:      !musicOriginal,
+      music_track:     !musicOriginal ? musicName   : null,
+      music_artist:    !musicOriginal ? musicArtist : null,
       profile_url:     `https://www.tiktok.com/@${username}`,
     });
   }
 
-  // Sort by engagement rate (high engagement = content resonates)
   creators.sort((a, b) => b.engagement_rate - a.engagement_rate);
   const selected = creators.slice(0, limit);
-  console.log(`[creator-scout] Returning ${selected.length} creators`);
+  console.log(`[creator-scout] Returning ${selected.length} creators (mode=${scrapeMode})`);
 
   return {
     units_consumed: selected.length || 1,
     output: {
       genre,
-      country:        countryCode || 'global',
-      // only show hashtags in global mode — country mode uses language detection, no genre tags
-      ...(countryCode ? {} : { hashtags }),
-      items_scraped:  items.length,
-      creators_found: selected.length,
-      creators:       selected,
+      similar_tracks:  similarTracks,
+      sound_urls_used: soundUrls.length,
+      scrape_mode:     scrapeMode,
+      items_scraped:   rawItems.length,
+      creators_found:  selected.length,
+      creators:        selected,
     },
   };
 }
