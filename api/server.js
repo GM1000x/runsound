@@ -97,7 +97,13 @@ app.post('/api/artists/register', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, ts: new Date().toISOString() });
+  res.json({
+    ok:    true,
+    ts:    new Date().toISOString(),
+    apify: !!process.env.APIFY_API_TOKEN,
+    apify_len: (process.env.APIFY_API_TOKEN || '').length,
+    env_file: (() => { try { return require('fs').existsSync(require('path').resolve(__dirname, '../.env')); } catch { return false; } })(),
+  });
 });
 
 // ─── Smart Link short URL ─────────────────────────────────────────────────────
