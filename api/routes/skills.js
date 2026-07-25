@@ -721,12 +721,14 @@ async function runCreatorScout(input, artist) {
 
   let apifyInput;
   if (countryCode) {
-    console.log(`[creator-scout] mode=location country=${countryCode} keywords: ${hashtags.join(', ')}`);
+    // Country mode: browse hashtag tag-pages AS a local user via location proxy.
+    // This surfaces the hashtag as TikTok shows it to someone in that country —
+    // far more local content than keyword search with an English query.
+    console.log(`[creator-scout] mode=tag-pages country=${countryCode} tags: ${hashtags.join(', ')}`);
     apifyInput = {
-      keywords: hashtags,
-      location: countryCode,
-      maxItems: 500,
-      sortType: 'RELEVANCE',
+      startUrls: hashtags.map(h => ({ url: `https://www.tiktok.com/tag/${h}` })),
+      location:  countryCode,
+      maxItems:  500,
     };
   } else {
     console.log(`[creator-scout] mode=global keywords: ${hashtags.join(', ')}`);
