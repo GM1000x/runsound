@@ -343,6 +343,18 @@ router.post('/submit', requireApiKey, async (req, res) => {
   });
 });
 
+// ─── Direct creator-scout endpoint (no API key required) ─────────────────────
+router.post('/creator-scout', async (req, res) => {
+  try {
+    const { genre, country, spotify_url } = req.body;
+    const fakeArtist = { id: null, name: 'test', genre: genre || null, target_country: country || null };
+    const result = await runCreatorScout({ genre, country, spotify_url }, fakeArtist);
+    res.json({ ok: true, ...result.output });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ─── Generate API key utility ─────────────────────────────────────────────────
 router.post('/generate-api-key', async (req, res) => {
   const token = req.query.token || req.headers['x-dashboard-token'];
