@@ -655,17 +655,22 @@ function isTargetLanguage(text, countryCode) {
   const signals   = LANG_SIGNALS[signalKey];
   if (!signals) return true; // country not in our signal table → include
 
-  if (!text || text.trim().length < 8) return true; // too short to judge → include
+  if (!text || text.trim().length < 8) return false; // too short to judge → exclude
 
   const lower  = text.toLowerCase();
   const tokens = lower.split(/[\s,!?.:;()\-"'#@]+/).filter(t => t.length >= 2);
-
-  // Distinctive character — single occurrence is a reliable signal (å, ä, ö, ñ, ü etc.)
-  const charMatch = signals.chars.some(c => lower.includes(c));
-
-  // Stopword count — 2+ matches avoids false positives from short shared words
   const wordMatches = tokens.filter(w => signals.words.includes(w)).length;
 
+  // Swedish: å is uniquely Scandinavian. ä/ö are shared with German/Finnish —
+  // require at least one stopword alongside them to avoid false positives.
+  if (countryCode === 'SE' || countryCode === 'NO') {
+    const hasAa      = lower.includes('å');
+    const hasUmlauts = lower.includes('ä') || lower.includes('ö');
+    return hasAa || (hasUmlauts && wordMatches >= 1) || wordMatches >= 3;
+  }
+
+  // Other languages: distinctive char alone, or 2+ stopword matches
+  const charMatch = signals.chars.some(c => lower.includes(c));
   return charMatch || wordMatches >= 2;
 }
 
@@ -862,7 +867,7 @@ async function runCreatorScout(input, artist) {
       username,
       followers,
       engagement_rate: engagementRate,
-      total_likes:     Number(channel.likes ?? 0),
+      total_likes:     postLikes,
       niche,
       country:         postCountry,
       uses_music:      usesMusic,
