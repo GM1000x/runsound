@@ -753,10 +753,10 @@ async function runCreatorScout(input, artist) {
   const { data: { id: runId } } = await startRes.json();
   console.log(`[creator-scout] Apify run ${runId} started`);
 
-  // Poll until SUCCEEDED (max 90s = 30 × 3s)
+  // Poll until SUCCEEDED (max 240s = 60 × 4s — apidojo can take ~100s for 500 items)
   let items = [];
-  for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 3000));
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 4000));
     const statusRes = await fetch(
       `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
     );
