@@ -721,12 +721,11 @@ async function runCreatorScout(input, artist) {
 
   let apifyInput;
   if (countryCode) {
-    // Country mode: browse hashtag tag-pages AS a local user via location proxy.
-    // This surfaces the hashtag as TikTok shows it to someone in that country —
-    // far more local content than keyword search with an English query.
-    console.log(`[creator-scout] mode=tag-pages country=${countryCode} tags: ${hashtags.join(', ')}`);
+    // Country mode: no genre hashtags. Browse the #fyp feed as a local user via
+    // location proxy — broad local content. Language filter is the ONLY qualifier.
+    console.log(`[creator-scout] mode=local-fyp country=${countryCode}`);
     apifyInput = {
-      startUrls: hashtags.map(h => ({ url: `https://www.tiktok.com/tag/${h}` })),
+      startUrls: [{ url: 'https://www.tiktok.com/tag/fyp' }],
       location:  countryCode,
       maxItems:  500,
     };
