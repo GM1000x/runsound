@@ -775,77 +775,69 @@ async function runCreatorScout(input, artist) {
   }
 
   // ── 4. Extract unique creators, calculate engagement ─────────────────────
+  // apidojo field mapping (differs from clockworks):
+  //   channel.username  → creator handle
+  //   channel.followers → follower count
+  //   item.title        → caption text
+  //   item.likes        → post-level likes (for engagement rate)
+  //   item.hashtags[]   → plain strings (may contain nulls)
+  //   song.title        → music track ("original sound - user" = own audio)
   const seen     = new Set();
   const creators = [];
 
   for (const item of items) {
-    const meta      = item.authorMeta || {};
-    const author    = item.author     || {};
-    const username  = meta.name || meta.uniqueId || author.uniqueId || item.uniqueId;
+    const channel  = item.channel || {};
+    const username = channel.username || channel.name;
+    if (!username || seen.has(username)) continue;
 
-    // Strict followers: require fans field to be a real number, not undefined/null
-    const rawFans = meta.fans ?? author.fans;
-    if (rawFans == null || typeof rawFans === 'undefined') continue; // Apify couldn't load profile
-    const followers = Number(rawFans);
-    if (!Number.isFinite(followers) || followers < 100) continue;   // ghost/empty/unloaded accounts
+    const followers = Number(channel.followers ?? 0);
+    if (!Number.isFinite(followers) || followers < 100) continue;
+    if (followers > follower_max)                       continue;
+    if (follower_min > 0 && followers < follower_min)   continue;
 
-    const likes  = Number(meta.heart ?? author.heart ?? 0);
-    const videos = Number(meta.video ?? author.video ?? 1);
-
-    if (!username || seen.has(username))              continue;
-    if (followers > follower_max)                     continue;
-    if (follower_min > 0 && followers < follower_min) continue;
-    if (videos < 3)                                   continue; // need posting history
-
-    // Language filter — check caption text for target language
-    const caption = item.text || item.desc || item.description || '';
+    // Language filter — caption is in item.title for apidojo
+    const caption = item.title || item.text || '';
     if (!isTargetLanguage(caption, countryCode)) continue;
+
+    // Music detection: "original sound - username" = creator's own voice
+    const song        = item.song || {};
+    const songTitle   = (song.title  || '').toLowerCase();
+    const songArtist  = (song.artist || '').toLowerCase();
+    const usernameLC  = username.toLowerCase();
+    const isOriginal  = songTitle.startsWith('original sound') ||
+                        songArtist === usernameLC ||
+                        songArtist.replace(/[^a-z0-9]/g, '').includes(usernameLC.replace(/[^a-z0-9]/g, ''));
+    const usesMusic   = !isOriginal;
+    if (music_only && !usesMusic) continue;
 
     seen.add(username);
 
-    // Engagement rate = avg likes per video / followers (as %)
-    const avgLikesPerVideo = likes / Math.max(videos, 1);
-    const engagementRate   = Math.min(
-      Math.round((avgLikesPerVideo / followers) * 1000) / 10,
-      500 // cap at 500% to prevent outliers
+    // Engagement rate: post likes / followers (recent post signal)
+    const postLikes     = Number(item.likes ?? 0);
+    const engagementRate = Math.min(
+      Math.round((postLikes / Math.max(followers, 1)) * 1000) / 10,
+      500
     );
 
-    // Niche: detect from creator's own post hashtags (not the search hashtag we used)
-    const postTags = (item.hashtags || []).map(h => {
-      if (typeof h === 'string') return h.toLowerCase();
-      if (h && typeof h.name  === 'string') return h.name.toLowerCase();
-      if (h && typeof h.title === 'string') return h.title.toLowerCase();
-      return '';
-    }).filter(Boolean);
+    // Hashtags — filter null entries, plain strings in apidojo
+    const postTags = (item.hashtags || [])
+      .filter(h => h && typeof h === 'string')
+      .map(h => h.toLowerCase());
     const niche = detectCreatorNiche(postTags);
 
-    // Country for display
-    const country = (item.locationCreated || meta.region || '').toUpperCase() || null;
-
-    // Music detection: does this post use an actual song, or is it the creator's own voice/sound?
-    // musicOriginal: true  → creator recorded their own audio (talking, voiceover, interview)
-    // musicOriginal: false → creator used a real music track (ideal for music promotion)
-    const musicMeta     = item.musicMeta || item.music || {};
-    const isOriginal    = musicMeta.musicOriginal ?? musicMeta.original ?? true; // default: assume original if unknown
-    const usesMusic     = !isOriginal;
-    const musicTrack    = usesMusic ? (musicMeta.musicName || musicMeta.title || null) : null;
-    const musicArtist   = usesMusic ? (musicMeta.musicAuthor || musicMeta.authorName || null) : null;
-
-    // Apply music_only filter — skip creators who used their own voice/sound
-    if (music_only && !usesMusic) continue;
+    const postCountry = (channel.region || '').toUpperCase() || null;
 
     creators.push({
       username,
       followers,
       engagement_rate: engagementRate,
-      total_likes:     likes,
-      videos,
+      total_likes:     Number(channel.likes ?? 0),
       niche,
-      country,
-      uses_music:   usesMusic,
-      music_track:  musicTrack,
-      music_artist: musicArtist,
-      profile_url: `https://www.tiktok.com/@${username}`,
+      country:         postCountry,
+      uses_music:      usesMusic,
+      music_track:     usesMusic ? (song.title  || null) : null,
+      music_artist:    usesMusic ? (song.artist || null) : null,
+      profile_url:     `https://www.tiktok.com/@${username}`,
     });
   }
 
