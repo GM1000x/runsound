@@ -731,15 +731,33 @@ async function runCreatorScout(input, artist) {
   const countryCode = (country || '').toUpperCase();
   const hashtags    = genreToHashtags(genre);
 
+  // Broad seed words in each language — no genre, just common native words so
+  // TikTok search + location proxy surfaces that language's content.
+  const SEED_WORDS = {
+    SE: ['och', 'det'],   // svenska: "and", "it/that"
+    NO: ['og', 'det'],
+    DK: ['og', 'det'],
+    FI: ['ja', 'on'],
+    DE: ['und', 'ich'],
+    FR: ['et', 'je'],
+    ES: ['y', 'el'],
+    IT: ['e', 'io'],
+    NL: ['en', 'ik'],
+    PT: ['e', 'eu'],
+    PL: ['i', 'to'],
+    RU: ['и', 'я'],
+    JP: ['の', 'は'],
+    KR: ['이', '나'],
+  };
+
   let apifyInput;
   if (countryCode) {
-    // Country mode: no genre hashtags. Browse the #fyp feed as a local user via
-    // location proxy — broad local content. Language filter is the ONLY qualifier.
-    console.log(`[creator-scout] mode=local-fyp country=${countryCode}`);
+    const seedWords = SEED_WORDS[countryCode] || ['and', 'my'];
+    console.log(`[creator-scout] mode=language-seed country=${countryCode} seeds: ${seedWords.join(', ')}`);
     apifyInput = {
-      startUrls: [{ url: 'https://www.tiktok.com/tag/fyp' }],
-      location:  countryCode,
-      maxItems:  500,
+      keywords: seedWords,
+      location: countryCode,
+      maxItems: 500,
     };
   } else {
     console.log(`[creator-scout] mode=global keywords: ${hashtags.join(', ')}`);
@@ -864,8 +882,9 @@ async function runCreatorScout(input, artist) {
     output: {
       genre,
       country:        countryCode || 'global',
-      hashtags,
-      items_scraped:  items.length,   // debug: total posts Apify returned before filtering
+      // only show hashtags in global mode — country mode uses language detection, no genre tags
+      ...(countryCode ? {} : { hashtags }),
+      items_scraped:  items.length,
       creators_found: selected.length,
       creators:       selected,
     },
