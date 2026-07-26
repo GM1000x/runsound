@@ -59,6 +59,7 @@ app.use('/api/spotify',    require('./routes/spotify'));
 app.use('/auth/tiktok',    require('./routes/tiktok-auth'));
 app.use('/api/tiktok',    require('./routes/tiktok-demo'));
 app.use('/api/outreach',  require('./routes/outreach'));
+app.use('/api/outreach',  require('./routes/tiktok-accounts'));
 app.use('/api/skills',   require('./routes/skills'));
 app.use('/api/creators', require('./routes/creators'));
 app.use('/api/offers',   require('./routes/offers'));

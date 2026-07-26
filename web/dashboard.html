@@ -360,6 +360,46 @@
     </div>
   </div>
 
+  <!-- TikTok DM Outreach -->
+  <div class="section-header" style="margin-top:2rem">
+    <span class="section-title">TikTok Outreach</span>
+    <span class="section-sub">Automated DMs to creators — runs daily</span>
+  </div>
+  <div class="top-grid" id="outreach-panel">
+    <div class="card">
+      <div class="card-label">TikTok Account</div>
+      <div id="tiktok-account-status" style="font-size:.9rem;color:var(--muted);margin-bottom:12px">No account connected</div>
+      <button class="btn" onclick="showTikTokConnect()">Connect TikTok account</button>
+    </div>
+    <div class="card">
+      <div class="card-label">DMs Sent</div>
+      <div style="font-size:1.6rem;font-weight:700;letter-spacing:-0.03em" id="dms-today">—</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:4px" id="dms-total">Loading…</div>
+    </div>
+  </div>
+
+  <!-- TikTok Connect Modal -->
+  <div id="tiktok-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border-radius:16px;padding:32px;max-width:480px;width:90%;position:relative">
+      <button onclick="hideTikTokConnect()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+      <h3 style="margin-bottom:8px;font-size:1.1rem">Connect your TikTok account</h3>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px">We use your session cookies to send DMs on your behalf. 50–75 DMs per day, sent automatically each morning.</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:4px">TikTok username</label>
+          <input id="tt-username" type="text" placeholder="@yourhandle" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:4px">Session cookies (JSON)</label>
+          <textarea id="tt-cookies" rows="5" placeholder='[{"name":"sessionid","value":"..."}]' style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-size:.82rem;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">Get these from your browser dev tools → Application → Cookies → tiktok.com</div>
+        </div>
+        <button class="btn" onclick="saveTikTokAccount()" style="margin-top:4px">Save account</button>
+        <div id="tt-error" style="display:none;font-size:.82rem;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Skills -->
   <div class="section-header">
     <span class="section-title">Skills</span>
@@ -684,10 +724,67 @@
     setTimeout(() => el.classList.remove('show'), 2200);
   }
 
+  // ── TikTok Outreach ───────────────────────────────────────────────────────
+  async function loadOutreach() {
+    try {
+      const r = await fetch('/api/outreach/tiktok-status', { headers: { Authorization: `Bearer ${apiKey}` } });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.account) {
+        document.getElementById('tiktok-account-status').innerHTML =
+          `<span style="color:var(--green);font-weight:600">@${d.account.tiktok_username}</span> connected`;
+        document.getElementById('dms-today').textContent = d.dms_sent_today ?? '0';
+        document.getElementById('dms-total').textContent = `${d.dms_sent_total ?? 0} total sent`;
+      }
+    } catch (e) { /* silent */ }
+  }
+
+  function showTikTokConnect() {
+    document.getElementById('tiktok-modal').style.display = 'flex';
+  }
+  function hideTikTokConnect() {
+    document.getElementById('tiktok-modal').style.display = 'none';
+  }
+
+  async function saveTikTokAccount() {
+    const username = document.getElementById('tt-username').value.trim().replace('@','');
+    const cookies  = document.getElementById('tt-cookies').value.trim();
+    const errEl    = document.getElementById('tt-error');
+    errEl.style.display = 'none';
+
+    if (!username || !cookies) {
+      errEl.textContent = 'Username and cookies are required.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try { JSON.parse(cookies); } catch {
+      errEl.textContent = 'Cookies must be valid JSON.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const r = await fetch('/api/outreach/tiktok-connect', {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tiktok_username: username, session_cookies: cookies }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error);
+      hideTikTokConnect();
+      toast('TikTok account connected ✓');
+      loadOutreach();
+    } catch (e) {
+      errEl.textContent = e.message || 'Something went wrong.';
+      errEl.style.display = 'block';
+    }
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
   loadCredits();
   loadSkills();
   loadRuns();
+  loadOutreach();
 </script>
 </body>
 </html>

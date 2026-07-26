@@ -77,6 +77,18 @@ async function runLearnHooks() {
   }
 }
 
+// ─── Daily DM outreach ────────────────────────────────────────────────────────
+// Sends 50-100 DMs per artist from their connected TikTok account
+async function runDailyDms() {
+  console.log(`\n[cron] 📩 Daily DMs starting — ${new Date().toISOString()}`);
+  try {
+    await runScript('scripts/send-daily-dms.js', [], 'daily-dms');
+    console.log('[cron] ✅ Daily DMs complete');
+  } catch (err) {
+    console.error(`[cron] ❌ Daily DMs failed: ${err.message}`);
+  }
+}
+
 // ─── Trending hook scrape ─────────────────────────────────────────────────────
 // Runs Sunday 01:00 UTC — before the pipeline at 03:00 so fresh hooks are ready
 async function runScrapeTrends() {
@@ -95,6 +107,9 @@ function startCron() {
   // Trending hook scrape: Sunday 01:00 UTC (before pipeline)
   cron.schedule('0 1 * * 0', runScrapeTrends, { timezone: 'UTC' });
 
+  // Daily DM outreach: every day at 10:00 UTC (morning in EU/US)
+  cron.schedule('0 10 * * *', runDailyDms, { timezone: 'UTC' });
+
   // Full pipeline: every day at 03:00 UTC
   cron.schedule('0 3 * * *', runDailyPipeline, { timezone: 'UTC' });
 
@@ -105,8 +120,9 @@ function startCron() {
   console.log('   01:00 UTC Sunday  → trending scrape (fresh TikTok hook patterns)');
   console.log('   03:00 UTC daily   → full pipeline (pick → texts → overlay → post)');
   console.log('   04:00 UTC Monday  → hook learning (update archetype weights)');
+  console.log('   10:00 UTC daily   → DM outreach (50-100 DMs per artist)');
 
-  return { runDailyPipeline, runLearnHooks, runScrapeTrends };
+  return { runDailyPipeline, runLearnHooks, runScrapeTrends, runDailyDms };
 }
 
 module.exports = { startCron, runDailyPipeline, runLearnHooks };
