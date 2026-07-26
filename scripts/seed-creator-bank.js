@@ -6,12 +6,15 @@
  * in the creator_bank table. Run once per genre to populate the bank.
  *
  * Usage:
- *   node scripts/seed-creator-bank.js                  # all genres
- *   node scripts/seed-creator-bank.js "melodic techno" # one genre
- *   node scripts/seed-creator-bank.js --dry-run        # no DB writes
+ *   node scripts/seed-creator-bank.js                       # all genres
+ *   node scripts/seed-creator-bank.js "pop"                 # one genre
+ *   node scripts/seed-creator-bank.js "pop" --dry-run       # no DB writes
+ *   node scripts/seed-creator-bank.js "pop" --test          # small test (~$0.40)
  *
- * Cost estimate: ~$6-8 per genre (Apify sound-scraper at $4/1000 videos)
- * Make sure you have ≥$100 Apify balance before running all genres.
+ * Cost estimate:
+ *   --test:    2 sounds × 50 videos  = ~$0.40 per genre
+ *   normal:    8 sounds × 300 videos = ~$6-8  per genre
+ *   all genres (12): ~$70-80 total
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
@@ -26,9 +29,12 @@ try { fetch = require('node-fetch').default; } catch { fetch = global.fetch; }
 const APIFY_TOKEN = process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN ||
   ['apify', '_api_', '7DqTHNLjlzk2J7Fw', 'EVC50ml2OnKKE34Ah0kf'].join('');
 
-const TARGET_PER_GENRE = 500;   // creators to store per genre
-const SOUNDS_PER_GENRE = 8;     // how many TikTok sounds to scrape per genre
-const VIDEOS_PER_SOUND = 300;   // how many videos to scrape per sound (~$1.20/sound)
+const args     = process.argv.slice(2);
+const TEST_MODE = args.includes('--test');
+
+const TARGET_PER_GENRE = TEST_MODE ? 20  : 500;  // creators to store per genre
+const SOUNDS_PER_GENRE = TEST_MODE ? 2   : 8;    // how many TikTok sounds to scrape per genre
+const VIDEOS_PER_SOUND = TEST_MODE ? 50  : 300;  // how many videos to scrape per sound
 const FOLLOWER_MIN     = 50;
 const FOLLOWER_MAX     = 10000; // wide range — artist can filter further
 
@@ -96,7 +102,7 @@ async function findSoundsForGenre(genre) {
 
   const items = await runApifyActor(
     'OtzYfK1ndEGdwWFKQ',  // clockworks/free-tiktok-scraper
-    { search: [genre], resultsPerPage: 50 },
+    { searchQueries: [genre], resultsPerPage: 50 },
     120
   );
 
@@ -233,15 +239,6 @@ async function saveToBank(creators, genre, dryRun) {
     }
   }
 
-  // Append genre to existing creators who didn't have it
-  // (upsert above overwrites genres; do a targeted update instead)
-  for (const c of creators) {
-    await supabase.rpc('append_creator_genre', {
-      p_username: c.username,
-      p_genre:    genre,
-    }).catch(() => {}); // RPC may not exist yet, ignore silently
-  }
-
   console.log(`  ✅ Saved ${saved} creators to creator_bank`);
 }
 
@@ -273,17 +270,17 @@ async function seedGenre(genre, dryRun) {
 }
 
 async function main() {
-  const args    = process.argv.slice(2);
-  const dryRun  = args.includes('--dry-run');
+  const dryRun   = args.includes('--dry-run');
   const genreArg = args.filter(a => !a.startsWith('--'));
 
   const genres = genreArg.length > 0 ? genreArg : ALL_GENRES;
 
   console.log('🎵 RunSound creator bank seeder');
+  console.log(`   Mode:     ${TEST_MODE ? '🧪 TEST (small)' : 'FULL'}`);
   console.log(`   Genres:   ${genres.join(', ')}`);
   console.log(`   Target:   ${TARGET_PER_GENRE} creators/genre`);
   console.log(`   Sounds:   ${SOUNDS_PER_GENRE} sounds/genre × ${VIDEOS_PER_SOUND} videos`);
-  console.log(`   Est cost: ~$${(genres.length * SOUNDS_PER_GENRE * VIDEOS_PER_SOUND / 1000 * 4).toFixed(0)} Apify`);
+  console.log(`   Est cost: ~$${(genres.length * SOUNDS_PER_GENRE * VIDEOS_PER_SOUND / 1000 * 4).toFixed(2)} Apify`);
   console.log(`   Dry run:  ${dryRun}`);
 
   if (!dryRun) {

@@ -831,7 +831,7 @@ async function runCreatorScout(input, artist) {
     try {
       const searchItems = await runApifyActor(
         'OtzYfK1ndEGdwWFKQ',  // clockworks/free-tiktok-scraper
-        { search: queries, resultsPerPage: 20 },
+        { searchQueries: queries, resultsPerPage: 20 },
         APIFY_TOKEN,
         90
       );
