@@ -70,10 +70,7 @@
     .welcome p { font-size: 0.88rem; color: var(--muted); margin-top: 2px; }
 
     /* ── SECTION HEADER ── */
-    .section-header {
-      display: flex; align-items: baseline; justify-content: space-between;
-      margin-bottom: 1rem;
-    }
+    .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
     .section-title { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
     .section-sub { font-size: 0.8rem; color: var(--muted); }
 
@@ -82,51 +79,8 @@
     @media (max-width: 580px) { .top-grid { grid-template-columns: 1fr; } }
 
     /* ── CARD ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
-    }
-    .card-label {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;
-    }
-
-    /* ── API KEY ── */
-    .key-row {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--bg); border: 1px solid var(--border2);
-      border-radius: var(--radius); padding: 9px 12px;
-      margin-bottom: 10px;
-    }
-    .key-value {
-      font-family: var(--mono); font-size: 0.78rem;
-      color: var(--muted); flex: 1;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .icon-btn {
-      background: none; border: 1px solid var(--border);
-      border-radius: 6px; padding: 3px 8px;
-      font-size: 0.72rem; color: var(--muted);
-      cursor: pointer; transition: border-color .15s, color .15s;
-      white-space: nowrap;
-    }
-    .icon-btn:hover { border-color: var(--border2); color: var(--text); }
-    .key-hint { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
-    .key-hint code {
-      font-family: var(--mono); font-size: 0.72rem;
-      background: var(--bg); border: 1px solid var(--border);
-      padding: 1px 5px; border-radius: 4px; color: var(--accent);
-    }
-
-    /* ── CREDITS ── */
-    .credits-amount {
-      font-size: 2.2rem; font-weight: 700; letter-spacing: -0.04em;
-      line-height: 1; margin-bottom: 4px;
-    }
-    .credits-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; }
-    .credits-sub.low { color: var(--red); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .card-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -137,162 +91,21 @@
       transition: opacity .15s;
     }
     .btn:hover { opacity: 0.8; }
-    .btn-outline {
-      background: none; color: var(--text);
-      border: 1px solid var(--border2);
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 0.85rem; font-weight: 600; }
+    .field input, .field select {
+      padding: 10px 12px; border: 1px solid var(--border2); border-radius: 8px;
+      background: var(--bg); color: var(--text); font-size: 0.9rem; font-family: inherit;
     }
-    .btn-outline:hover { border-color: var(--text); opacity: 1; }
+    .field-hint { font-size: 0.75rem; color: var(--muted); }
 
-    /* ── SKILLS ── */
-    .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .status-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--accent-l); color: var(--accent); white-space: nowrap; }
 
-    .skill-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.1rem;
-      cursor: pointer; transition: border-color .15s;
-      text-align: left; width: 100%;
-    }
-    .skill-card:hover { border-color: var(--border2); }
-    .skill-card.expanded { border-color: rgba(124,58,237,0.35); background: var(--surface); }
+    .idea-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .idea-row:last-child { border-bottom: none; }
+    .idea-score { color: var(--muted); font-size: 0.78rem; }
 
-    .skill-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-    .skill-icon {
-      width: 30px; height: 30px; background: var(--accent-l);
-      border-radius: 7px; display: flex; align-items: center;
-      justify-content: center; font-size: 15px; flex-shrink: 0;
-    }
-    .skill-meta { flex: 1; }
-    .skill-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 3px; }
-    .skill-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
-    .skill-price {
-      font-size: 0.72rem; font-weight: 600; color: var(--green);
-      background: var(--green-l); padding: 2px 8px;
-      border-radius: 999px; white-space: nowrap; flex-shrink: 0;
-    }
-
-    .skill-curl { display: none; margin-top: 0.85rem; }
-    .skill-card.expanded .skill-curl { display: block; }
-
-    .curl-block {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px;
-      font-family: var(--mono); font-size: 0.7rem;
-      color: var(--muted); line-height: 1.65;
-      overflow-x: auto; white-space: pre;
-      position: relative;
-    }
-    .curl-copy {
-      position: absolute; top: 7px; right: 7px;
-      background: var(--surface); border: 1px solid var(--border2);
-      border-radius: 5px; padding: 2px 8px;
-      font-size: 0.65rem; font-weight: 600; color: var(--muted);
-      cursor: pointer; font-family: 'Inter', sans-serif;
-      transition: color .15s, border-color .15s;
-    }
-    .curl-copy:hover { color: var(--text); border-color: var(--text); }
-
-    /* ── RUN HISTORY ── */
-    .run-table {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden;
-    }
-    .run-row {
-      display: grid;
-      grid-template-columns: 24px 1fr auto auto auto;
-      gap: 0.75rem; align-items: center;
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .run-row:last-child { border-bottom: none; }
-
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .status-dot.succeeded { background: var(--green); }
-    .status-dot.running   { background: #f59e0b; animation: blink 1.4s infinite; }
-    .status-dot.failed    { background: var(--red); }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
-
-    .run-skill { font-size: 0.85rem; font-weight: 600; }
-    .run-time  { font-size: 0.75rem; color: var(--muted); }
-    .run-units { font-size: 0.78rem; color: var(--muted); text-align: right; }
-    .run-cost  { font-size: 0.82rem; font-weight: 600; text-align: right; min-width: 52px; }
-    .run-status-badge {
-      font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px;
-      text-align: center;
-    }
-    .run-status-badge.succeeded { background: var(--green-l); color: var(--green); }
-    .run-status-badge.failed    { background: var(--red-l);   color: var(--red);   }
-    .run-status-badge.running   { background: #fef3c7; color: #92400e; }
-
-    /* ── CREATOR TABLE ── */
-    .creators-section { margin-top: 0; }
-
-    .creator-table-wrap {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden;
-    }
-
-    .creator-table-head {
-      display: grid;
-      grid-template-columns: 32px 1fr 90px 90px 90px 80px;
-      gap: 0.5rem; align-items: center;
-      padding: 0.6rem 1rem;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--muted);
-    }
-
-    .creator-row {
-      display: grid;
-      grid-template-columns: 32px 1fr 90px 90px 90px 80px;
-      gap: 0.5rem; align-items: center;
-      padding: 0.7rem 1rem;
-      border-bottom: 1px solid var(--border);
-      transition: background .1s;
-    }
-    .creator-row:last-child { border-bottom: none; }
-    .creator-row:hover { background: var(--bg); }
-
-    .creator-rank { font-size: 0.72rem; color: var(--muted); text-align: center; }
-    .creator-user { font-size: 0.85rem; font-weight: 600; }
-    .creator-user a { color: var(--accent); text-decoration: none; }
-    .creator-user a:hover { text-decoration: underline; }
-    .creator-user .niche-tag {
-      display: inline-block; font-size: 0.65rem; font-weight: 600;
-      background: var(--accent-l); color: var(--accent);
-      padding: 1px 7px; border-radius: 999px; margin-left: 6px;
-      vertical-align: middle;
-    }
-    .creator-num { font-size: 0.8rem; color: var(--text); text-align: right; }
-    .creator-eng { font-size: 0.8rem; font-weight: 600; text-align: right; }
-    .creator-eng.high   { color: var(--green); }
-    .creator-eng.medium { color: #d97706; }
-    .creator-eng.low    { color: var(--muted); }
-
-    .creator-link a {
-      font-size: 0.72rem; font-weight: 600;
-      color: var(--accent); text-decoration: none;
-      background: var(--accent-l);
-      padding: 3px 10px; border-radius: 999px; white-space: nowrap;
-    }
-    .creator-link a:hover { opacity: 0.8; }
-
-    .scout-meta {
-      font-size: 0.78rem; color: var(--muted); margin-bottom: 0.75rem;
-    }
-    .scout-meta strong { color: var(--text); font-weight: 600; }
-
-    @media (max-width: 640px) {
-      .creator-table-head,
-      .creator-row { grid-template-columns: 28px 1fr 70px 70px; }
-      .creator-table-head > *:nth-child(5),
-      .creator-table-head > *:nth-child(6),
-      .creator-row > *:nth-child(5),
-      .creator-row > *:nth-child(6) { display: none; }
-    }
-
-    /* ── EMPTY / SKELETON ── */
     .empty-state {
       text-align: center; padding: 2.5rem 1rem;
       background: var(--surface); border: 1px solid var(--border);
@@ -300,13 +113,10 @@
     }
     .empty-state strong { display: block; font-size: 0.95rem; color: var(--text); margin-bottom: 4px; }
 
-    .skeleton-block {
-      background: linear-gradient(90deg, var(--border) 25%, #F0F0EB 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 5px;
+    .error-msg {
+      font-size: 0.82rem; color: #b91c1c; background: #fef2f2;
+      border: 1px solid #fecaca; border-radius: 8px; padding: 10px; display: none;
     }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
     /* ── TOAST ── */
     .toast {
@@ -335,113 +145,56 @@
 
   <div class="welcome" id="welcome">
     <strong>You're in.</strong>
-    <p>Copy your API key below and paste it into your AI agent or terminal to start running skills.</p>
+    <p>Connect TikTok and Instagram, then upload a song or a few rough ideas to get started.</p>
   </div>
 
-  <!-- API key + Credits -->
+  <!-- Connect accounts -->
   <div class="top-grid">
     <div class="card">
-      <div class="card-label">API Key</div>
-      <div class="key-row">
-        <span class="key-value" id="key-display">Loading…</span>
-        <button class="icon-btn" onclick="toggleKey()" id="key-eye">Show</button>
-        <button class="icon-btn" onclick="copyKey()">Copy</button>
-      </div>
-      <p class="key-hint">
-        Use as <code>Authorization: Bearer &lt;key&gt;</code>
-      </p>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Credits</div>
-      <div class="credits-amount" id="credits-amount">—</div>
-      <div class="credits-sub" id="credits-sub">Loading balance…</div>
-      <button class="btn" onclick="topup()">+ Add credits</button>
-    </div>
-  </div>
-
-  <!-- TikTok DM Outreach -->
-  <div class="section-header" style="margin-top:2rem">
-    <span class="section-title">TikTok Outreach</span>
-    <span class="section-sub">Automated DMs to creators — runs daily</span>
-  </div>
-  <div class="top-grid" id="outreach-panel">
-    <div class="card">
-      <div class="card-label">TikTok Account</div>
-      <div id="tiktok-account-status" style="font-size:.9rem;color:var(--muted);margin-bottom:12px">No account connected</div>
-      <button class="btn" onclick="showTikTokConnect()">Connect TikTok account</button>
+      <div class="card-label">TikTok</div>
+      <div id="tiktok-status" style="font-size:.9rem;color:var(--muted);margin-bottom:12px">Not connected</div>
+      <button class="btn" onclick="connectPlatform('tiktok')">Connect TikTok</button>
     </div>
     <div class="card">
-      <div class="card-label">DMs Sent</div>
-      <div style="font-size:1.6rem;font-weight:700;letter-spacing:-0.03em" id="dms-today">—</div>
-      <div style="font-size:.8rem;color:var(--muted);margin-top:4px" id="dms-total">Loading…</div>
+      <div class="card-label">Instagram</div>
+      <div id="instagram-status" style="font-size:.9rem;color:var(--muted);margin-bottom:12px">Not connected</div>
+      <button class="btn" onclick="connectPlatform('instagram')">Connect Instagram</button>
     </div>
   </div>
 
-  <!-- TikTok Connect Modal -->
-  <div id="tiktok-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center">
-    <div style="background:var(--surface);border-radius:16px;padding:32px;max-width:480px;width:90%;position:relative">
-      <button onclick="hideTikTokConnect()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
-      <h3 style="margin-bottom:8px;font-size:1.1rem">Connect your TikTok account</h3>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:20px">We use your session cookies to send DMs on your behalf. 50–75 DMs per day, sent automatically each morning.</p>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:4px">TikTok username</label>
-          <input id="tt-username" type="text" placeholder="@yourhandle" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--text)">
-        </div>
-        <div>
-          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:4px">Session cookies (JSON)</label>
-          <textarea id="tt-cookies" rows="5" placeholder='[{"name":"sessionid","value":"..."}]' style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;font-size:.82rem;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical"></textarea>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">Get these from your browser dev tools → Application → Cookies → tiktok.com</div>
-        </div>
-        <button class="btn" onclick="saveTikTokAccount()" style="margin-top:4px">Save account</button>
-        <div id="tt-error" style="display:none;font-size:.82rem;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Skills -->
+  <!-- Upload -->
   <div class="section-header">
-    <span class="section-title">Skills</span>
-    <span class="section-sub">Click to see the curl command</span>
+    <span class="section-title">Upload</span>
+    <span class="section-sub">A finished song, or a few rough ideas to test</span>
   </div>
-  <div class="skills-grid" id="skills-grid">
-    <div class="card"><div class="skeleton-block" style="height:14px;width:55%;margin-bottom:8px"></div><div class="skeleton-block" style="height:12px;width:85%"></div></div>
-    <div class="card"><div class="skeleton-block" style="height:14px;width:60%;margin-bottom:8px"></div><div class="skeleton-block" style="height:12px;width:75%"></div></div>
-    <div class="card"><div class="skeleton-block" style="height:14px;width:50%;margin-bottom:8px"></div><div class="skeleton-block" style="height:12px;width:90%"></div></div>
-    <div class="card"><div class="skeleton-block" style="height:14px;width:65%;margin-bottom:8px"></div><div class="skeleton-block" style="height:12px;width:70%"></div></div>
+  <div class="card" style="margin-bottom:2rem">
+    <div class="field">
+      <label>What are you uploading?</label>
+      <select id="upload-type">
+        <option value="IDEA_TEST">A few rough ideas — help me pick which to finish</option>
+        <option value="RELEASE">A finished song — run the release campaign</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Title</label>
+      <input id="upload-title" type="text" placeholder="Song or idea title" />
+    </div>
+    <div class="field" style="margin-bottom: 6px">
+      <label>Audio file URL</label>
+      <input id="upload-audio" type="url" placeholder="https://..." />
+      <div class="field-hint">Direct upload is coming — for now, paste a hosted link (Dropbox, Drive, etc).</div>
+    </div>
+    <button class="btn" onclick="submitUpload()" style="margin-top:8px">Start testing →</button>
+    <div class="error-msg" id="upload-error"></div>
   </div>
 
-  <!-- Run history -->
-  <div class="section-header" style="margin-top:2rem">
-    <span class="section-title">Run history</span>
-    <span class="section-sub" id="history-sub"></span>
+  <!-- Campaigns -->
+  <div class="section-header">
+    <span class="section-title">Your campaigns</span>
+    <span class="section-sub" id="campaigns-sub"></span>
   </div>
-  <div id="run-container">
-    <div class="run-table" style="padding:1rem">
-      <div class="skeleton-block" style="height:14px;width:40%;margin-bottom:10px"></div>
-      <div class="skeleton-block" style="height:14px;width:60%"></div>
-    </div>
-  </div>
-
-  <!-- Creator Scout Results (shown when latest run has creators) -->
-  <div class="creators-section" id="creators-section" style="display:none">
-    <div class="section-header">
-      <span class="section-title">Discovered creators</span>
-      <span class="section-sub" id="creators-sub"></span>
-    </div>
-    <div class="scout-meta" id="scout-meta"></div>
-    <div class="creator-table-wrap">
-      <div class="creator-table-head">
-        <div>#</div>
-        <div>Creator</div>
-        <div style="text-align:right">Followers</div>
-        <div style="text-align:right">Engagement</div>
-        <div style="text-align:right">Videos</div>
-        <div></div>
-      </div>
-      <div id="creator-rows"></div>
-    </div>
+  <div id="campaigns-container">
+    <div class="empty-state"><strong>Nothing yet</strong>Upload a song or idea above to get started.</div>
   </div>
 
 </div>
@@ -449,274 +202,15 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const API  = '';
-  let apiKey = localStorage.getItem('runsound_api_key') || '';
-  let keyVisible = false;
-
-  if (!apiKey) window.location.href = '/signup.html';
+  const apiKey   = localStorage.getItem('runsound_api_key')   || '';
+  const artistId = localStorage.getItem('runsound_artist_id') || '';
+  if (!apiKey || !artistId) window.location.href = '/signup.html';
 
   if (new URLSearchParams(location.search).get('welcome') === '1') {
     document.getElementById('welcome').classList.add('show');
     history.replaceState({}, '', '/dashboard.html');
   }
 
-  // ── API key ───────────────────────────────────────────────────────────────
-  function masked(k) { return k.slice(0, 10) + '••••••••••••••••••••••'; }
-  function renderKey() {
-    document.getElementById('key-display').textContent = keyVisible ? apiKey : masked(apiKey);
-    document.getElementById('key-eye').textContent = keyVisible ? 'Hide' : 'Show';
-  }
-  renderKey();
-
-  function toggleKey() { keyVisible = !keyVisible; renderKey(); }
-  function copyKey() {
-    navigator.clipboard.writeText(apiKey).then(() => toast('API key copied'));
-  }
-
-  // ── Credits ───────────────────────────────────────────────────────────────
-  async function loadCredits() {
-    try {
-      const r = await fetch('/api/credits/balance', { headers: { Authorization: `Bearer ${apiKey}` } });
-      const d = await r.json();
-      if (!d.ok) throw new Error(d.error);
-      document.getElementById('credits-amount').textContent = `$${Number(d.credits).toFixed(2)}`;
-      const sub = document.getElementById('credits-sub');
-      sub.textContent = d.low_balance_warning
-        ? 'Low balance — add credits to keep running skills'
-        : 'Available to spend';
-      if (d.low_balance_warning) sub.classList.add('low');
-      if (d.artist_name) document.getElementById('nav-artist').textContent = d.artist_name;
-    } catch {
-      document.getElementById('credits-amount').textContent = '—';
-      document.getElementById('credits-sub').textContent = 'Could not load balance';
-    }
-  }
-
-  async function topup() {
-    const amount = prompt('How many credits ($USD)?', '10');
-    if (!amount || isNaN(parseFloat(amount))) return;
-    try {
-      const r = await fetch('/api/credits/topup', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount_usd: parseFloat(amount) })
-      });
-      const d = await r.json();
-      if (d.checkout_url) window.location.href = d.checkout_url;
-      else toast(d.error || 'Something went wrong');
-    } catch { toast('Network error'); }
-  }
-
-  // ── Skills ────────────────────────────────────────────────────────────────
-  const skillIcons = {
-    'creator-scout':  '🎯',
-    'dm-outreach':    '💬',
-    'hook-generator': '🪝',
-    'gig-pitcher':    '🎸',
-    'release-kit':    '📦',
-    'trend-matcher':  '📈',
-    'playlist-pitcher':'🎵',
-    'press-pitcher':  '📰',
-    'full-campaign':  '🚀',
-  };
-
-  const curlExamples = {
-    'creator-scout': `curl -X POST https://run-sound.com/api/skills/run \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "skill": "creator-scout",
-    "spotify_url": "https://open.spotify.com/artist/...",
-    "budget_usd": 150,
-    "countries": ["SE","NO","DK","FI"]
-  }'`,
-    'gig-pitcher': `curl -X POST https://run-sound.com/api/skills/run \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "skill": "gig-pitcher",
-    "city": "Stockholm",
-    "genre": "indie",
-    "artist_name": "Your Name",
-    "artist_bio": "Short bio here",
-    "spotify_url": "https://open.spotify.com/artist/..."
-  }'`,
-    'hook-generator': `curl -X POST https://run-sound.com/api/skills/run \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "skill": "hook-generator",
-    "spotify_url": "https://open.spotify.com/track/...",
-    "count": 5
-  }'`,
-    'release-kit': `curl -X POST https://run-sound.com/api/skills/run \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "skill": "release-kit",
-    "spotify_url": "https://open.spotify.com/track/...",
-    "artist_name": "Your Name",
-    "release_date": "2025-09-01",
-    "artist_bio": "Short bio here"
-  }'`,
-  };
-
-  function getCurl(slug) {
-    return curlExamples[slug] || `curl -X POST https://run-sound.com/api/skills/run \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"skill":"${slug}"}'`;
-  }
-
-  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  async function loadSkills() {
-    try {
-      const r = await fetch('/api/skills');
-      const d = await r.json();
-      if (!d.ok || !d.skills.length) throw new Error();
-
-      const grid = document.getElementById('skills-grid');
-      grid.innerHTML = '';
-      d.skills.forEach(skill => {
-        const btn = document.createElement('button');
-        btn.className = 'skill-card';
-        btn.innerHTML = `
-          <div class="skill-top">
-            <div class="skill-icon">${skillIcons[skill.slug] || '⚡'}</div>
-            <span class="skill-price">$${skill.price_per_unit}/${skill.unit_label}</span>
-          </div>
-          <div class="skill-meta">
-            <div class="skill-name">${skill.name}</div>
-            <div class="skill-desc">${skill.description || ''}</div>
-          </div>
-          <div class="skill-curl">
-            <div class="curl-block"><button class="curl-copy" onclick="copyCurl(this,event)">Copy</button>${esc(getCurl(skill.slug))}</div>
-          </div>`;
-        btn.addEventListener('click', () => {
-          const was = btn.classList.contains('expanded');
-          document.querySelectorAll('.skill-card').forEach(c => c.classList.remove('expanded'));
-          if (!was) btn.classList.add('expanded');
-        });
-        grid.appendChild(btn);
-      });
-    } catch {
-      document.getElementById('skills-grid').innerHTML =
-        '<div class="empty-state"><strong>Could not load skills</strong></div>';
-    }
-  }
-
-  function copyCurl(btn, e) {
-    e.stopPropagation();
-    const text = btn.parentElement.textContent.replace('Copy','').trim();
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = 'Copy', 1500);
-    });
-  }
-
-  // ── Run history + Creator results ─────────────────────────────────────────
-  function timeAgo(iso) {
-    const s = Math.floor((Date.now() - new Date(iso)) / 1000);
-    if (s < 60)    return `${s}s ago`;
-    if (s < 3600)  return `${Math.floor(s/60)}m ago`;
-    if (s < 86400) return `${Math.floor(s/3600)}h ago`;
-    return `${Math.floor(s/86400)}d ago`;
-  }
-
-  function fmtNum(n) {
-    if (n >= 1_000_000) return (n/1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000)     return (n/1_000).toFixed(1) + 'K';
-    return String(n);
-  }
-
-  function renderCreators(run) {
-    const output = run.output;
-    if (!output || !output.creators || !output.creators.length) return;
-
-    const creators = output.creators;
-    document.getElementById('creators-section').style.display = '';
-    document.getElementById('creators-sub').textContent =
-      `${creators.length} found · ${timeAgo(run.started_at)}`;
-
-    // Scout meta — genre + country + hashtags used
-    const parts = [];
-    if (output.genre)    parts.push(`Genre: <strong>${output.genre}</strong>`);
-    if (output.country && output.country !== 'global') parts.push(`Country: <strong>${output.country}</strong>`);
-    if (output.hashtags && output.hashtags.length) parts.push(`Tags: <strong>${output.hashtags.map(h=>'#'+h).join(', ')}</strong>`);
-    document.getElementById('scout-meta').innerHTML = parts.join(' &nbsp;·&nbsp; ');
-
-    const rowsEl = document.getElementById('creator-rows');
-    rowsEl.innerHTML = '';
-    creators.forEach((c, i) => {
-      const eng = c.engagement_rate || 0;
-      const engClass = eng >= 5 ? 'high' : eng >= 2 ? 'medium' : 'low';
-      const profileUrl = c.profile_url || `https://tiktok.com/@${c.username}`;
-      const row = document.createElement('div');
-      row.className = 'creator-row';
-      row.innerHTML = `
-        <div class="creator-rank">${i + 1}</div>
-        <div class="creator-user">
-          <a href="${profileUrl}" target="_blank" rel="noopener">@${c.username}</a>
-          ${c.niche ? `<span class="niche-tag">${c.niche}</span>` : ''}
-        </div>
-        <div class="creator-num" style="text-align:right">${fmtNum(c.followers)}</div>
-        <div class="creator-eng ${engClass}" style="text-align:right">${eng.toFixed(1)}%</div>
-        <div class="creator-num" style="text-align:right">${c.videos != null ? fmtNum(c.videos) : '—'}</div>
-        <div class="creator-link"><a href="${profileUrl}" target="_blank" rel="noopener">TikTok ↗</a></div>`;
-      rowsEl.appendChild(row);
-    });
-  }
-
-  async function loadRuns() {
-    try {
-      const r = await fetch('/api/skills/runs?limit=10', { headers: { Authorization: `Bearer ${apiKey}` } });
-      const d = await r.json();
-      if (!d.ok) throw new Error();
-
-      const container = document.getElementById('run-container');
-
-      if (!d.runs.length) {
-        container.innerHTML = `<div class="empty-state">
-          <strong>No runs yet</strong>
-          Click a skill above to see the curl command, then run it in your terminal.
-        </div>`;
-        return;
-      }
-
-      document.getElementById('history-sub').textContent = `${d.runs.length} recent`;
-
-      const table = document.createElement('div');
-      table.className = 'run-table';
-      d.runs.forEach(run => {
-        const sc = run.status === 'succeeded' ? 'succeeded' : run.status === 'running' ? 'running' : 'failed';
-        const row = document.createElement('div');
-        row.className = 'run-row';
-        row.innerHTML = `
-          <div class="status-dot ${sc}"></div>
-          <div>
-            <div class="run-skill">${run.skill_slug}</div>
-            <div class="run-time">${timeAgo(run.started_at)}</div>
-          </div>
-          <div class="run-units">${run.units_consumed != null ? `${run.units_consumed} units` : ''}</div>
-          <div class="run-cost">${run.cost_usd != null ? `$${Number(run.cost_usd).toFixed(4)}` : '—'}</div>
-          <div class="run-status-badge ${sc}">${run.status}</div>`;
-        table.appendChild(row);
-      });
-      container.innerHTML = '';
-      container.appendChild(table);
-
-      // Show creators from the most recent succeeded creator-scout run
-      const scoutRun = d.runs.find(r => r.skill_slug === 'creator-scout' && r.status === 'succeeded' && r.output);
-      if (scoutRun) renderCreators(scoutRun);
-
-    } catch {
-      document.getElementById('run-container').innerHTML =
-        '<div class="empty-state">Could not load run history</div>';
-    }
-  }
-
-  // ── Toast ─────────────────────────────────────────────────────────────────
   function toast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg;
@@ -724,67 +218,111 @@
     setTimeout(() => el.classList.remove('show'), 2200);
   }
 
-  // ── TikTok Outreach ───────────────────────────────────────────────────────
-  async function loadOutreach() {
-    try {
-      const r = await fetch('/api/outreach/tiktok-status', { headers: { Authorization: `Bearer ${apiKey}` } });
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.account) {
-        document.getElementById('tiktok-account-status').innerHTML =
-          `<span style="color:var(--green);font-weight:600">@${d.account.tiktok_username}</span> connected`;
-        document.getElementById('dms-today').textContent = d.dms_sent_today ?? '0';
-        document.getElementById('dms-total').textContent = `${d.dms_sent_total ?? 0} total sent`;
-      }
-    } catch (e) { /* silent */ }
+  // ── Connect accounts ─────────────────────────────────────────────────────
+  // Placeholder — real OAuth goes through Postiz's white-label connect flow
+  // once the enterprise account is set up (see runsound-v2/README.md and
+  // postiz-for-musik-plan.md). Deliberately NOT the old cookie-paste flow.
+  function connectPlatform(platform) {
+    toast(`${platform === 'tiktok' ? 'TikTok' : 'Instagram'} connect — coming soon`);
   }
 
-  function showTikTokConnect() {
-    document.getElementById('tiktok-modal').style.display = 'flex';
-  }
-  function hideTikTokConnect() {
-    document.getElementById('tiktok-modal').style.display = 'none';
-  }
-
-  async function saveTikTokAccount() {
-    const username = document.getElementById('tt-username').value.trim().replace('@','');
-    const cookies  = document.getElementById('tt-cookies').value.trim();
-    const errEl    = document.getElementById('tt-error');
+  // ── Upload ────────────────────────────────────────────────────────────────
+  async function submitUpload() {
+    const type  = document.getElementById('upload-type').value;
+    const title = document.getElementById('upload-title').value.trim();
+    const audio = document.getElementById('upload-audio').value.trim();
+    const errEl = document.getElementById('upload-error');
     errEl.style.display = 'none';
 
-    if (!username || !cookies) {
-      errEl.textContent = 'Username and cookies are required.';
-      errEl.style.display = 'block';
-      return;
-    }
-    try { JSON.parse(cookies); } catch {
-      errEl.textContent = 'Cookies must be valid JSON.';
+    if (!title || !audio) {
+      errEl.textContent = 'Title and audio URL are required.';
       errEl.style.display = 'block';
       return;
     }
 
     try {
-      const r = await fetch('/api/outreach/tiktok-connect', {
-        method:  'POST',
+      // TODO: backend route not wired up yet — see api/routes/campaigns.js
+      // (currently the old Fastlane-style batch generator). Needs a plain
+      // POST /api/campaigns handler: create Campaign + Idea, then trigger
+      // freebeat generation, matching runsound-v2/app/api/campaigns/route.ts.
+      const r = await fetch('/api/campaigns', {
+        method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tiktok_username: username, session_cookies: cookies }),
+        body: JSON.stringify({
+          artist_id: artistId,
+          type,
+          ideas: [{ title, audio_url: audio, is_finished: type === 'RELEASE' }]
+        })
       });
       const d = await r.json();
-      if (!d.ok) throw new Error(d.error);
-      hideTikTokConnect();
-      toast('TikTok account connected ✓');
-      loadOutreach();
+      if (!d.ok) throw new Error(d.error || 'Something went wrong');
+      toast('Started ✓');
+      document.getElementById('upload-title').value = '';
+      document.getElementById('upload-audio').value = '';
+      loadCampaigns();
     } catch (e) {
-      errEl.textContent = e.message || 'Something went wrong.';
+      errEl.textContent = e.message || 'That endpoint isn’t wired up yet — see the TODO in this file.';
       errEl.style.display = 'block';
     }
   }
 
-  // ── Init ──────────────────────────────────────────────────────────────────
-  loadCredits();
-  loadSkills();
-  loadRuns();
-  loadOutreach();
+  // ── Campaigns ─────────────────────────────────────────────────────────────
+  const STATUS_LABEL = {
+    DRAFT: 'Draft',
+    IDEA_TESTING: 'Testing ideas',
+    AWAITING_ARTIST_FINISH: 'Pick your winner',
+    CONTENT_GENERATING: 'Generating videos',
+    ORGANIC_TESTING: 'Testing organically',
+    AWAITING_BUDGET_APPROVAL: 'Ready to boost — needs your approval',
+    BOOSTING: 'Boosting winner',
+    ACTIVE: 'Active',
+    COMPLETED: 'Completed',
+  };
+
+  async function loadCampaigns() {
+    const container = document.getElementById('campaigns-container');
+    try {
+      // TODO: GET /api/campaigns?artist_id= not wired up yet either — see
+      // note in submitUpload() above. This function is ready for it.
+      const r = await fetch(`/api/campaigns?artist_id=${artistId}`, {
+        headers: { Authorization: `Bearer ${apiKey}` }
+      });
+      const d = await r.json();
+      if (!d.ok || !d.campaigns.length) throw new Error();
+
+      document.getElementById('campaigns-sub').textContent = `${d.campaigns.length} total`;
+      container.innerHTML = '';
+      d.campaigns.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.marginBottom = '12px';
+
+        let ideasHtml = '';
+        if (c.type === 'IDEA_TEST' && c.ideas && c.ideas.length) {
+          ideasHtml = c.ideas
+            .slice()
+            .sort((a, b) => (a.rank || 99) - (b.rank || 99))
+            .map(i => `<div class="idea-row">
+              <span>${i.rank ? `#${i.rank} · ` : ''}${i.title}</span>
+              <span class="idea-score">${i.score != null ? `score ${i.score.toFixed(1)}` : 'awaiting signal'}</span>
+            </div>`)
+            .join('');
+        }
+
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${c.type === 'IDEA_TEST' ? 'Idea test' : 'Release campaign'}</strong>
+            <span class="status-badge">${STATUS_LABEL[c.status] || c.status}</span>
+          </div>
+          ${ideasHtml}`;
+        container.appendChild(card);
+      });
+    } catch {
+      container.innerHTML = '<div class="empty-state"><strong>Nothing yet</strong>Upload a song or idea above to get started.</div>';
+    }
+  }
+
+  loadCampaigns();
 </script>
 </body>
 </html>

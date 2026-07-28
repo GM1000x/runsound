@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RunSound — Music marketing skills for AI agents</title>
-  <meta name="description" content="One skill unlocks every music marketing tool your agent needs. Find TikTok creators, send DMs, pitch playlists, generate hooks — pay per call, no subscriptions." />
-  <meta name="og:title" content="RunSound — Music marketing skills for AI agents" />
-  <meta name="og:description" content="One skill. Every music promotion tool. No subscriptions — your agent discovers, pays per call, and delivers." />
+  <title>RunSound — upload a song, we test it, we grow it</title>
+  <meta name="description" content="Upload a song or a rough idea. RunSound generates videos, posts them organically on TikTok and Instagram, learns what actually connects, then boosts the winner with paid ads." />
+  <meta name="og:title" content="RunSound — upload a song, we test it, we grow it" />
+  <meta name="og:description" content="We generate the videos, post them organically, learn what works, and boost the winner with real ad budget — only once you approve it." />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -35,14 +35,11 @@
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
-
     a { color: inherit; text-decoration: none; }
 
-    /* ── NAV ── */
     nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 5%;
-      height: 60px;
+      padding: 0 5%; height: 60px;
       border-bottom: 1px solid var(--border);
       background: var(--bg);
       position: sticky; top: 0; z-index: 100;
@@ -53,759 +50,216 @@
     .nav-links a { color: var(--muted); font-size: 0.88rem; transition: color .15s; }
     .nav-links a:hover { color: var(--text); }
     .nav-cta {
-      background: var(--text);
-      color: var(--bg) !important;
-      padding: 0.45rem 1.1rem;
-      border-radius: var(--radius);
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: opacity .15s;
+      background: var(--text); color: var(--bg) !important;
+      padding: 0.45rem 1.1rem; border-radius: var(--radius);
+      font-size: 0.85rem; font-weight: 600; transition: opacity .15s;
     }
     .nav-cta:hover { opacity: 0.8; }
 
-    /* ── HERO ── */
-    .hero {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 100px 5% 72px;
-      text-align: center;
-    }
+    .hero { max-width: 760px; margin: 0 auto; padding: 100px 5% 72px; text-align: center; }
     .live-badge {
       display: inline-flex; align-items: center; gap: 7px;
-      background: var(--green-l);
-      color: var(--green);
-      border: 1px solid #bbf7d0;
-      border-radius: 999px;
-      padding: 4px 12px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      margin-bottom: 28px;
+      background: var(--green-l); color: var(--green);
+      border: 1px solid #bbf7d0; border-radius: 999px;
+      padding: 4px 12px; font-size: 0.78rem; font-weight: 600; margin-bottom: 28px;
     }
     .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
     h1 {
-      font-size: clamp(2.2rem, 5vw, 3.5rem);
-      font-weight: 700;
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-      margin-bottom: 20px;
+      font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700;
+      line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 20px;
     }
     h1 em { color: var(--accent); font-style: normal; }
     .hero-sub {
-      color: var(--muted);
-      font-size: 1.1rem;
-      max-width: 540px;
-      margin: 0 auto 40px;
-      line-height: 1.65;
+      color: var(--muted); font-size: 1.1rem; max-width: 560px;
+      margin: 0 auto 40px; line-height: 1.65;
     }
-    .skill-box {
-      display: inline-flex; align-items: center; gap: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: var(--radius);
-      padding: 14px 20px;
-      font-family: 'Inter', monospace;
-      font-size: 0.95rem;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-    .skill-box strong { color: var(--accent); font-weight: 600; }
-    .skill-box-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 32px; }
-    .copy-btn {
-      background: none; border: 1px solid var(--border2);
-      border-radius: 6px; padding: 3px 10px;
-      font-size: 0.75rem; color: var(--muted);
-      cursor: pointer; transition: all .15s;
-    }
-    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
     .hero-cta {
-      display: inline-block;
-      background: var(--text);
-      color: var(--bg);
-      padding: 0.7rem 1.8rem;
-      border-radius: var(--radius);
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: opacity .15s;
+      display: inline-block; background: var(--text); color: var(--bg);
+      padding: 0.7rem 1.8rem; border-radius: var(--radius);
+      font-weight: 600; font-size: 0.95rem; transition: opacity .15s;
     }
     .hero-cta:hover { opacity: 0.8; }
+    .hero-note { font-size: 0.8rem; color: var(--muted); margin-top: 14px; }
 
-    /* ── SCROLLING SKILLS ── */
-    .scroll-section {
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      overflow: hidden;
-      padding: 20px 0;
-      background: var(--surface);
-    }
-    .scroll-track {
-      display: flex; gap: 0;
-      animation: scroll-left 28s linear infinite;
-      width: max-content;
-    }
-    .scroll-track:hover { animation-play-state: paused; }
-    @keyframes scroll-left {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
-    .skill-chip {
-      display: flex; align-items: center; gap: 10px;
-      padding: 0 28px;
-      white-space: nowrap;
-      border-right: 1px solid var(--border);
-    }
-    .skill-chip-icon {
-      width: 28px; height: 28px;
-      background: var(--accent-l);
-      border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
-    }
-    .skill-chip-name { font-size: 0.88rem; font-weight: 500; }
-    .skill-chip-desc { font-size: 0.78rem; color: var(--muted); }
-
-    /* ── HOW IT WORKS ── */
     section { max-width: 860px; margin: 0 auto; padding: 80px 5%; }
-    h2 {
-      font-size: 1.8rem; font-weight: 700;
-      letter-spacing: -0.025em; margin-bottom: 12px;
-    }
+    h2 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
     .section-sub { color: var(--muted); font-size: 1rem; margin-bottom: 48px; }
 
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-    .step {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-    }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
     .step-num {
-      font-size: 0.75rem; font-weight: 600;
-      color: var(--accent);
-      background: var(--accent-l);
-      border-radius: 999px;
-      padding: 2px 10px;
-      display: inline-block;
-      margin-bottom: 14px;
+      font-size: 0.75rem; font-weight: 600; color: var(--accent);
+      background: var(--accent-l); border-radius: 999px; padding: 2px 10px;
+      display: inline-block; margin-bottom: 14px;
     }
     .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
     .step p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
-    .step code {
-      display: block; margin-top: 12px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-family: monospace;
-    }
-    .step code strong { color: var(--accent); }
 
-    /* ── NO SUBSCRIPTIONS ── */
-    .nosub-section {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-    .nosub-inner {
-      max-width: 860px; margin: 0 auto; padding: 80px 5%;
-    }
-    .nosub-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 32px; margin-top: 48px;
-    }
+    .idea-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .idea-inner { max-width: 860px; margin: 0 auto; padding: 80px 5%; display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
+    .idea-inner p { color: var(--muted); font-size: 0.98rem; line-height: 1.7; margin-bottom: 20px; }
+    .idea-card { background: var(--bg); border: 1px solid var(--border2); border-radius: 12px; padding: 20px; }
+    .idea-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .idea-row:last-child { border-bottom: none; }
+    .idea-rank { color: var(--accent); font-weight: 700; margin-right: 8px; }
+    .idea-score { color: var(--muted); font-size: 0.78rem; }
+
+    .nosub-section { background: var(--text); }
+    .nosub-inner { max-width: 860px; margin: 0 auto; padding: 80px 5%; text-align: center; }
+    .nosub-inner h2 { color: var(--bg); }
+    .nosub-inner .section-sub { color: rgba(250,250,247,0.6); }
+    .nosub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 40px; }
     .nosub-stat { text-align: center; }
-    .nosub-num { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; }
-    .nosub-label { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+    .nosub-num { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; color: var(--bg); }
+    .nosub-label { font-size: 0.82rem; color: rgba(250,250,247,0.6); margin-top: 4px; }
 
-    /* ── SKILLS GRID ── */
-    .skills-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 40px;
-    }
-    .skill-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      transition: border-color .15s;
-    }
-    .skill-card:hover { border-color: var(--border2); }
-    .skill-card-top {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .skill-icon {
-      width: 32px; height: 32px;
-      background: var(--accent-l);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-    .skill-price {
-      font-size: 0.78rem; font-weight: 600;
-      color: var(--green);
-      background: var(--green-l);
-      padding: 2px 8px;
-      border-radius: 999px;
-    }
-    .skill-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
-    .skill-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
-    .featured-badge {
-      font-size: 0.7rem; font-weight: 600;
-      color: var(--accent);
-      background: var(--accent-l);
-      padding: 1px 7px; border-radius: 999px;
-      margin-left: 8px;
-    }
-
-    /* ── THREE WAYS ── */
-    .ways-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
-    .way {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-    }
-    .way-tag {
-      font-size: 0.75rem; font-weight: 700;
-      color: var(--accent);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .way h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
-    .way p { font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; }
-    .way code {
-      display: block;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-family: monospace;
-    }
-
-    /* ── FAQ ── */
     .faq-list { margin-top: 40px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
     .faq-item { border-bottom: 1px solid var(--border); }
     .faq-item:last-child { border-bottom: none; }
     .faq-q {
-      width: 100%; background: none; border: none;
-      padding: 20px 24px;
-      text-align: left;
-      font-size: 0.95rem; font-weight: 500;
-      color: var(--text);
-      cursor: pointer;
-      display: flex; justify-content: space-between; align-items: center;
-      font-family: 'Inter', sans-serif;
+      width: 100%; background: none; border: none; padding: 20px 24px; text-align: left;
+      font-size: 0.95rem; font-weight: 500; color: var(--text); cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; font-family: 'Inter', sans-serif;
     }
     .faq-q:hover { background: var(--bg); }
     .faq-chevron { transition: transform .2s; font-size: 1.1rem; color: var(--muted); }
-    .faq-a {
-      display: none;
-      padding: 0 24px 20px;
-      font-size: 0.88rem;
-      color: var(--muted);
-      line-height: 1.7;
-    }
+    .faq-a { display: none; padding: 0 24px 20px; font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
     .faq-item.open .faq-a { display: block; }
     .faq-item.open .faq-chevron { transform: rotate(180deg); }
 
-    /* ── DEVELOPER CTA ── */
-    .dev-section {
-      background: var(--text);
-      color: var(--bg);
-      text-align: center;
-      padding: 80px 5%;
-    }
-    .dev-section h2 { color: var(--bg); margin-bottom: 12px; }
-    .dev-section p { color: rgba(250,250,247,0.6); font-size: 1rem; margin-bottom: 32px; }
-    .dev-cta {
-      display: inline-block;
-      background: var(--bg);
-      color: var(--text);
-      padding: 0.7rem 1.8rem;
-      border-radius: var(--radius);
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-    .dev-cta:hover { opacity: 0.85; }
-
-    /* ── FOOTER ── */
     footer {
-      border-top: 1px solid var(--border);
-      padding: 40px 5%;
+      border-top: 1px solid var(--border); padding: 40px 5%;
       display: flex; justify-content: space-between; align-items: center;
-      font-size: 0.82rem; color: var(--muted);
-      max-width: 100%;
+      font-size: 0.82rem; color: var(--muted); max-width: 100%;
     }
     footer a { color: var(--muted); transition: color .15s; }
     footer a:hover { color: var(--text); }
     .footer-links { display: flex; gap: 1.5rem; }
 
-    /* ── MODE TOGGLE ── */
-    .mode-toggle {
-      display: inline-flex;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 999px;
-      padding: 4px;
-      gap: 2px;
-      margin-bottom: 40px;
-    }
-    .mode-btn {
-      background: none;
-      border: none;
-      border-radius: 999px;
-      padding: 9px 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all .2s;
-      font-family: 'Inter', sans-serif;
-      white-space: nowrap;
-    }
-    .mode-btn.active {
-      background: var(--text);
-      color: var(--bg);
-      font-weight: 600;
-    }
-
-    /* ── DASHBOARD STEPS ── */
-    .dash-steps {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 32px;
-      flex-wrap: wrap;
-    }
-    .dash-step {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: var(--radius);
-      padding: 12px 18px;
-      font-size: 0.88rem;
-      font-weight: 500;
-    }
-    .dash-step-num {
-      width: 22px; height: 22px;
-      background: var(--accent);
-      color: #fff;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
     @media (max-width: 640px) {
-      .steps, .nosub-grid, .ways-grid { grid-template-columns: 1fr; }
-      .skills-grid { grid-template-columns: 1fr; }
+      .steps, .nosub-grid { grid-template-columns: 1fr 1fr; }
+      .idea-inner { grid-template-columns: 1fr; }
       .nav-links { display: none; }
       footer { flex-direction: column; gap: 12px; text-align: center; }
-      .mode-btn { padding: 8px 12px; font-size: 0.78rem; }
-      .dash-steps { flex-direction: column; align-items: center; }
     }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <div class="logo">Run<span>Sound</span></div>
   <div class="nav-links">
-    <a href="#skills">Skills</a>
     <a href="#how">How it works</a>
-    <a href="https://run-sound.com/SKILL.md">SKILL.md</a>
+    <a href="#ideas">Idea testing</a>
     <a href="#faq">FAQ</a>
   </div>
   <a href="/signup.html" class="nav-cta">Get started →</a>
 </nav>
 
-<!-- HERO -->
 <div class="hero">
-  <div class="live-badge">
-    <div class="live-dot"></div>
-    Live · 10 music skills
-  </div>
+  <div class="live-badge"><div class="live-dot"></div>Live</div>
 
-  <!-- MODE TOGGLE -->
-  <div class="mode-toggle">
-    <button class="mode-btn active" id="btn-agent" onclick="setMode('agent')">I want an AI agent to handle it</button>
-    <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">I want to do it myself</button>
-  </div>
-
-  <!-- AGENT MODE -->
-  <div id="mode-agent">
-    <h1>Give your agent every<br><em>music marketing skill</em><br>it needs.</h1>
-    <p class="hero-sub">
-      One skill unlocks TikTok creator outreach, playlist pitching, hook generation, press kits, and more — billed per call, no subscriptions.
-    </p>
-    <div class="skill-box">
-      <strong>$set up</strong> https://run-sound.com/SKILL.md
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('$set up https://run-sound.com/SKILL.md');this.textContent='Copied!'">Copy</button>
-    </div>
-    <div class="skill-box-label">Give this to Claude, Cursor, Goose, or any AI agent</div>
-    <a href="/signup.html" class="hero-cta">Start with $5 in free credits →</a>
-  </div>
-
-  <!-- MANUAL / DASHBOARD MODE -->
-  <div id="mode-manual" style="display:none">
-    <h1>Run your campaign.<br><em>No AI agent</em><br>required.</h1>
-    <p class="hero-sub">
-      Create campaigns, scout TikTok creators, send personalized DMs, and track results from your dashboard — step by step, you stay in control.
-    </p>
-    <div class="dash-steps">
-      <div class="dash-step">
-        <div class="dash-step-num">1</div>
-        Paste your Spotify link
-      </div>
-      <div class="dash-step">
-        <div class="dash-step-num">2</div>
-        Pick creators &amp; set budget
-      </div>
-      <div class="dash-step">
-        <div class="dash-step-num">3</div>
-        Launch — we handle the rest
-      </div>
-    </div>
-    <a href="/signup.html" class="hero-cta">Open dashboard →</a>
-    <div class="skill-box-label" style="margin-top:14px">Same skills, same pricing — no agent needed</div>
-  </div>
+  <h1>Upload a song.<br>We <em>test it</em>, we <em>grow it</em>.</h1>
+  <p class="hero-sub">
+    RunSound generates videos from your track, posts them organically on TikTok and Instagram,
+    and learns which one actually connects — before a single dollar of ad budget gets spent.
+  </p>
+  <a href="/signup.html" class="hero-cta">Upload a song or idea →</a>
+  <div class="hero-note">Free to test. You approve any ad spend before it happens.</div>
 </div>
 
-<!-- SCROLLING SKILLS -->
-<div class="scroll-section">
-  <div class="scroll-track" id="scrollTrack">
-    <!-- First set -->
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🎯</div>
-      <div><div class="skill-chip-name">full-campaign</div><div class="skill-chip-desc">end-to-end</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🔍</div>
-      <div><div class="skill-chip-name">creator-scout</div><div class="skill-chip-desc">TikTok creators</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📨</div>
-      <div><div class="skill-chip-name">dm-outreach</div><div class="skill-chip-desc">personalized DMs</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🪝</div>
-      <div><div class="skill-chip-name">hook-generator</div><div class="skill-chip-desc">viral TikTok hooks</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🎵</div>
-      <div><div class="skill-chip-name">playlist-pitcher</div><div class="skill-chip-desc">Spotify curators</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📰</div>
-      <div><div class="skill-chip-name">press-pitcher</div><div class="skill-chip-desc">music blogs</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📦</div>
-      <div><div class="skill-chip-name">release-kit</div><div class="skill-chip-desc">press release + bio</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📈</div>
-      <div><div class="skill-chip-name">trend-matcher</div><div class="skill-chip-desc">TikTok formats</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">👂</div>
-      <div><div class="skill-chip-name">sound-tracker</div><div class="skill-chip-desc">usage monitoring</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📅</div>
-      <div><div class="skill-chip-name">post-scheduler</div><div class="skill-chip-desc">TikTok posting</div></div>
-    </div>
-    <!-- Duplicate for seamless loop -->
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🎯</div>
-      <div><div class="skill-chip-name">full-campaign</div><div class="skill-chip-desc">end-to-end</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🔍</div>
-      <div><div class="skill-chip-name">creator-scout</div><div class="skill-chip-desc">TikTok creators</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📨</div>
-      <div><div class="skill-chip-name">dm-outreach</div><div class="skill-chip-desc">personalized DMs</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🪝</div>
-      <div><div class="skill-chip-name">hook-generator</div><div class="skill-chip-desc">viral TikTok hooks</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">🎵</div>
-      <div><div class="skill-chip-name">playlist-pitcher</div><div class="skill-chip-desc">Spotify curators</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📰</div>
-      <div><div class="skill-chip-name">press-pitcher</div><div class="skill-chip-desc">music blogs</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📦</div>
-      <div><div class="skill-chip-name">release-kit</div><div class="skill-chip-desc">press release + bio</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📈</div>
-      <div><div class="skill-chip-name">trend-matcher</div><div class="skill-chip-desc">TikTok formats</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">👂</div>
-      <div><div class="skill-chip-name">sound-tracker</div><div class="skill-chip-desc">usage monitoring</div></div>
-    </div>
-    <div class="skill-chip">
-      <div class="skill-chip-icon">📅</div>
-      <div><div class="skill-chip-name">post-scheduler</div><div class="skill-chip-desc">TikTok posting</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- HOW IT WORKS -->
 <section id="how">
-  <h2>Tell your agent what to do.<br>It handles the rest.</h2>
-  <p class="section-sub">Your agent discovers the right skill, runs it, and pays from one credit balance.</p>
+  <h2>Upload once. The agent handles the rest.</h2>
+  <p class="section-sub">No dashboard to babysit — you get a status update, not a to-do list.</p>
 
   <div class="steps">
     <div class="step">
-      <div class="step-num">01 — Discover</div>
-      <h3>Agent finds the skill</h3>
-      <p>Your agent queries the skills registry and gets ranked suggestions based on your goal.</p>
-      <code><strong>GET</strong> /api/skills/discover<br>?q=find tiktok creators</code>
+      <div class="step-num">01 — Upload</div>
+      <h3>Song or idea</h3>
+      <p>A finished track, or a handful of rough hooks you haven't decided between yet.</p>
     </div>
     <div class="step">
-      <div class="step-num">02 — Run</div>
-      <h3>Skill executes instantly</h3>
-      <p>One API call. The skill runs against your Spotify track and artist account — no manual steps.</p>
-      <code><strong>POST</strong> /api/skills/run<br>{ skill: "creator-scout" }</code>
+      <div class="step-num">02 — Generate</div>
+      <h3>Videos, automatically</h3>
+      <p>Lyric video, dance cut, visualizer — several variants made from your track.</p>
     </div>
     <div class="step">
-      <div class="step-num">03 — Pay</div>
-      <h3>Debited per call</h3>
-      <p>Credits are deducted per action. No monthly fees, no wasted spend on tools you don't use.</p>
-      <code><strong>$0.01</strong> per creator found<br><strong>$0.03</strong> per DM sent</code>
+      <div class="step-num">03 — Test</div>
+      <h3>Posted organically</h3>
+      <p>Live on TikTok and Instagram. We read completion rate, saves, and shares.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04 — Boost</div>
+      <h3>You approve, we spend</h3>
+      <p>Real ad budget goes only behind whichever version actually worked.</p>
     </div>
   </div>
 </section>
 
-<!-- NO SUBSCRIPTIONS -->
-<div class="nosub-section">
-  <div class="nosub-inner">
-    <h2>We killed the music marketing subscription.</h2>
-    <p class="section-sub">
-      SoundCampaign, Groover, SubmitHub — you pay every month whether you release or not.<br>
-      RunSound charges only when your agent runs a skill.
-    </p>
-    <div class="nosub-grid">
-      <div class="nosub-stat">
-        <div class="nosub-num">10</div>
-        <div class="nosub-label">Music marketing skills</div>
-      </div>
-      <div class="nosub-stat">
-        <div class="nosub-num">1</div>
-        <div class="nosub-label">Balance for everything</div>
-      </div>
-      <div class="nosub-stat">
-        <div class="nosub-num">$0</div>
-        <div class="nosub-label">Monthly minimum</div>
-      </div>
+<div class="idea-section" id="ideas">
+  <div class="idea-inner">
+    <div>
+      <h2>Got 10 half-finished ideas and don't know which one to finish?</h2>
+      <p>
+        Upload the rough hooks — voice memos are fine, nothing needs to be mixed. RunSound turns each
+        one into a short test video, posts them organically, and tells you which idea actually landed
+        before you spend another hour finishing the wrong song.
+      </p>
+      <a href="/signup.html" class="hero-cta">Try idea testing →</a>
+    </div>
+    <div class="idea-card">
+      <div class="idea-row"><span><span class="idea-rank">#1</span>"3am thoughts" hook</span><span class="idea-score">score 84.2</span></div>
+      <div class="idea-row"><span><span class="idea-rank">#2</span>chorus idea v3</span><span class="idea-score">score 61.5</span></div>
+      <div class="idea-row"><span><span class="idea-rank">#3</span>slow bridge demo</span><span class="idea-score">score 22.9</span></div>
     </div>
   </div>
 </div>
 
-<!-- SKILLS GRID -->
-<section id="skills">
-  <h2>Every skill your agent needs.</h2>
-  <p class="section-sub">From creator discovery to press kits — all in one API.</p>
-
-  <div class="skills-grid">
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">🎯</div>
-        <span class="skill-price">$15 / campaign</span>
-      </div>
-      <h3>full-campaign <span class="featured-badge">recommended</span></h3>
-      <p>Run a complete campaign end-to-end. Scouts creators, generates hooks, queues DMs, starts tracking — one call.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">🔍</div>
-        <span class="skill-price">$0.05 / creator</span>
-      </div>
-      <h3>creator-scout</h3>
-      <p>Find TikTok creators matched to your song's energy, genre, and mood via Spotify audio features.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">📨</div>
-        <span class="skill-price">$0.10 / DM</span>
-      </div>
-      <h3>dm-outreach</h3>
-      <p>Send personalized TikTok DMs to creators. GPT writes a unique message per creator based on their bio.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">🪝</div>
-        <span class="skill-price">$0.25 / hook</span>
-      </div>
-      <h3>hook-generator</h3>
-      <p>Generate viral TikTok hooks based on trending formats in your genre. POV, storytime, emotional — all of it.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">🎵</div>
-        <span class="skill-price">$0.50 / pitch</span>
-      </div>
-      <h3>playlist-pitcher</h3>
-      <p>Find Spotify playlist curators in your genre and send personalized pitches automatically.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">📰</div>
-        <span class="skill-price">$0.50 / pitch</span>
-      </div>
-      <h3>press-pitcher</h3>
-      <p>Find music blogs and Substack writers covering your genre and send tailored pitches.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">📦</div>
-        <span class="skill-price">$5 / kit</span>
-      </div>
-      <h3>release-kit</h3>
-      <p>Generate a complete release package: press release, artist bio, social captions, and pitch templates.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">📈</div>
-        <span class="skill-price">$1 / analysis</span>
-      </div>
-      <h3>trend-matcher</h3>
-      <p>Match your song to currently trending TikTok formats, sounds, and hashtags in your genre.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">👂</div>
-        <span class="skill-price">$0.05 / check</span>
-      </div>
-      <h3>sound-tracker</h3>
-      <p>Monitor TikTok to detect when creators post videos using your sound. Track campaign results automatically.</p>
-    </div>
-    <div class="skill-card">
-      <div class="skill-card-top">
-        <div class="skill-icon">📅</div>
-        <span class="skill-price">$0.25 / post</span>
-      </div>
-      <h3>post-scheduler</h3>
-      <p>Schedule and publish content to TikTok at optimal times for your audience's time zone.</p>
+<div class="nosub-section">
+  <div class="nosub-inner">
+    <h2>No PR retainer. No agency fee.</h2>
+    <p class="section-sub">Test for free. Pay a flat campaign fee only once there's a winner worth backing.</p>
+    <div class="nosub-grid">
+      <div class="nosub-stat"><div class="nosub-num">2</div><div class="nosub-label">Platforms tested at once</div></div>
+      <div class="nosub-stat"><div class="nosub-num">24–48h</div><div class="nosub-label">To a real signal</div></div>
+      <div class="nosub-stat"><div class="nosub-num">$0</div><div class="nosub-label">Ad spend without your approval</div></div>
+      <div class="nosub-stat"><div class="nosub-num">1</div><div class="nosub-label">Winner gets the budget</div></div>
     </div>
   </div>
-</section>
+</div>
 
-<!-- THREE WAYS -->
-<section>
-  <h2>Three ways to connect.</h2>
-  <p class="section-sub">Same skills, same balance — whichever your agent speaks.</p>
-
-  <div class="ways-grid">
-    <div class="way">
-      <div class="way-tag">Skill</div>
-      <h3>One line into your agent's chat</h3>
-      <p>Works with Claude, Cursor, Goose, and any agent that supports SKILL.md.</p>
-      <code>$set up https://run-sound.com/SKILL.md</code>
-    </div>
-    <div class="way">
-      <div class="way-tag">CLI</div>
-      <h3>Install from your terminal</h3>
-      <p>Installs SKILL.md into your project and stores your API key locally.</p>
-      <code>npx runsound install</code>
-    </div>
-    <div class="way">
-      <div class="way-tag">API</div>
-      <h3>Call the REST API directly</h3>
-      <p>Full REST API with structured JSON responses. Works in any language or framework.</p>
-      <code>POST run-sound.com/api/skills/run</code>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
 <section id="faq">
   <h2>Common questions.</h2>
   <div class="faq-list">
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
-        Do I need separate accounts for each platform?
-        <span class="faq-chevron">▾</span>
-      </button>
-      <div class="faq-a">No. You connect your Spotify once during signup. For TikTok outreach, you connect your TikTok session — one account sends up to 30 DMs per day, and you can connect multiple accounts to scale.</div>
+      <button class="faq-q" onclick="toggleFaq(this)">Do I need to connect my TikTok and Instagram?<span class="faq-chevron">▾</span></button>
+      <div class="faq-a">Yes, once — we post to your own accounts, never anyone else's. You authorize it during signup, same as connecting any scheduling tool.</div>
     </div>
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
-        How does pricing work?
-        <span class="faq-chevron">▾</span>
-      </button>
-      <div class="faq-a">You top up a credit balance and each skill call debits from it. No monthly fees. A typical release campaign (30 creators scouted, 30 DMs sent, 5 hooks, 1 release kit) costs around $2–3 total.</div>
+      <button class="faq-q" onclick="toggleFaq(this)">Will you spend my money without asking?<span class="faq-chevron">▾</span></button>
+      <div class="faq-a">No. The agent proposes a winner and a budget once organic testing shows a clear signal — real ad spend only starts after you approve it.</div>
     </div>
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
-        Which AI agents are supported?
-        <span class="faq-chevron">▾</span>
-      </button>
-      <div class="faq-a">Claude (Claude.ai and Claude Code), Cursor, Goose, and any agent that can read SKILL.md files or call a REST API. The CLI installs SKILL.md into your project's .claude/ folder automatically.</div>
+      <button class="faq-q" onclick="toggleFaq(this)">Can I upload unfinished demos?<span class="faq-chevron">▾</span></button>
+      <div class="faq-a">Yes — that's the idea-testing flow. Upload a rough voice memo or hook, we generate a short test video and post it, and you get a ranked signal before you finish the song.</div>
     </div>
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
-        What if a skill fails — am I charged?
-        <span class="faq-chevron">▾</span>
-      </button>
-      <div class="faq-a">No. Credits are only debited when a skill completes successfully. Failed runs are logged but not billed.</div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
-        Can I use RunSound without an AI agent?
-        <span class="faq-chevron">▾</span>
-      </button>
-      <div class="faq-a">Yes. You can use the dashboard at run-sound.com to run skills manually with a click — the same skills, same pricing, no agent required.</div>
+      <button class="faq-q" onclick="toggleFaq(this)">What does it cost?<span class="faq-chevron">▾</span></button>
+      <div class="faq-a">Idea testing and the organic test phase are free. If a video is worth boosting, you approve a specific daily ad budget before anything is spent — no subscription, no surprise charges.</div>
     </div>
   </div>
 </section>
 
-<!-- DEVELOPER CTA -->
-<div class="dev-section">
-  <h2>Build a music skill. Earn 70%.</h2>
-  <p>Have an API artists should be calling? List it on RunSound. We route agent traffic to it, meter every call, and share the revenue.</p>
-  <a href="mailto:hello@run-sound.com" class="dev-cta">Apply to list your skill →</a>
-</div>
-
-<!-- FOOTER -->
 <footer>
   <div class="logo">Run<span style="color:var(--accent)">Sound</span></div>
   <div class="footer-links">
     <a href="/signup.html">Get started</a>
-    <a href="https://run-sound.com/SKILL.md">SKILL.md</a>
     <a href="mailto:hello@run-sound.com">Support</a>
   </div>
   <div>© 2026 RunSound</div>
 </footer>
 
 <script>
-  function setMode(mode) {
-    document.getElementById('mode-agent').style.display  = mode === 'agent'  ? 'block' : 'none';
-    document.getElementById('mode-manual').style.display = mode === 'manual' ? 'block' : 'none';
-    document.getElementById('btn-agent').classList.toggle('active',  mode === 'agent');
-    document.getElementById('btn-manual').classList.toggle('active', mode === 'manual');
-  }
-
   function toggleFaq(btn) {
     const item = btn.closest('.faq-item');
     item.classList.toggle('open');
