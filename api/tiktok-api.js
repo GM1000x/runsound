@@ -263,6 +263,70 @@ async function pollStatus(accessToken, publishId, maxAttempts = 20, intervalMs =
   throw new Error(`TikTok post timed out after ${maxAttempts} polls`);
 }
 
+/**
+ * Post a video to TikTok directly from a hosted URL (e.g. a freebeat
+ * video_url) — used for the organic-test-to-paid loop in
+ * postiz-for-musik-plan.md. Uses PULL_FROM_URL so TikTok fetches the file
+ * itself; no local download/re-upload needed.
+ *
+ * IMPORTANT — TikTok policy, not a bug: apps that haven't passed TikTok's
+ * app review (Content Posting API "unaudited" tier) can only post as
+ * SELF_ONLY (private, visible only to the poster), same restriction the
+ * existing postPhotoCarousel() already works around by sending to the
+ * inbox as a draft. Until this app is audited/approved for public posting,
+ * `privacyLevel` below will need to stay 'SELF_ONLY' regardless of what's
+ * passed in, or TikTok will reject the request — the organic-test step in
+ * the plan needs real public posts, so getting app review approved is a
+ * blocking prerequisite for this function to be useful, not just a nice-to-have.
+ *
+ * @param {string} accessToken
+ * @param {string} videoUrl       Hosted video URL (freebeat's video_url)
+ * @param {string} caption
+ * @param {'SELF_ONLY'|'PUBLIC_TO_EVERYONE'} [privacyLevel]
+ * @returns {Promise<{ publishId: string, status: string }>}
+ */
+async function postVideo(accessToken, videoUrl, caption, privacyLevel = 'SELF_ONLY') {
+  console.log(`\n[tiktok-api] 🎬 Posting video from URL (privacy: ${privacyLevel})...`);
+
+  const initBody = {
+    post_info: {
+      title: caption.slice(0, 2200),
+      privacy_level: privacyLevel,
+      disable_duet: false,
+      disable_stitch: false,
+      disable_comment: false,
+    },
+    source_info: {
+      source: 'PULL_FROM_URL',
+      video_url: videoUrl,
+    },
+    post_mode: 'DIRECT_POST',
+    media_type: 'VIDEO',
+  };
+
+  const initResp = await apiRequest('POST', '/v2/post/publish/video/init/', accessToken, initBody);
+
+  if (initResp.error?.code && initResp.error.code !== 'ok') {
+    throw new Error(`TikTok video init error (${initResp.error.code}): ${initResp.error.message}`);
+  }
+
+  const publishId = initResp.data?.publish_id;
+  if (!publishId) {
+    throw new Error(`No publish_id in response: ${JSON.stringify(initResp).slice(0, 300)}`);
+  }
+
+  console.log(`[tiktok-api] Publish ID: ${publishId} — TikTok is fetching the video from the URL...`);
+
+  const finalStatus = await pollStatus(accessToken, publishId);
+  console.log(`[tiktok-api] Final status: ${finalStatus}`);
+
+  if (finalStatus === 'FAILED') {
+    throw new Error('TikTok video processing failed — check TikTok developer console');
+  }
+
+  return { publishId, status: finalStatus };
+}
+
 // ─── Low-level helpers ────────────────────────────────────────────────────────
 
 /**
@@ -330,6 +394,7 @@ function generateCodeChallenge(verifier) {
 module.exports = {
   getValidToken,
   postPhotoCarousel,
+  postVideo,
   refreshAccessToken,
   generateCodeVerifier,
   generateCodeChallenge,

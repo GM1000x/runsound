@@ -43,6 +43,139 @@ async function requireToken(req, res, next) {
   next();
 }
 
+// ─── Idea-test / release campaigns (upload -> freebeat -> organic test) ───────
+// New flow from postiz-for-musik-plan.md — separate from the Fastlane
+// dash_token routes above/below, uses its own tables (rs_campaigns,
+// rs_ideas, rs_videos, rs_post_results, see supabase/migrations/003).
+// Auth matches api/routes/skills.js: Authorization: Bearer <artist api_key>.
+
+const freebeat = require('../freebeat');
+const { pickBatchStyles, DEFAULT_BATCH_SIZE } = require('../prompt-styles');
+
+async function requireApiKey(req, res, next) {
+  const auth = req.headers['authorization'] || '';
+  const key  = auth.replace('Bearer ', '').trim();
+
+  if (!key || !key.startsWith('rs_')) {
+    return res.status(401).json({ ok: false, error: 'Missing or invalid API key' });
+  }
+
+  const { data: artist } = await supabase.from('artists').select('id').eq('api_key', key).single();
+  if (!artist) return res.status(401).json({ ok: false, error: 'Invalid API key' });
+
+  req.artist = artist;
+  next();
+}
+
+// ─── POST /api/campaigns — create an idea-test or release campaign ────────────
+// Body: { artist_id, type: 'IDEA_TEST'|'RELEASE', ideas: [{ title, audio_url, is_finished }], clips_per_idea? }
+//
+// Aug 2026 strategy: no manual clipping. For each idea, generate a BATCH of
+// 10-15 freebeat variants (one per prompt style, see api/prompt-styles.js)
+// instead of a single video. All variants get organically tested; the
+// winner is what gets boosted later (see runScoreIdeas/runVideoPipeline in
+// api/cron.js). Generation itself is async — cron polls freebeat job status
+// and publishes ready videos on its own schedule/throttle.
+router.post('/', requireApiKey, async (req, res) => {
+  const { artist_id, type, ideas, clips_per_idea } = req.body;
+
+  if (!artist_id || artist_id !== req.artist.id) {
+    return res.status(403).json({ ok: false, error: 'artist_id does not match API key' });
+  }
+  if (!['IDEA_TEST', 'RELEASE'].includes(type)) {
+    return res.status(400).json({ ok: false, error: "type must be 'IDEA_TEST' or 'RELEASE'" });
+  }
+  if (!Array.isArray(ideas) || ideas.length === 0) {
+    return res.status(400).json({ ok: false, error: 'ideas must be a non-empty array' });
+  }
+
+  try {
+    const { data: campaign, error: campaignErr } = await supabase
+      .from('rs_campaigns')
+      .insert({ artist_id, type, status: type === 'IDEA_TEST' ? 'IDEA_TESTING' : 'CONTENT_GENERATING' })
+      .select()
+      .single();
+    if (campaignErr) throw campaignErr;
+
+    const { data: insertedIdeas, error: ideasErr } = await supabase
+      .from('rs_ideas')
+      .insert(ideas.map(i => ({
+        campaign_id: campaign.id,
+        title: i.title,
+        audio_url: i.audio_url,
+        is_finished: !!i.is_finished,
+      })))
+      .select();
+    if (ideasErr) throw ideasErr;
+
+    // Kick off a batch of freebeat generations per idea — one per picked
+    // style. Fire-and-forget per clip — don't block the response on video
+    // generation; api/cron.js polls job status and moves things forward.
+    const batchSize = clips_per_idea
+      ? Math.min(Math.max(parseInt(clips_per_idea, 10) || DEFAULT_BATCH_SIZE, 10), 15)
+      : DEFAULT_BATCH_SIZE;
+
+    for (const idea of insertedIdeas) {
+      const styles = await pickBatchStyles(batchSize);
+      const maxDuration = type === 'IDEA_TEST' ? 15 : undefined; // short test-clips for raw ideas
+
+      for (const style of styles) {
+        freebeat.generateVideo({
+          audioUrl: idea.audio_url,
+          variant: style.variant,
+          aspectRatio: '9:16',
+          maxDurationSeconds: maxDuration,
+          vibe: style.vibe,
+        }).then(async ({ jobId, promptJson }) => {
+          await supabase.from('rs_videos').insert({
+            campaign_id: campaign.id,
+            idea_id: idea.id,
+            freebeat_job_id: jobId,
+            variant_label: style.key,
+            prompt_json: promptJson,
+            status: 'GENERATING',
+          });
+        }).catch(err => {
+          console.error(`[campaigns] freebeat generateVideo failed for idea ${idea.id} (style ${style.key}): ${err.message}`);
+        });
+      }
+    }
+
+    res.status(201).json({
+      ok: true,
+      campaign: { ...campaign, ideas: insertedIdeas },
+      clips_per_idea: batchSize,
+    });
+  } catch (err) {
+    console.error('[campaigns] POST / failed:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ─── GET /api/campaigns?artist_id= — list an artist's campaigns ───────────────
+router.get('/', requireApiKey, async (req, res) => {
+  const artistId = req.query.artist_id;
+  if (!artistId || artistId !== req.artist.id) {
+    return res.status(403).json({ ok: false, error: 'artist_id does not match API key' });
+  }
+
+  try {
+    const { data: campaigns, error } = await supabase
+      .from('rs_campaigns')
+      .select('*, rs_ideas(*)')
+      .eq('artist_id', artistId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    // Match the shape dashboard.html expects: campaign.ideas, not campaign.rs_ideas
+    const shaped = campaigns.map(c => ({ ...c, ideas: c.rs_ideas, rs_ideas: undefined }));
+    res.json({ ok: true, campaigns: shaped });
+  } catch (err) {
+    console.error('[campaigns] GET / failed:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ─── POST /api/campaigns/:id/generate-batch ───────────────────────────────────
 router.post('/:id/generate-batch', requireToken, async (req, res) => {
   const { campaign } = req;
